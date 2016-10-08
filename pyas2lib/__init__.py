@@ -13,3 +13,6 @@ if (2, 7) <= sys.version_info < (3, 2):
     import logging
     logger = logging.getLogger('pyas2lib')
     logger.addHandler(logging.NullHandler())
+
+from .message import Message as AS2Message
+from .mdn import MDN as AS2MDN
