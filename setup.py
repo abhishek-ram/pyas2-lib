@@ -11,6 +11,7 @@ f.close()
 
 install_requires = [
     'asn1crypto==0.18.5',
+    'cryptography==1.5.2',
 ]
 
 tests_require = [
