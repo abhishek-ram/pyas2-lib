@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from .compat import StringIO
+from .cms import compress_message, decompress_message
+from .utils import canonicalize, mime_to_string
 from email import utils as email_utils
 from email import message as email_message
 from email import generator as email_generator
@@ -86,7 +88,19 @@ class Message(object):
         del self.payload['MIME-Version']
 
         if self.compress:
-            pass
+            compressed_message = email_message.Message()
+            compressed_message.set_type('application/pkcs7-mime')
+            compressed_message.set_param('name', 'smime.p7z')
+            compressed_message.set_param('smime-type', 'compressed-data')
+            compressed_message.add_header('Content-Transfer-Encoding',
+                                          'binary')
+            compressed_message.add_header('Content-Disposition', 'attachment',
+                                          filename='smime.p7z')
+            mic_content = canonicalize(mime_to_string(self.payload, 0))
+            compressed_message.set_payload(
+                compress_message(mic_content).dump())
+
+            self.payload = compressed_message
 
         if self.sign:
             pass
@@ -123,5 +137,8 @@ class Message(object):
 
         if self.payload.get_content_type() == 'application/pkcs7-mime' \
                 and self.payload.get_param('smime-type') == 'compressed-data':
-            pass
+            self.compress = True
+            decompressed_data = mic_content = \
+                decompress_message(self.payload.get_payload())
+            self.payload = message_from_string(decompressed_data)
         return mic_content
