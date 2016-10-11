@@ -1,12 +1,12 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from .compat import StringIO
+from .compat import StringIO, EmailGenerator, str_cls, byte_cls, parse_mime
 from .cms import compress_message, decompress_message
-from .utils import canonicalize, mime_to_string
+from .utils import canonicalize, mime_to_string, mime_to_bytes
 from email import utils as email_utils
 from email import message as email_message
-from email import generator as email_generator
 from email import message_from_string
+from email import encoders 
 from uuid import uuid1
 from os.path import basename
 from .exceptions import *
@@ -51,18 +51,21 @@ class Message(object):
         if self.payload and self.headers:
             for k, v in self.headers.items():
                 self.payload[k] = v
-            fp = StringIO()
-            g = email_generator.Generator(
-                fp, mangle_from_=False)
-            g.flatten(self.payload)
-            return fp.getvalue()
+            return mime_to_string(self.payload, 78)
         else:
             return ''
 
-    def build(self, organization, partner, fp, subject='AS2 Message',
-              content_type='application/edi-consent'):
+    def __bytes__(self):
+        if self.payload and self.headers:
+            for k, v in self.headers.items():
+                self.payload[k] = v
+            return mime_to_bytes(self.payload, 78)
+        else:
+            return ''
 
-        mic_content = fp.read()
+    def build(self, organization, partner, fp, encoding='utf-8',
+              subject='AS2 Message', content_type='application/edi-consent'):
+
         # Generate message id using UUID 1 as it uses both hostname and time
         self.message_id = str(uuid1())
 
@@ -79,9 +82,16 @@ class Message(object):
             # 'recipient-address': message.partner.target_url,
         }
 
+        # Read the input and convert to bytes if value is unicode/str
+        # using utf-8 encoding and finally Canonicalize the payload 
+        file_content = fp.read()
+        if type(file_content) == str_cls:
+            file_content = file_content.encode('utf-8')
         self.payload = email_message.Message()
-        self.payload.set_payload(mic_content)
+        self.payload.set_payload(file_content)
         self.payload.set_type(content_type)
+        mic_content = canonicalize(mime_to_string(self.payload, 0))
+
         if hasattr(fp, 'name'):
             self.payload.add_header('Content-Disposition', 'attachment',
                                     filename=basename(fp.name))
@@ -92,14 +102,12 @@ class Message(object):
             compressed_message.set_type('application/pkcs7-mime')
             compressed_message.set_param('name', 'smime.p7z')
             compressed_message.set_param('smime-type', 'compressed-data')
-            compressed_message.add_header('Content-Transfer-Encoding',
-                                          'binary')
             compressed_message.add_header('Content-Disposition', 'attachment',
                                           filename='smime.p7z')
-            mic_content = canonicalize(mime_to_string(self.payload, 0))
-            compressed_message.set_payload(
-                compress_message(mic_content).dump())
-
+            compressed_payload = compress_message(mic_content.encode(encoding)).dump()
+            compressed_message.set_payload(compressed_payload)
+            encoders.encode_base64(compressed_message)
+            print(compressed_message)
             self.payload = compressed_message
 
         if self.sign:
@@ -115,8 +123,8 @@ class Message(object):
 
     def parse(self, raw_content, validate_org_callback=None,
               validate_partner_callback=None):
-        self.payload = message_from_string(raw_content)
-        mic_content = self.payload.get_payload()
+        self.payload = parse_mime(raw_content)
+        mic_content = self.payload.get_payload(decode=True)
         for k,v in self.payload.items():
             self.headers[k] = v
 
@@ -139,6 +147,6 @@ class Message(object):
                 and self.payload.get_param('smime-type') == 'compressed-data':
             self.compress = True
             decompressed_data = mic_content = \
-                decompress_message(self.payload.get_payload())
-            self.payload = message_from_string(decompressed_data)
+                decompress_message(mic_content)
+            self.payload = parse_mime(decompressed_data)
         return mic_content

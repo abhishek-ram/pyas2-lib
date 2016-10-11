@@ -24,15 +24,8 @@ def compress_message(data_to_compress):
 
 def decompress_message(compressed_data):
 
-    try:
-        compressed_data.encode('ascii')
-    except UnicodeDecodeError:
-        der_bytes = compressed_data
-    else:
-        der_bytes = pem.unarmor(
-            '-----BEGIN PKCS7-----\r\n'
-            '{}\r\n-----END PKCS7-----'.format(compressed_data))
-
+    der_bytes = compressed_data
+    print(der_bytes)
     cms_content = cms.ContentInfo.load(der_bytes)
     if cms_content['content_type'].native == 'compressed_data':
         return cms_content['content'].decompressed

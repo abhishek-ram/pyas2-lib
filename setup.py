@@ -5,9 +5,9 @@ VERSION = (0, 1, 0, 'dev')
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
-f = open(join(dirname(__file__), 'README.md'))
-long_description = f.read().strip()
-f.close()
+# f = open(join(dirname(__file__), 'README.md'))
+# long_description = f.read().strip()
+# f.close()
 
 install_requires = [
     'asn1crypto==0.18.5',
@@ -27,7 +27,9 @@ setup(
     description="Python library for building and parsing AS2 Messages",
     license="GNU GPL v2.0",
     url="https://github.com/abhishek-ram/pyas2-lib",
-    long_description=long_description,
+    # long_description=long_description,
+    long_description="Docs for this project are maintained at "
+                     "https://github.com/abhishek-ram/pyas2-lib/blob/master/README.md",
     version=__versionstr__,
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",
