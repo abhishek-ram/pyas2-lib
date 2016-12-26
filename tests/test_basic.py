@@ -32,8 +32,7 @@ class TestBasic(unittest.TestCase):
 
         # Build an As2 message to be transmitted to partner
         out_message = as2.Message()
-        out_message.build(
-            'some_organization', 'some_partner', self.test_file)
+        out_message.build(self.org, self.partner, self.test_file)
         raw_out_message = bytes(out_message)
 
         # Parse the generated AS2 message as the partner
@@ -56,7 +55,7 @@ class TestBasic(unittest.TestCase):
         # Build an As2 message to be transmitted to partner
         out_message = as2.Message(compress=True)
         out_mic_content = out_message.build(
-            'some_organization', 'some_partner', self.test_file)
+            self.org, self.partner, self.test_file)
         raw_out_message = bytes(out_message)
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
@@ -68,6 +67,37 @@ class TestBasic(unittest.TestCase):
 
         # Compare the mic contents of the input and output messages
         self.assertEqual(out_mic_content, in_mic_content.decode('utf-8'))
+
+    def test_encrypted_message(self):
+        """ Test Encrypted Unsigned Uncompressed Message """
+        # Build an As2 message to be transmitted to partner
+        out_message = as2.Message(encrypt=True)
+        out_mic_content = out_message.build(
+            self.org, self.partner, self.test_file)
+        raw_out_message = bytes(out_message)
+
+        # Parse the generated AS2 message as the partner
+        in_message = as2.Message()
+        in_mic_content = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
+        # sss
+        # # Compare the mic contents of the input and output messages
+        self.assertEqual(out_mic_content, in_mic_content.decode('utf-8'))
+
+    def test_signed_message(self):
+        """ Test Encrypted Unsigned Uncompressed Message """
+        pass
+
+    def test_encrypted_signed_message(self):
+        """ Test Encrypted Signed Uncompressed Message """
+        pass
+
+    def test_encrypted_signed_compressed_message(self):
+        """ Test Encrypted Signed Compressed Message """
+        pass
 
     def find_org(self, headers):
         return self.org

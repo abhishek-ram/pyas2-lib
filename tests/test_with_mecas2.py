@@ -33,10 +33,10 @@ class TestMecAS2(unittest.TestCase):
         """ Test Compressed Message received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
-        with open(os.path.join(TEST_DIR, 'mecas2_compressed.as2'), 'rb') as infile:
+        with open(os.path.join(TEST_DIR, 'mecas2_compressed.as2'), 'rb') as fp:
             in_message = as2.Message()
             in_message.parse(
-                infile.read(),
+                fp.read(),
                 find_org_cb=self.find_org,
                 find_partner_cb=self.find_partner
             )
@@ -49,10 +49,10 @@ class TestMecAS2(unittest.TestCase):
         """ Test Encrypted Message received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
-        with open(os.path.join(TEST_DIR, 'mecas2_encrypted.as2'), 'rb') as infile:
+        with open(os.path.join(TEST_DIR, 'mecas2_encrypted.as2'), 'rb') as fp:
             in_message = as2.Message()
-            in_mic_content = in_message.parse(
-                infile.read(),
+            in_message.parse(
+                fp.read(),
                 find_org_cb=self.find_org,
                 find_partner_cb=self.find_partner
             )
@@ -60,6 +60,18 @@ class TestMecAS2(unittest.TestCase):
         # Compare the mic contents of the input and output messages
         self.assertEqual(
             self.test_file.read(), in_message.payload.get_payload())
+
+    def test_signed_message(self):
+        """ Test Encrypted Unsigned Uncompressed Message """
+        pass
+
+    def test_encrypted_signed_message(self):
+        """ Test Encrypted Signed Uncompressed Message """
+        pass
+
+    def test_encrypted_signed_compressed_message(self):
+        """ Test Encrypted Signed Compressed Message """
+        pass
 
     def find_org(self, headers):
         return self.org
