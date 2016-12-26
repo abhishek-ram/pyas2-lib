@@ -29,12 +29,14 @@ class Organization(object):
 
 class Partner(object):
 
-    def __init__(self, as2_id, verify_cert=None, encrypt_cert=None):
+    def __init__(self, as2_id, verify_cert=None, encrypt_cert=None,
+                 indefinite_length=False):
         self.as2_id = as2_id
         self.verify_cert = asymmetric.load_public_key(
             verify_cert) if verify_cert else None
         self.encrypt_cert = asymmetric.load_public_key(
             encrypt_cert) if encrypt_cert else None
+        self.indefinite_length = indefinite_length
 
 
 class Message(object):
@@ -155,14 +157,26 @@ class Message(object):
             pass
 
         # Get the organization and partner for this transmission
-        organization = find_org_cb
-        partner = find_partner_cb
+        organization = find_org_cb(self.headers)
+        partner = find_partner_cb(self.headers)
 
         if self.payload.get_content_type() == 'application/pkcs7-mime' \
                 and self.payload.get_param('smime-type') == 'enveloped-data':
             self.compress = True
-            decrypted_data = mic_content = decrypt_message(mic_content)
-            self.payload = parse_mime(decrypted_data)
+            decrypted_content = mic_content = decrypt_message(
+                mic_content,
+                organization.decrypt_key,
+                partner.indefinite_length
+            )
+            self.payload = parse_mime(decrypted_content)
+
+            if self.payload.get_content_type() == 'text/plain':
+                self.payload = email_message.Message()
+                self.payload.set_payload(decrypted_content)
+                self.payload.set_type('application/edi-consent')
+                # if filename:
+                #     payload.add_header('Content-Disposition', 'attachment',
+                #                        filename=filename)
 
         if self.sign and \
                 self.payload.get_content_type() != 'multipart/signed':
@@ -174,7 +188,7 @@ class Message(object):
         if self.payload.get_content_type() == 'application/pkcs7-mime' \
                 and self.payload.get_param('smime-type') == 'compressed-data':
             self.compress = True
-            decompressed_data = mic_content = \
-                decompress_message(mic_content)
+            decompressed_data = mic_content = decompress_message(
+                mic_content, partner.indefinite_length)
             self.payload = parse_mime(decompressed_data)
         return mic_content

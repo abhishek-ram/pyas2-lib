@@ -23,6 +23,7 @@ class TestMecAS2(unittest.TestCase):
             as2_id='mecas2',
             verify_cert=os.path.join(TEST_DIR, 'cert_mecas2_public.pem'),
             encrypt_cert=os.path.join(TEST_DIR, 'cert_mecas2_public.pem'),
+            indefinite_length=True
         )
 
     def tearDown(self):
@@ -44,11 +45,11 @@ class TestMecAS2(unittest.TestCase):
         self.assertEqual(
             self.test_file.read(), in_message.payload.get_payload())
 
-    def ztest_encrypted_message(self):
+    def test_encrypted_message(self):
         """ Test Encrypted Message received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
-        with open(os.path.join(TEST_DIR, 'mecas2_encrypted.as2')) as infile:
+        with open(os.path.join(TEST_DIR, 'mecas2_encrypted.as2'), 'rb') as infile:
             in_message = as2.Message()
             in_mic_content = in_message.parse(
                 infile.read(),
@@ -57,7 +58,8 @@ class TestMecAS2(unittest.TestCase):
             )
 
         # Compare the mic contents of the input and output messages
-        # self.assertEqual(out_mic_content, in_mic_content.decode('utf-8'))
+        self.assertEqual(
+            self.test_file.read(), in_message.payload.get_payload())
 
     def find_org(self, headers):
         return self.org
