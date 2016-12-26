@@ -1,5 +1,5 @@
 from __future__ import absolute_import, unicode_literals
-from asn1crypto import cms, pem
+from asn1crypto import cms, core
 import zlib
 
 
@@ -25,9 +25,25 @@ def compress_message(data_to_compress):
 def decompress_message(compressed_data):
 
     der_bytes = compressed_data
-    print(der_bytes)
     cms_content = cms.ContentInfo.load(der_bytes)
+    decompressed_content = ''
     if cms_content['content_type'].native == 'compressed_data':
-        return cms_content['content'].decompressed
-    else:
-        return ''
+        try:
+            decompressed_content = cms_content['content'].decompressed
+        except:
+            # If default decompression method fails then extract data manually
+            # and then decompress
+            encapsulated_data = cms_content['content']['encap_content_info'][
+                'content'].native
+            read = 0
+            data = b''
+            while read < len(encapsulated_data):
+                value, read = core._parse_build(encapsulated_data, read)
+                data += value.native
+            decompressed_content = zlib.decompress(data)
+    return decompressed_content
+
+
+def decrypt_message(encrypted_data):
+    cms_content = cms.ContentInfo.load(encrypted_data)
+    print(cms_content.debug())

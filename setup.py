@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 from os.path import join, dirname
 
-VERSION = (0, 1, 0, 'dev')
+VERSION = (0, 1, 'dev0')
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
@@ -10,8 +10,9 @@ __versionstr__ = '.'.join(map(str, VERSION))
 # f.close()
 
 install_requires = [
-    'asn1crypto==0.18.5',
-    'cryptography==1.5.2',
+    'asn1crypto==0.19.0',
+    'oscrypto==0.17.2'
+    # 'cryptography==1.5.2',
 ]
 
 tests_require = [
@@ -29,7 +30,8 @@ setup(
     url="https://github.com/abhishek-ram/pyas2-lib",
     # long_description=long_description,
     long_description="Docs for this project are maintained at "
-                     "https://github.com/abhishek-ram/pyas2-lib/blob/master/README.md",
+                     "https://github.com/abhishek-ram/pyas2-lib/blob/"
+                     "master/README.md",
     version=__versionstr__,
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from .compat import StringIO, EmailGenerator, str_cls, byte_cls, parse_mime
-from .cms import compress_message, decompress_message
+from .cms import compress_message, decompress_message, decrypt_message
 from .utils import canonicalize, mime_to_string, mime_to_bytes
 from email import utils as email_utils
 from email import message as email_message
@@ -122,7 +122,7 @@ class Message(object):
         return mic_content
 
     def parse(self, raw_content, validate_org_callback=None,
-              validate_partner_callback=None):
+              validate_partner_callback=None, ):
         self.payload = parse_mime(raw_content)
         mic_content = self.payload.get_payload(decode=True)
         for k,v in self.payload.items():
@@ -134,7 +134,10 @@ class Message(object):
 
         if self.payload.get_content_type() == 'application/pkcs7-mime' \
                 and self.payload.get_param('smime-type') == 'enveloped-data':
-            pass
+            self.compress = True
+            decrypted_data = mic_content = \
+                decrypt_message(mic_content)
+            self.payload = parse_mime(decrypted_data)
 
         if self.sign and \
                 self.payload.get_content_type() != 'multipart/signed':

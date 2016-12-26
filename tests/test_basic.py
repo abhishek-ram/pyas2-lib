@@ -15,9 +15,8 @@ class TestBasic(unittest.TestCase):
     def tearDown(self):
         self.test_file.close()
 
-    def test_unencrypted_unsigned_message(self):
-        """ Test Permutation 1: Sender sends un-encrypted data and does
-         NOT request a receipt. """
+    def test_plain_message(self):
+        """ Test Unencrypted Unsigned Uncompressed Message """
 
         # Build an As2 message to be transmitted to partner
         out_message = pyas2lib.AS2Message()
@@ -32,10 +31,11 @@ class TestBasic(unittest.TestCase):
         # Compare the mic contents of the input and output messages
         self.test_file.seek(0)
         original_message = self.test_file.read()
-        self.assertEqual(original_message, in_message.payload.get_payload(decode=True))
+        self.assertEqual(original_message,
+                         in_message.payload.get_payload(decode=True))
 
     def test_compressed_message(self):
-        """Sender sends compressed but unencrypted and unsigned data. """
+        """ Test Unencrypted Unsigned Compressed Message """
 
         # Build an As2 message to be transmitted to partner
         out_message = pyas2lib.AS2Message(compress=True)

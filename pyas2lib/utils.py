@@ -18,5 +18,6 @@ def mime_to_bytes(msg, header_len):
     g.flatten(msg)
     return fp.getvalue()
 
+
 def canonicalize(msg):
     return msg.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
