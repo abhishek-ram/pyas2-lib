@@ -50,7 +50,7 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
 
     # Generate the symmetric encryption key and encrypt the message
     if cipher == 'tripledes':
-        key = util.rand_bytes(int(key_length)/8)
+        key = util.rand_bytes(int(key_length)//8)
         iv, encrypted_content = symmetric.tripledes_cbc_pkcs5_encrypt(
             key, data_to_encrypt, None)
         enc_alg_asn1 = algos.EncryptionAlgorithm({
