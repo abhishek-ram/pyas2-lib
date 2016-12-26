@@ -10,7 +10,7 @@ class TestMecAS2(unittest.TestCase):
 
     def setUp(self):
         self.test_file = open(
-                os.path.join(TEST_DIR, 'payload.txt'), 'rb')
+                os.path.join(TEST_DIR, 'payload.txt'))
 
     def tearDown(self):
         self.test_file.close()
@@ -19,7 +19,7 @@ class TestMecAS2(unittest.TestCase):
         """ Test Compressed Message received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
-        with open(os.path.join(TEST_DIR, 'mecas2_compressed.as2')) as infile:
+        with open(os.path.join(TEST_DIR, 'mecas2_compressed.as2'), 'rb') as infile:
             in_message = pyas2lib.AS2Message()
             in_message.parse(infile.read())
 

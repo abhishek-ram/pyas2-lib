@@ -10,8 +10,8 @@ __versionstr__ = '.'.join(map(str, VERSION))
 # f.close()
 
 install_requires = [
-    'asn1crypto==0.19.0',
-    'oscrypto==0.17.2'
+    'asn1crypto>=0.19.0',
+    'oscrypto>=0.17.2'
     # 'cryptography==1.5.2',
 ]
 
