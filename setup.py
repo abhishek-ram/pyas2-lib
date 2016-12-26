@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 from os.path import join, dirname
 
-VERSION = (0, 1, 'dev0')
+VERSION = (0, 1, 'dev1')
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 

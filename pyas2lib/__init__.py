@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import sys
 
-VERSION = (0, 1, 0, 'dev')
+VERSION = (0, 1, 'dev1')
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
@@ -14,5 +14,5 @@ if (2, 7) <= sys.version_info < (3, 2):
     logger = logging.getLogger('pyas2lib')
     logger.addHandler(logging.NullHandler())
 
-from .message import Message as AS2Message
-from .mdn import MDN as AS2MDN
+# from .as2 import Message as AS2Message
+# from .mdn import MDN as AS2MDN

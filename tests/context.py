@@ -2,4 +2,4 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-import pyas2lib
+from pyas2lib import as2

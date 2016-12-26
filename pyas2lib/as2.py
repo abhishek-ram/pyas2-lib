@@ -6,7 +6,8 @@ from .utils import canonicalize, mime_to_string, mime_to_bytes
 from email import utils as email_utils
 from email import message as email_message
 from email import message_from_string
-from email import encoders 
+from email import encoders
+from oscrypto import asymmetric
 from uuid import uuid1
 from os.path import basename
 from .exceptions import *
@@ -15,8 +16,30 @@ import logging
 logger = logging.getLogger('pyas2lib')
 
 
+class Organization(object):
+
+    def __init__(self, as2_id, sign_key=None, sign_key_pass=None,
+                 decrypt_key=None, decrypt_key_pass=None):
+        self.as2_id = as2_id
+        self.sign_key = asymmetric.load_private_key(
+            sign_key, sign_key_pass) if sign_key else None
+        self.decrypt_key = asymmetric.load_private_key(
+            decrypt_key, decrypt_key_pass) if decrypt_key else None
+
+
+class Partner(object):
+
+    def __init__(self, as2_id, verify_cert=None, encrypt_cert=None):
+        self.as2_id = as2_id
+        self.verify_cert = asymmetric.load_public_key(
+            verify_cert) if verify_cert else None
+        self.encrypt_cert = asymmetric.load_public_key(
+            encrypt_cert) if encrypt_cert else None
+
+
 class Message(object):
-    """Class for building and parsing AS2 Inbound and Outbound Messages
+    """Class for handling AS2 messages. Includes functions for both
+    parsing and building messages.
 
     """
 
@@ -121,8 +144,7 @@ class Message(object):
 
         return mic_content
 
-    def parse(self, raw_content, validate_org_callback=None,
-              validate_partner_callback=None, ):
+    def parse(self, raw_content, find_org_cb, find_partner_cb):
         self.payload = parse_mime(raw_content)
         mic_content = self.payload.get_payload(decode=True)
         for k,v in self.payload.items():
@@ -132,11 +154,14 @@ class Message(object):
                 self.payload.get_content_type() != 'application/pkcs7-mime':
             pass
 
+        # Get the organization and partner for this transmission
+        organization = find_org_cb
+        partner = find_partner_cb
+
         if self.payload.get_content_type() == 'application/pkcs7-mime' \
                 and self.payload.get_param('smime-type') == 'enveloped-data':
             self.compress = True
-            decrypted_data = mic_content = \
-                decrypt_message(mic_content)
+            decrypted_data = mic_content = decrypt_message(mic_content)
             self.payload = parse_mime(decrypted_data)
 
         if self.sign and \
