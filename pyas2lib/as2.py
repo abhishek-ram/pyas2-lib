@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from .compat import StringIO, EmailGenerator, str_cls, byte_cls, parse_mime
+from .compat import str_cls, byte_cls, parse_mime
 from .cms import compress_message, decompress_message, decrypt_message, \
-    encrypt_message
+    encrypt_message, verify_message
 from .utils import canonicalize, mime_to_string, mime_to_bytes
 from email import utils as email_utils
 from email import message as email_message
@@ -22,6 +22,8 @@ class Organization(object):
     def __init__(self, as2_id, sign_key=None, sign_key_pass=None,
                  decrypt_key=None, decrypt_key_pass=None):
         self.as2_id = as2_id
+
+        # TODO: Need to give option to include CA certificates
         self.sign_key = asymmetric.load_private_key(
             sign_key, sign_key_pass) if sign_key else None
         self.decrypt_key = asymmetric.load_private_key(
@@ -33,6 +35,8 @@ class Partner(object):
     def __init__(self, as2_id, verify_cert=None, encrypt_cert=None,
                  indefinite_length=False):
         self.as2_id = as2_id
+
+        # TODO: Need to give option to include CA certificates
         self.verify_cert = Partner.load_cert(
             verify_cert) if verify_cert else None
         self.encrypt_cert = Partner.load_cert(
@@ -58,7 +62,7 @@ class Message(object):
     _AS2_VERSION = '1.2'
     _MIME_VERSION = '1.0'
     _EDIINT_FEATURES = 'CMS'
-    _SIGNATURE_ALGORITHMS = (
+    _DIGEST_ALGORITHMS = (
         'md5',
         'sha1',
         'sha256',
@@ -73,12 +77,12 @@ class Message(object):
         'aes_256_cbc',
     )
 
-    def __init__(self, compress=False, sign=False, sig_alg='SHA256',
+    def __init__(self, compress=False, sign=False, digest_alg='sha256',
                  encrypt=False, enc_alg='tripledes_192_cbc', mdn_mode=None,
                  mdn_url=None):
         self.compress = compress
         self.sign = sign
-        self.sig_alg = sig_alg
+        self.digest_alg = digest_alg
         self.encrypt = encrypt
         self.enc_alg = enc_alg
         self.mdn_mode = mdn_mode
@@ -216,7 +220,18 @@ class Message(object):
             pass
 
         if self.payload.get_content_type() == 'multipart/signed':
-            pass
+            self.sign = True
+            signature = None
+            for part in self.payload.walk():
+                if part.get_content_type() == "application/pkcs7-signature":
+                    signature = part.get_payload(decode=True)
+                else:
+                    self.payload = part
+            self.digest_alg = verify_message(
+                mime_to_string(self.payload, 0),
+                signature,
+                partner.verify_cert
+            )
 
         if self.payload.get_content_type() == 'application/pkcs7-mime' \
                 and self.payload.get_param('smime-type') == 'compressed-data':

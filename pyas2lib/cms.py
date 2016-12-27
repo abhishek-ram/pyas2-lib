@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 from asn1crypto import cms, core, algos
 from oscrypto import asymmetric, symmetric, util
+import hashlib
 import zlib
 
 
@@ -123,3 +124,35 @@ def decrypt_message(encrypted_data, decryption_key, indefinite_length=False):
                     key, data, alg.encryption_iv)
 
     return cipher, decrypted_content
+
+
+def verify_message(message, signature, verify_cert):
+    cms_content = cms.ContentInfo.load(signature)
+    digest_alg = None
+    if cms_content['content_type'].native == 'signed_data':
+        for signer in cms_content['content']['signer_infos']:
+            signed_attributes = signer['signed_attrs'].copy()
+            attr_dict = {}
+            for attr in signed_attributes.native:
+                attr_dict[attr['type']] = attr['values']
+            # TODO: Need to verify the certificate here.
+
+            # Extract the digest and verify it
+            digest_alg = signer['digest_algorithm']['algorithm'].native
+            message_digest = reduce(
+                (lambda x, y: x + y), attr_dict['message_digest'])
+            digest_func = getattr(hashlib, digest_alg)
+            calc_message_digest = digest_func(message).digest()
+
+            if message_digest == calc_message_digest:
+                # Now verify the signature using the provided certificate
+                sig_alg = signer['signature_algorithm']['algorithm'].native
+                sig = signer['signature'].native
+                signed_data = signed_attributes.untag().dump()
+                if sig_alg == 'rsassa_pkcs1v15':
+                    asymmetric.rsa_pkcs1v15_verify(
+                        asymmetric.load_certificate(verify_cert),
+                        sig, signed_data, digest_alg)
+            else:
+                raise Exception('Message Digest does not match.')
+    return digest_alg
