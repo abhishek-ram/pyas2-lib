@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 from asn1crypto import cms, core, algos
 from oscrypto import asymmetric, symmetric, util
+from .compat import byte_cls
 import hashlib
 import zlib
 
@@ -139,11 +140,14 @@ def verify_message(message, signature, verify_cert):
 
             # Extract the digest and verify it
             digest_alg = signer['digest_algorithm']['algorithm'].native
-            message_digest = reduce(
-                (lambda x, y: x + y), attr_dict['message_digest'])
+            message_digest = byte_cls() 
+            for d in attr_dict['message_digest']:
+                message_digest += d
             digest_func = getattr(hashlib, digest_alg)
-            calc_message_digest = digest_func(message).digest()
-
+            calc_message_digest = digest_func(message.encode('utf-8')).digest()
+            print(message)
+            print(message_digest)
+            print(calc_message_digest)
             if message_digest == calc_message_digest:
                 # Now verify the signature using the provided certificate
                 sig_alg = signer['signature_algorithm']['algorithm'].native

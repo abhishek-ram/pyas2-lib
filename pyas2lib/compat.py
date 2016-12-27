@@ -55,4 +55,9 @@ else:
     from email.generator import Generator
 
     class CanonicalGenerator(Generator):
-        pass
+        
+        def _write_headers(self, msg):
+            for h, v in msg.raw_items():
+                lines = v.splitlines()
+                self.write(h + ': ' + '\r\n'.join(lines) + '\r\n')
+            self.write('\r\n')
