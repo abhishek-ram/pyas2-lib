@@ -11,16 +11,16 @@ class TestMecAS2(unittest.TestCase):
     def setUp(self):
         self.test_file = open(
                 os.path.join(TEST_DIR, 'payload.txt'))
-        with open(os.path.join(TEST_DIR, 'cert_test.p12')) as key_file:
+        with open(os.path.join(TEST_DIR, 'cert_test.p12'), 'rb') as key_file:
             key = key_file.read()
             self.org = as2.Organization(
                 as2_id='some_organization',
                 sign_key=key,
-                sign_key_pass='test',
+                sign_key_pass='test'.encode('utf-8'),
                 decrypt_key=key,
-                decrypt_key_pass='test'
+                decrypt_key_pass='test'.encode('utf-8')
             )
-        with open(os.path.join(TEST_DIR, 'cert_mecas2_public.pem')) as c_file:
+        with open(os.path.join(TEST_DIR, 'cert_mecas2_public.pem'), 'rb') as c_file:
             cert = c_file.read()
             self.partner = as2.Partner(
                 as2_id='mecas2',

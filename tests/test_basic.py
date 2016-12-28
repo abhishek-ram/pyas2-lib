@@ -11,16 +11,16 @@ class TestBasic(unittest.TestCase):
     def setUp(self):
         self.test_file = open(
                 os.path.join(TEST_DIR, 'payload.txt'), 'rb')
-        with open(os.path.join(TEST_DIR, 'cert_test.p12')) as key_file:
+        with open(os.path.join(TEST_DIR, 'cert_test.p12'), 'rb') as key_file:
             key = key_file.read()
             self.org = as2.Organization(
                 as2_id='some_organization',
                 sign_key=key,
-                sign_key_pass='test',
+                sign_key_pass='test'.encode('utf-8'),
                 decrypt_key=key,
-                decrypt_key_pass='test'
+                decrypt_key_pass='test'.encode('utf-8')
             )
-        with open(os.path.join(TEST_DIR, 'cert_test_public.pem')) as cert_file:
+        with open(os.path.join(TEST_DIR, 'cert_test_public.pem'), 'rb') as cert_file:
             cert = cert_file.read()
             self.partner = as2.Partner(
                 as2_id='some_partner',

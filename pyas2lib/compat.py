@@ -69,8 +69,8 @@ else:
  
     class CanonicalGenerator2(BytesGenerator):
 
-        def __init__(self, *args, **kwargs):
-            BytesGenerator.__init__(self, policy=policy_8bit, *args, **kwargs)
+        # def __init__(self, *args, **kwargs):
+            # BytesGenerator.__init__(self, policy=policy_8bit, *args, **kwargs)
         
         def _write_headers(self, msg):
             for h, v in msg.raw_items():

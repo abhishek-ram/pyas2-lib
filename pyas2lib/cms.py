@@ -207,7 +207,7 @@ def sign_message(message, digest_alg, sign_key, use_signed_attributes=True):
 
 def verify_message(message, signature, verify_cert):
     cms_content = cms.ContentInfo.load(signature)
-    print cms_content.debug()
+    # print cms_content.debug()
     digest_alg = None
     if cms_content['content_type'].native == 'signed_data':
         for signer in cms_content['content']['signer_infos']:
