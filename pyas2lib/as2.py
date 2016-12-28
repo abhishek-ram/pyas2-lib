@@ -132,17 +132,19 @@ class Message(object):
 
         # Read the input and convert to bytes if value is unicode/str
         # using utf-8 encoding and finally Canonicalize the payload
+        mic_content = None
         file_content = fp.read()
         if type(file_content) == str_cls:
             file_content = file_content.encode('utf-8')
         self.payload = email_message.Message()
         self.payload.set_payload(file_content)
         self.payload.set_type(content_type)
-        mic_content = canonicalize(mime_to_string(self.payload, 0))
+
+            # mime_to_string(self.payload, 0)
 
         if hasattr(fp, 'name'):
-            self.payload.add_header('Content-Disposition', 'attachment',
-                                    filename=basename(fp.name))
+            self.payload.add_header(
+                'Content-Disposition', 'attachment', filename=basename(fp.name))
         del self.payload['MIME-Version']
 
         if self.compress:
@@ -153,7 +155,7 @@ class Message(object):
             compressed_message.add_header('Content-Disposition', 'attachment',
                                           filename='smime.p7z')
             compressed_payload = compress_message(
-                mic_content.encode(encoding)).dump()
+                mime_to_string(self.payload, 0)).dump()
             compressed_message.set_payload(compressed_payload)
             encoders.encode_base64(compressed_message)
             self.payload = compressed_message
@@ -169,7 +171,7 @@ class Message(object):
             encrypted_message.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7m')
             encrypted_payload = encrypt_message(
-                mic_content.encode(encoding),
+                mime_to_string(self.payload, 0),
                 self.enc_alg,
                 partner.encrypt_cert
             ).dump()
@@ -183,8 +185,28 @@ class Message(object):
         return mic_content
 
     def parse(self, raw_content, find_org_cb, find_partner_cb):
+        """Function parses the RAW AS2 message; decrypts, verifies and
+        decompresses it and extracts the payload.
+
+        :param raw_content:
+            A byte string of the received HTTP headers followed by the body.
+
+        :param find_org_cb:
+            A callback the returns an Organization object if exists. The
+            as2-to header value is passed as an argument to it.
+
+        :param find_partner_cb:
+            A callback the returns an Partner object if exists. The
+            as2-from header value is passed as an argument to it.
+
+        :return:
+            The MIC Content of the received message to be used while generating
+            the MDN.
+        """
+
+        # Parse the raw MIME message and extract its content and headers
         self.payload = parse_mime(raw_content)
-        mic_content = self.payload.get_payload(decode=True)
+        mic_content = None
         for k, v in self.payload.items():
             self.headers[k] = v
 
@@ -200,11 +222,10 @@ class Message(object):
                 and self.payload.get_param('smime-type') == 'enveloped-data':
             self.encrypt = True
             self.enc_alg, decrypted_content = decrypt_message(
-                mic_content,
+                self.payload.get_payload(decode=True),
                 organization.decrypt_key,
                 partner.indefinite_length
             )
-            mic_content = decrypted_content
             self.payload = parse_mime(decrypted_content)
 
             if self.payload.get_content_type() == 'text/plain':
@@ -227,8 +248,9 @@ class Message(object):
                     signature = part.get_payload(decode=True)
                 else:
                     self.payload = part
+            mic_content = mime_to_string(self.payload, 0)
             self.digest_alg = verify_message(
-                mime_to_string(self.payload, 0),
+                mic_content,
                 signature,
                 partner.verify_cert
             )
@@ -236,7 +258,10 @@ class Message(object):
         if self.payload.get_content_type() == 'application/pkcs7-mime' \
                 and self.payload.get_param('smime-type') == 'compressed-data':
             self.compress = True
-            decompressed_data = mic_content = decompress_message(
-                mic_content, partner.indefinite_length)
+            decompressed_data = decompress_message(
+                self.payload.get_payload(decode=True),
+                partner.indefinite_length
+            )
             self.payload = parse_mime(decompressed_data)
+
         return mic_content

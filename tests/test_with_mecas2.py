@@ -86,6 +86,7 @@ class TestMecAS2(unittest.TestCase):
 
     def test_encrypted_signed_message(self):
         """ Test Encrypted Signed Uncompressed Message """
+
         # Parse the generated AS2 message as the partner
         test_file = os.path.join(TEST_DIR, 'mecas2_signed_encrypted.as2')
         with open(test_file, 'rb') as fp:
@@ -106,25 +107,25 @@ class TestMecAS2(unittest.TestCase):
 
     def test_encrypted_signed_compressed_message(self):
         """ Test Encrypted Signed Compressed Message """
+
         # Parse the generated AS2 message as the partner
-        pass
-        # test_file = os.path.join(
-        #     TEST_DIR, 'mecas2_compressed_signed_encrypted.as2')
-        # with open(test_file, 'rb') as fp:
-        #     in_message = as2.Message()
-        #     in_message.parse(
-        #         fp.read(),
-        #         find_org_cb=self.find_org,
-        #         find_partner_cb=self.find_partner
-        #     )
-        #
-        # # Compare the mic contents of the input and output messages
-        # self.assertTrue(in_message.encrypt)
-        # self.assertEqual(in_message.enc_alg, 'tripledes_192_cbc')
-        # self.assertTrue(in_message.sign)
-        # self.assertEqual(in_message.digest_alg, 'sha1')
-        # self.assertEqual(
-        #     self.test_file.read(), in_message.payload.get_payload())
+        test_file = os.path.join(
+            TEST_DIR, 'mecas2_compressed_signed_encrypted.as2')
+        with open(test_file, 'rb') as fp:
+            in_message = as2.Message()
+            in_message.parse(
+                fp.read(),
+                find_org_cb=self.find_org,
+                find_partner_cb=self.find_partner
+            )
+
+        # Compare the mic contents of the input and output messages
+        self.assertTrue(in_message.encrypt)
+        self.assertEqual(in_message.enc_alg, 'tripledes_192_cbc')
+        self.assertTrue(in_message.sign)
+        self.assertEqual(in_message.digest_alg, 'sha1')
+        self.assertEqual(
+            self.test_file.read(), in_message.payload.get_payload())
 
     def find_org(self, headers):
         return self.org

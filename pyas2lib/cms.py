@@ -26,8 +26,8 @@ def compress_message(data_to_compress):
 
 
 def decompress_message(compressed_data, indefinite_length=False):
-    der_bytes = compressed_data
-    cms_content = cms.ContentInfo.load(der_bytes)
+    # print compressed_data
+    cms_content = cms.ContentInfo.load(compressed_data)
     decompressed_content = ''
     if cms_content['content_type'].native == 'compressed_data':
         if indefinite_length:
@@ -144,10 +144,12 @@ def verify_message(message, signature, verify_cert):
             for d in attr_dict['message_digest']:
                 message_digest += d
             digest_func = getattr(hashlib, digest_alg)
-            calc_message_digest = digest_func(message.encode('utf-8')).digest()
-            print(message)
-            print(message_digest)
-            print(calc_message_digest)
+            print type(message)
+            # calc_message_digest = digest_func(message.encode('utf-8')).digest()
+            calc_message_digest = digest_func(message).digest()
+            # print(message)
+            # print(message_digest)
+            # print(calc_message_digest)
             if message_digest == calc_message_digest:
                 # Now verify the signature using the provided certificate
                 sig_alg = signer['signature_algorithm']['algorithm'].native

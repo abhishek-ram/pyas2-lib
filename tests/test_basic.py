@@ -43,7 +43,7 @@ class TestBasic(unittest.TestCase):
             find_partner_cb=self.find_partner
         )
 
-        # Compare the mic contents of the input and output messages
+        # Compare contents of the input and output messages
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message,
@@ -66,7 +66,10 @@ class TestBasic(unittest.TestCase):
         )
 
         # Compare the mic contents of the input and output messages
-        self.assertEqual(out_mic_content, in_mic_content.decode('utf-8'))
+        self.test_file.seek(0)
+        original_message = self.test_file.read()
+        self.assertEqual(original_message,
+                         in_message.payload.get_payload(decode=True))
 
     def test_encrypted_message(self):
         """ Test Encrypted Unsigned Uncompressed Message """
@@ -83,9 +86,12 @@ class TestBasic(unittest.TestCase):
             find_org_cb=self.find_org,
             find_partner_cb=self.find_partner
         )
-        # sss
-        # # Compare the mic contents of the input and output messages
-        self.assertEqual(out_mic_content, in_mic_content.decode('utf-8'))
+
+        # Compare the mic contents of the input and output messages
+        self.test_file.seek(0)
+        original_message = self.test_file.read()
+        self.assertEqual(original_message,
+                         in_message.payload.get_payload(decode=True))
 
     def test_signed_message(self):
         """ Test Encrypted Unsigned Uncompressed Message """
