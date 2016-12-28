@@ -10,11 +10,11 @@ if PY2:
     from email import message_from_string as parse_mime
     from cStringIO import StringIO
     from cStringIO import StringIO as BytesIO
-    from email.generator import Generator
+    from email.generator import Generator as BytesGenerator
     from email.generator import _is8bitstring
     from email.header import Header
 
-    class CanonicalGenerator(Generator):
+    class CanonicalGenerator(BytesGenerator):
 
         def _write_headers(self, msg):
             for h, v in msg.items():
@@ -45,6 +45,8 @@ if PY2:
             # A blank line always separates headers from body
             print >> self._fp, '\r'
 
+    CanonicalGenerator2 = CanonicalGenerator
+
 else:
     str_cls = str
     byte_cls = bytes
@@ -52,12 +54,30 @@ else:
     from email import message_from_bytes as parse_mime
     from io import StringIO 
     from io import BytesIO 
-    from email.generator import Generator
-
+    from email.generator import Generator, BytesGenerator
+    from email.policy import default, SMTP
+    from email.headerregistry import HeaderRegistry
+    
+    policy_8bit = default.clone(cte_type='8bit')
     class CanonicalGenerator(Generator):
-        
+
         def _write_headers(self, msg):
             for h, v in msg.raw_items():
                 lines = v.splitlines()
                 self.write(h + ': ' + '\r\n'.join(lines) + '\r\n')
             self.write('\r\n')
+ 
+    class CanonicalGenerator2(BytesGenerator):
+
+        def __init__(self, *args, **kwargs):
+            BytesGenerator.__init__(self, policy=policy_8bit, *args, **kwargs)
+        
+        def _write_headers(self, msg):
+            header_factory = HeaderRegistry()
+            for h, v in msg.raw_items():
+                lines = v.splitlines()
+                # self._fp.write(
+                    # header_factory(h, ''.join(lines)).fold(policy=SMTP).encode('utf-8'))
+
+                self._fp.write((h + ': ' + '\r\n'.join(lines) + '\r\n').encode('utf-8'))
+            self._fp.write('\r\n'.encode('utf-8'))

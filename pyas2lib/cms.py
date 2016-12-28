@@ -144,12 +144,11 @@ def verify_message(message, signature, verify_cert):
             for d in attr_dict['message_digest']:
                 message_digest += d
             digest_func = getattr(hashlib, digest_alg)
-            print type(message)
-            # calc_message_digest = digest_func(message.encode('utf-8')).digest()
+            # calc_message_digest = digest_func(message.encode('utf-8', 'surrogateescape')).digest()
             calc_message_digest = digest_func(message).digest()
-            # print(message)
-            # print(message_digest)
-            # print(calc_message_digest)
+            print(message)
+            print(message_digest)
+            print(calc_message_digest)
             if message_digest == calc_message_digest:
                 # Now verify the signature using the provided certificate
                 sig_alg = signer['signature_algorithm']['algorithm'].native

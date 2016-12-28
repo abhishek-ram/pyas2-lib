@@ -155,7 +155,7 @@ class Message(object):
             compressed_message.add_header('Content-Disposition', 'attachment',
                                           filename='smime.p7z')
             compressed_payload = compress_message(
-                mime_to_string(self.payload, 0)).dump()
+                mime_to_bytes(self.payload, 0)).dump()
             compressed_message.set_payload(compressed_payload)
             encoders.encode_base64(compressed_message)
             self.payload = compressed_message
@@ -171,7 +171,7 @@ class Message(object):
             encrypted_message.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7m')
             encrypted_payload = encrypt_message(
-                mime_to_string(self.payload, 0),
+                mime_to_bytes(self.payload, 0),
                 self.enc_alg,
                 partner.encrypt_cert
             ).dump()
@@ -248,7 +248,7 @@ class Message(object):
                     signature = part.get_payload(decode=True)
                 else:
                     self.payload = part
-            mic_content = mime_to_string(self.payload, 0)
+            mic_content = canonicalize(self.payload) 
             self.digest_alg = verify_message(
                 mic_content,
                 signature,

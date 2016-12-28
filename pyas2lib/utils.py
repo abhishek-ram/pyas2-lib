@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from .compat import StringIO, BytesIO, CanonicalGenerator
+from .compat import StringIO, BytesIO, CanonicalGenerator, CanonicalGenerator2
 from email import generator
 
 
@@ -12,10 +12,15 @@ def mime_to_string(msg, header_len):
 
 def mime_to_bytes(msg, header_len):
     fp = BytesIO()
-    g = generator.BytesGenerator(fp, maxheaderlen=header_len)
+    g = CanonicalGenerator2(fp, maxheaderlen=header_len)
     g.flatten(msg)
     return fp.getvalue()
 
 
 def canonicalize(msg):
-    return msg.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
+    canonical_msg = ''
+    for k, v in msg.items():
+        canonical_msg += '{}: {}\r\n'.format(k, v)
+    canonical_msg += '\r\n'
+
+    return canonical_msg.encode('utf-8') + msg.get_payload(decode=True)    
