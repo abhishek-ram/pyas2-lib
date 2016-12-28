@@ -55,10 +55,10 @@ else:
     from io import StringIO 
     from io import BytesIO 
     from email.generator import Generator, BytesGenerator
-    from email.policy import default, SMTP
-    from email.headerregistry import HeaderRegistry
-    
+    from email.policy import default
+
     policy_8bit = default.clone(cte_type='8bit')
+
     class CanonicalGenerator(Generator):
 
         def _write_headers(self, msg):
@@ -73,11 +73,8 @@ else:
             BytesGenerator.__init__(self, policy=policy_8bit, *args, **kwargs)
         
         def _write_headers(self, msg):
-            header_factory = HeaderRegistry()
             for h, v in msg.raw_items():
                 lines = v.splitlines()
-                # self._fp.write(
-                    # header_factory(h, ''.join(lines)).fold(policy=SMTP).encode('utf-8'))
-
-                self._fp.write((h + ': ' + '\r\n'.join(lines) + '\r\n').encode('utf-8'))
+                self._fp.write(
+                    (h + ': ' + '\r\n'.join(lines) + '\r\n').encode('utf-8'))
             self._fp.write('\r\n'.encode('utf-8'))

@@ -11,20 +11,23 @@ class TestMecAS2(unittest.TestCase):
     def setUp(self):
         self.test_file = open(
                 os.path.join(TEST_DIR, 'payload.txt'))
-
-        self.org = as2.Organization(
-            as2_id='some_organization',
-            sign_key=os.path.join(TEST_DIR, 'cert_test_private.pem'),
-            sign_key_pass='test',
-            decrypt_key=os.path.join(TEST_DIR, 'cert_test_private.pem'),
-            decrypt_key_pass='test'
-        )
-        self.partner = as2.Partner(
-            as2_id='mecas2',
-            verify_cert=os.path.join(TEST_DIR, 'cert_mecas2_public.pem'),
-            encrypt_cert=os.path.join(TEST_DIR, 'cert_mecas2_public.pem'),
-            indefinite_length=True
-        )
+        with open(os.path.join(TEST_DIR, 'cert_test.p12')) as key_file:
+            key = key_file.read()
+            self.org = as2.Organization(
+                as2_id='some_organization',
+                sign_key=key,
+                sign_key_pass='test',
+                decrypt_key=key,
+                decrypt_key_pass='test'
+            )
+        with open(os.path.join(TEST_DIR, 'cert_mecas2_public.pem')) as c_file:
+            cert = c_file.read()
+            self.partner = as2.Partner(
+                as2_id='mecas2',
+                verify_cert=cert,
+                encrypt_cert=cert,
+                indefinite_length=True
+            )
 
     def tearDown(self):
         self.test_file.close()

@@ -2,11 +2,12 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 from .compat import str_cls, byte_cls, parse_mime
 from .cms import compress_message, decompress_message, decrypt_message, \
-    encrypt_message, verify_message
+    encrypt_message, verify_message, sign_message
 from .utils import canonicalize, mime_to_string, mime_to_bytes
 from email import utils as email_utils
 from email import message as email_message
 from email import encoders
+from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
 from asn1crypto import pem, x509
 from uuid import uuid1
@@ -24,10 +25,13 @@ class Organization(object):
         self.as2_id = as2_id
 
         # TODO: Need to give option to include CA certificates
-        self.sign_key = asymmetric.load_private_key(
-            sign_key, sign_key_pass) if sign_key else None
-        self.decrypt_key = asymmetric.load_private_key(
-            decrypt_key, decrypt_key_pass) if decrypt_key else None
+        if sign_key:
+            self.sign_key = asymmetric.load_pkcs12(
+                sign_key, byte_cls(sign_key_pass))
+        else:
+            self.sign_key = None
+        self.decrypt_key = asymmetric.load_pkcs12(
+            decrypt_key, byte_cls(decrypt_key_pass)) if decrypt_key else None
 
 
 class Partner(object):
@@ -37,20 +41,11 @@ class Partner(object):
         self.as2_id = as2_id
 
         # TODO: Need to give option to include CA certificates
-        self.verify_cert = Partner.load_cert(
+        self.verify_cert = asymmetric.load_certificate(
             verify_cert) if verify_cert else None
-        self.encrypt_cert = Partner.load_cert(
+        self.encrypt_cert = asymmetric.load_certificate(
             encrypt_cert) if encrypt_cert else None
         self.indefinite_length = indefinite_length
-
-    @staticmethod
-    def load_cert(path_to_cert):
-        with open(path_to_cert, 'rb') as f:
-            der_bytes = f.read()
-            if pem.detect(der_bytes):
-                type_name, headers, der_bytes = pem.unarmor(der_bytes)
-
-        return x509.Certificate.load(der_bytes)
 
 
 class Message(object):
@@ -135,12 +130,10 @@ class Message(object):
         mic_content = None
         file_content = fp.read()
         if type(file_content) == str_cls:
-            file_content = file_content.encode('utf-8')
+            file_content = file_content.encode(encoding)
         self.payload = email_message.Message()
         self.payload.set_payload(file_content)
         self.payload.set_type(content_type)
-
-            # mime_to_string(self.payload, 0)
 
         if hasattr(fp, 'name'):
             self.payload.add_header(
@@ -152,16 +145,31 @@ class Message(object):
             compressed_message.set_type('application/pkcs7-mime')
             compressed_message.set_param('name', 'smime.p7z')
             compressed_message.set_param('smime-type', 'compressed-data')
-            compressed_message.add_header('Content-Disposition', 'attachment',
-                                          filename='smime.p7z')
-            compressed_payload = compress_message(
-                mime_to_bytes(self.payload, 0)).dump()
-            compressed_message.set_payload(compressed_payload)
+            compressed_message.add_header(
+                'Content-Disposition', 'attachment', filename='smime.p7z')
+            compressed_message.set_payload(
+                compress_message(mime_to_bytes(self.payload, 0)))
             encoders.encode_base64(compressed_message)
             self.payload = compressed_message
 
         if self.sign:
-            pass
+            signed_message = MIMEMultipart(
+                'signed', protocol="application/pkcs7-signature")
+            del signed_message['MIME-Version']
+            signed_message.attach(self.payload)
+            mic_content = canonicalize(self.payload)
+            signature = email_message.Message()
+            signature.set_type('application/pkcs7-signature')
+            signature.set_param('name', 'smime.p7s')
+            signature.set_param('smime-type', 'signed-data')
+            signature.add_header(
+                'Content-Disposition', 'attachment', filename='smime.p7z')
+            signature.set_payload(sign_message(
+                mic_content, self.digest_alg, organization.sign_key))
+            encoders.encode_base64(signature)
+            signed_message.set_param('micalg', self.digest_alg)
+            signed_message.attach(signature)
+            self.payload = signed_message
 
         if self.encrypt:
             encrypted_message = email_message.Message()
@@ -170,12 +178,11 @@ class Message(object):
             encrypted_message.set_param('smime-type', 'enveloped-data')
             encrypted_message.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7m')
-            encrypted_payload = encrypt_message(
+            encrypted_message.set_payload(encrypt_message(
                 mime_to_bytes(self.payload, 0),
                 self.enc_alg,
                 partner.encrypt_cert
-            ).dump()
-            encrypted_message.set_payload(encrypted_payload)
+            ))
             encoders.encode_base64(encrypted_message)
             self.payload = encrypted_message
 

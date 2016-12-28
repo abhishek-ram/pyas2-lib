@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from .compat import StringIO, BytesIO, CanonicalGenerator, CanonicalGenerator2
-from email import generator
 
 
 def mime_to_string(msg, header_len):
