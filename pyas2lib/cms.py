@@ -3,6 +3,7 @@ from asn1crypto import cms, core, algos
 from oscrypto import asymmetric, symmetric, util
 from .compat import byte_cls
 from datetime import datetime
+from collections import OrderedDict
 import hashlib
 import zlib
 
@@ -133,6 +134,37 @@ def sign_message(message, digest_alg, sign_key, use_signed_attributes=True):
         digest_func = hashlib.new(digest_alg)
         digest_func.update(message)
         message_digest = digest_func.digest()
+
+        class SmimeCapability(core.Sequence):
+            _fields = [
+                ('0', core.Any, {'optional': True}),
+                ('1', core.Any, {'optional': True}),
+                ('2', core.Any, {'optional': True}),
+                ('3', core.Any, {'optional': True}),
+                ('4', core.Any, {'optional': True})
+            ]
+
+        class SmimeCapabilities(core.Sequence):
+            _fields = [
+                ('0', SmimeCapability),
+                ('1', SmimeCapability, {'optional': True}),
+                ('2', SmimeCapability, {'optional': True}),
+                ('3', SmimeCapability, {'optional': True}),
+                ('4', SmimeCapability, {'optional': True}),
+                ('5', SmimeCapability, {'optional': True}),
+            ]
+
+        smime_cap = OrderedDict([
+            ('0', OrderedDict([
+                ('0', core.ObjectIdentifier('1.2.840.113549.3.7'))])),
+            ('1', OrderedDict([
+                ('0', core.ObjectIdentifier('1.2.840.113549.3.2')),
+                ('1', core.Integer(128))])),
+            ('2', OrderedDict([
+                ('0', core.ObjectIdentifier('1.2.840.113549.3.4')),
+                ('1', core.Integer(128))])),
+        ])
+
         signed_attributes = cms.CMSAttributes([
             cms.CMSAttribute({
                 'type': cms.CMSAttributeType('content_type'),
@@ -152,6 +184,12 @@ def sign_message(message, digest_alg, sign_key, use_signed_attributes=True):
                 'type': cms.CMSAttributeType('message_digest'),
                 'values': cms.SetOfOctetString([
                     core.OctetString(message_digest)
+                ])
+            }),
+            cms.CMSAttribute({
+                'type': cms.CMSAttributeType('1.2.840.113549.1.9.15'),
+                'values': cms.SetOfAny([
+                    core.Any(SmimeCapabilities(smime_cap))
                 ])
             }),
         ])
@@ -209,13 +247,15 @@ def verify_message(message, signature, verify_cert):
     cms_content = cms.ContentInfo.load(signature)
     # print cms_content.debug()
     digest_alg = None
+    valid_digest_alg = (
+        'md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
     if cms_content['content_type'].native == 'signed_data':
         for signer in cms_content['content']['signer_infos']:
+            print (signer['signed_attrs'].native)
             signed_attributes = signer['signed_attrs'].copy()
-
-            # TODO: Need to verify the certificate here.
-
             digest_alg = signer['digest_algorithm']['algorithm'].native
+            if digest_alg not in valid_digest_alg:
+                raise Exception('Unsupported Digest Algorithm')
             sig_alg = signer['signature_algorithm']['algorithm'].native
             sig = signer['signature'].native
             signed_data = message
@@ -240,5 +280,10 @@ def verify_message(message, signature, verify_cert):
             if sig_alg == 'rsassa_pkcs1v15':
                 asymmetric.rsa_pkcs1v15_verify(
                     verify_cert, sig, signed_data, digest_alg)
+            elif sig_alg == 'rsassa_pss':
+                asymmetric.rsa_pss_verify(
+                    verify_cert, sig, signed_data, digest_alg)
+            else:
+                raise Exception('Unsupported Signature Algorithm')
 
     return digest_alg
