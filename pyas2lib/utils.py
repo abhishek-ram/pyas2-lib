@@ -1,6 +1,19 @@
 from __future__ import absolute_import, unicode_literals
 from .compat import StringIO, BytesIO, CanonicalGenerator, CanonicalGenerator2
+import email
+import re
 from uuid import uuid1
+
+
+def unquote_as2name(quoted_name):
+    return email.utils.unquote(quoted_name)
+
+
+def quote_as2name(unquoted_name):
+    if re.search(r'[\\" ]', unquoted_name, re.M):
+        return '"' + email.utils.quote(unquoted_name) + '"'
+    else:
+        return unquoted_name
 
 
 def mime_to_string(msg, header_len):

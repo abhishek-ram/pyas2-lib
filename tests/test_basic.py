@@ -57,7 +57,8 @@ class TestBasic(unittest.TestCase):
         """ Test Unencrypted Unsigned Compressed Message """
 
         # Build an As2 message to be transmitted to partner
-        out_message = as2.Message(compress=True)
+        self.partner.compress = True
+        out_message = as2.Message()
         out_message.build(
             self.org, self.partner, self.test_file.read())
         raw_out_message = bytes(out_message)
@@ -80,7 +81,8 @@ class TestBasic(unittest.TestCase):
         """ Test Encrypted Unsigned Uncompressed Message """
 
         # Build an As2 message to be transmitted to partner
-        out_message = as2.Message(encrypt=True)
+        self.partner.encrypt = True
+        out_message = as2.Message()
         out_message.build(
             self.org, self.partner, self.test_file.read())
         raw_out_message = bytes(out_message)
@@ -102,7 +104,8 @@ class TestBasic(unittest.TestCase):
     def test_signed_message(self):
         """ Test Encrypted Unsigned Uncompressed Message """
         # Build an As2 message to be transmitted to partner
-        out_message = as2.Message(sign=True)
+        self.partner.sign = True
+        out_message = as2.Message()
         out_mic_content = out_message.build(
             self.org, self.partner, self.test_file.read())
         raw_out_message = bytes(out_message)
@@ -127,7 +130,9 @@ class TestBasic(unittest.TestCase):
         """ Test Encrypted Signed Uncompressed Message """
 
         # Build an As2 message to be transmitted to partner
-        out_message = as2.Message(sign=True, encrypt=True)
+        self.partner.sign = True
+        self.partner.encrypt = True
+        out_message = as2.Message()
         out_mic_content = out_message.build(
             self.org, self.partner, self.test_file.read())
         raw_out_message = bytes(out_message)
@@ -153,7 +158,10 @@ class TestBasic(unittest.TestCase):
         """ Test Encrypted Signed Compressed Message """
 
         # Build an As2 message to be transmitted to partner
-        out_message = as2.Message(sign=True, encrypt=True, compress=True)
+        self.partner.sign = True
+        self.partner.encrypt = True
+        self.partner.compress = True
+        out_message = as2.Message()
         out_mic_content = out_message.build(
             self.org, self.partner, self.test_file.read())
         raw_out_message = bytes(out_message)

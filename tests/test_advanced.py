@@ -35,7 +35,10 @@ class TestAdvanced(unittest.TestCase):
         """ Test Encrypted Signed Binary Message """
 
         # Build an As2 message to be transmitted to partner
-        out_message = as2.Message(sign=True, encrypt=True, compress=True)
+        self.partner.sign = True
+        self.partner.encrypt = True
+        self.partner.compress = True
+        out_message = as2.Message()
         with open(os.path.join(TEST_DIR, 'payload.binary'), 'rb') as bin_file:
             original_message = bin_file.read()
             out_mic_content = out_message.build(

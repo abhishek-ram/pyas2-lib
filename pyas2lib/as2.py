@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 from .compat import str_cls, byte_cls, parse_mime
 from .cms import compress_message, decompress_message, decrypt_message, \
     encrypt_message, verify_message, sign_message
-from .utils import canonicalize, mime_to_string, mime_to_bytes
+from .utils import canonicalize, mime_to_string, mime_to_bytes, quote_as2name, \
+    unquote_as2name
 from email import utils as email_utils
 from email import message as email_message
 from email import encoders
@@ -16,15 +17,52 @@ import hashlib
 
 logger = logging.getLogger('pyas2lib')
 
+AS2_VERSION = '1.2'
+MIME_VERSION = '1.0'
+EDIINT_FEATURES = 'CMS'
+DIGEST_ALGORITHMS = (
+    'md5',
+    'sha1',
+    'sha224',
+    'sha256',
+    'sha384',
+    'sha512'
+)
+ENCRYPTION_ALGORITHMS = (
+    'tripledes_192_cbc',
+    'rc2_128_cbc',
+    'rc4_128_cbc'
+)
+MDN_MODES = (
+    'SYNC',
+    'ASYNC'
+)
+
 
 class Organization(object):
+    """Class represents an AS2 organization and defines the certificates and
+    settings to be used when sending and receiving messages. """
 
     def __init__(self, as2_id, sign_key=None, sign_key_pass=None,
-                 decrypt_key=None, decrypt_key_pass=None):
-        self.as2_id = as2_id
+                 decrypt_key=None, decrypt_key_pass=None, mdn_url=None):
+        """
+        :param as2_id: The unique AS2 name for this organization
+
+        :param sign_key: A byte string of the pkcs12 encoded key pair
+            used for signing outbound messages and MDNs.
+
+        :param sign_key_pass: The password for decrypting the `sign_key`
+
+        :param decrypt_key:  A byte string of the pkcs12 encoded key pair
+            used for decrypting inbound messages.
+
+        :param decrypt_key_pass: The password for decrypting the `decrypt_key`
+
+        :param mdn_url: The URL where the receiver is expected to post
+            asynchronous MDNs.
+        """
 
         # TODO: Need to give option to include CA certificates
-
         if sign_key:
             self.sign_key = asymmetric.load_pkcs12(
                 sign_key, byte_cls(sign_key_pass))
@@ -35,12 +73,74 @@ class Organization(object):
 
         # TODO: Need to verify the certificate here.
 
+        self.as2_id = as2_id
+        self.mdn_url = mdn_url
+
 
 class Partner(object):
+    """Class represents an AS2 partner and defines the certificates and
+    settings to be used when sending and receiving messages."""
 
     def __init__(self, as2_id, verify_cert=None, encrypt_cert=None,
-                 indefinite_length=False):
-        self.as2_id = as2_id
+                 compress=False, sign=False, digest_alg='sha256',
+                 encrypt=False, enc_alg='tripledes_192_cbc', mdn_mode=None,
+                 mdn_digest_alg=None, indefinite_length=False):
+        """
+        :param as2_id: The unique AS2 name for this partner.
+
+        :param verify_cert: A byte string of the certificate to be used for
+            verifying signatures of inbound messages and MDNs.
+
+        :param encrypt_cert: A byte string of the certificate to be used for
+            encrypting outbound message.
+
+        :param compress: Set this flag to True to compress outgoing
+           messages. (default `False`)
+
+        :param sign: Set this flag to True to sign outgoing
+           messages. (default `False`)
+
+        :param digest_alg: The digest algorithm to be used for generating the
+           signature. (default "sha256")
+
+        :param encrypt: Set this flag to True to encrypt outgoing
+           messages. (default `False`)
+
+        :param enc_alg:
+           The encryption algorithm to be used. (default `"tripledes_192_cbc"`)
+
+        :param mdn_mode: The mode to be used for receiving the MDN.
+           Set to `None` for no MDN, `'SYNC'` for synchronous and `'ASYNC'`
+           for asynchronous. (default `None`)
+
+        :param mdn_digest_alg: The digest algorithm to be used by the receiver
+           for signing the MDN. Use `None` for unsigned MDN. (default `None`)
+       """
+
+        # Validations
+        if digest_alg not in DIGEST_ALGORITHMS:
+            raise ImproperlyConfigured(
+                'Unsupported Digest Algorithm {}, must be '
+                'one of {}'.format(digest_alg, DIGEST_ALGORITHMS))
+
+        if enc_alg not in ENCRYPTION_ALGORITHMS:
+            raise ImproperlyConfigured(
+                'Unsupported Encryption Algorithm {}, must be '
+                'one of {}'.format(enc_alg, ENCRYPTION_ALGORITHMS))
+
+        if mdn_mode and mdn_mode not in MDN_MODES:
+            raise ImproperlyConfigured(
+                'Unsupported MDN Mode {}, must be '
+                'one of {}'.format(digest_alg, MDN_MODES))
+
+        # if mdn_mode == 'ASYNC' and not mdn_url:
+        #     raise ImproperlyConfigured(
+        #         'mdn_url is mandatory when mdn_mode is set to ASYNC ')
+
+        if mdn_digest_alg and mdn_digest_alg not in DIGEST_ALGORITHMS:
+            raise ImproperlyConfigured(
+                'Unsupported MDN Digest Algorithm {}, must be '
+                'one of {}'.format(mdn_digest_alg, DIGEST_ALGORITHMS))
 
         # TODO: Need to give option to include CA certificates
 
@@ -48,89 +148,9 @@ class Partner(object):
             verify_cert) if verify_cert else None
         self.encrypt_cert = asymmetric.load_certificate(
             encrypt_cert) if encrypt_cert else None
-        self.indefinite_length = indefinite_length
 
         # TODO: Need to verify the certificate here.
-
-
-class Message(object):
-    """Class for handling AS2 messages. Includes functions for both
-    parsing and building messages.
-
-    """
-
-    AS2_VERSION = '1.2'
-    MIME_VERSION = '1.0'
-    EDIINT_FEATURES = 'CMS'
-    DIGEST_ALGORITHMS = (
-        'md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'
-    )
-    ENCRYPTION_ALGORITHMS = (
-        'tripledes_192_cbc',
-        'rc2_128_cbc',
-        'rc4_128_cbc',
-    )
-
-    MDN_MODES = (
-        'SYNC', 'ASYNC'
-    )
-
-    def __init__(self, compress=False, sign=False, digest_alg='sha256',
-                 encrypt=False, enc_alg='tripledes_192_cbc', mdn_mode=None,
-                 mdn_digest_alg=None, mdn_url=None):
-        """
-        :param compress: Set this flag to True to compress outgoing
-            messages. (default `False`)
-
-        :param sign: Set this flag to True to sign outgoing
-            messages. (default `False`)
-
-        :param digest_alg: The digest algorithm to be used for generating the
-            signature. (default "sha256")
-
-        :param encrypt: Set this flag to True to encrypt outgoing
-            messages. (default `False`)
-
-        :param enc_alg:
-            The encryption algorithm to be used. (default `"tripledes_192_cbc"`)
-
-        :param mdn_mode: The mode to be used for receiving the MDN.
-            Set to `None` for no MDN, `'SYNC'` for synchronous and `'ASYNC'`
-            for asynchronous. (default `None`)
-
-        :param mdn_digest_alg: The digest algorithm to be used by the receiver
-            for signing the MDN. Use `None` for unsigned MDN. (default `None`)
-
-        :param mdn_url: The URL where the receiver is expected to post
-            asynchronous MDNs.
-        """
-
-        # Validations
-        if digest_alg not in Message.DIGEST_ALGORITHMS:
-            raise ImproperlyConfigured(
-                'Unsupported Digest Algorithm {}, must be '
-                'one of {}'.format(digest_alg, Message.DIGEST_ALGORITHMS))
-
-        if enc_alg not in Message.ENCRYPTION_ALGORITHMS:
-            raise ImproperlyConfigured(
-                'Unsupported Encryption Algorithm {}, must be '
-                'one of {}'.format(enc_alg, Message.ENCRYPTION_ALGORITHMS))
-
-        if mdn_mode and mdn_mode not in Message.MDN_MODES:
-            raise ImproperlyConfigured(
-                'Unsupported MDN Mode {}, must be '
-                'one of {}'.format(digest_alg, Message.MDN_MODES))
-
-        if mdn_mode == 'ASYNC' and not mdn_url:
-            raise ImproperlyConfigured(
-                'mdn_url is mandatory when mdn_mode is set to ASYNC ')
-
-        if mdn_digest_alg and mdn_digest_alg not in Message.DIGEST_ALGORITHMS:
-            raise ImproperlyConfigured(
-                'Unsupported MDN Digest Algorithm {}, must be '
-                'one of {}'.format(mdn_digest_alg, Message.DIGEST_ALGORITHMS))
-
-        # Assignments
+        self.as2_id = as2_id
         self.compress = compress
         self.sign = sign
         self.digest_alg = digest_alg
@@ -138,7 +158,23 @@ class Message(object):
         self.enc_alg = enc_alg
         self.mdn_mode = mdn_mode
         self.mdn_digest_alg = mdn_digest_alg
-        self.mdn_url = mdn_url
+        self.indefinite_length = indefinite_length
+
+
+class Message(object):
+    """Class for handling AS2 messages. Includes functions for both
+    parsing and building messages.
+    """
+
+    def __init__(self):
+        self.compress = False
+        self.sign = False
+        self.digest_alg = None
+        self.encrypt = False
+        self.enc_alg = None
+        # self.mdn_mode = None
+        # self.mdn_digest_alg = None
+        # self.mdn_url = None
         self.message_id = None
         self.headers = {}
         self.payload = None
@@ -220,12 +256,12 @@ class Message(object):
 
         # Set up the message headers
         self.headers = {
-            'AS2-Version': Message.AS2_VERSION,
-            'ediint-features': Message.EDIINT_FEATURES,
-            'MIME-Version': Message.MIME_VERSION,
+            'AS2-Version': AS2_VERSION,
+            'ediint-features': EDIINT_FEATURES,
+            'MIME-Version': MIME_VERSION,
             'Message-ID': '<{}>'.format(self.message_id),
-            'AS2-From': sender.as2_id,
-            'AS2-To': receiver.as2_id,
+            'AS2-From': quote_as2name(sender.as2_id),
+            'AS2-To': quote_as2name(receiver.as2_id),
             'Subject': subject,
             'Date': email_utils.formatdate(localtime=True),
             # 'recipient-address': message.partner.target_url,
@@ -245,7 +281,8 @@ class Message(object):
                 'Content-Disposition', 'attachment', filename=filename)
         del self.payload['MIME-Version']
 
-        if self.compress:
+        if receiver.compress:
+            self.compress = True
             compressed_message = email_message.Message()
             compressed_message.set_type('application/pkcs7-mime')
             compressed_message.set_param('name', 'smime.p7z')
@@ -257,7 +294,8 @@ class Message(object):
             encoders.encode_base64(compressed_message)
             self.payload = compressed_message
 
-        if self.sign:
+        if receiver.sign:
+            self.sign, self.digest_alg = True, receiver.digest_alg
             signed_message = MIMEMultipart(
                 'signed', protocol="application/pkcs7-signature")
             del signed_message['MIME-Version']
@@ -284,7 +322,8 @@ class Message(object):
             signed_message.attach(signature)
             self.payload = signed_message
 
-        if self.encrypt:
+        if receiver.encrypt:
+            self.encrypt, self.enc_alg = True, receiver.enc_alg
             encrypted_message = email_message.Message()
             encrypted_message.set_type('application/pkcs7-mime')
             encrypted_message.set_param('name', 'smime.p7m')
@@ -300,14 +339,19 @@ class Message(object):
             encoders.encode_base64(encrypted_message)
             self.payload = encrypted_message
 
-        if self.mdn_mode:
+        if receiver.mdn_mode:
             self.headers['disposition-notification-to'] = 'no-reply@pyas2.com'
-            if self.mdn_digest_alg:
+            if receiver.mdn_digest_alg:
                 self.headers['disposition-notification-options'] = \
                     'signed-receipt-protocol=required, pkcs7-signature; ' \
-                    'signed-receipt-micalg=optional, %s' % self.mdn_digest_alg
-            if self.mdn_mode.mdn_mode == 'ASYNC':
-                self.headers['receipt-delivery-option'] = self.mdn_url
+                    'signed-receipt-micalg=optional, {}'.format(
+                        receiver.mdn_digest_alg)
+            if receiver.mdn_mode == 'ASYNC':
+                if not sender.mdn_url:
+                    raise ImproperlyConfigured(
+                        'MDN URL must be set in the organization when MDN mode '
+                        'is set to ASYNC')
+                self.headers['receipt-delivery-option'] = sender.mdn_url
 
         return mic
 
@@ -335,13 +379,14 @@ class Message(object):
         self.payload = parse_mime(raw_content)
         mic = None
         for k, v in self.payload.items():
-            if k.lower() == 'message-id':
+            k = k.lower()
+            if k == 'message-id':
                 self.message_id = v.lstrip('<').rstrip('>')
             self.headers[k] = v
 
         # Get the organization and partner for this transmission
-        organization = find_org_cb(self.headers)
-        partner = find_partner_cb(self.headers)
+        receiver = find_org_cb(unquote_as2name(self.headers['as2-to']))
+        sender = find_partner_cb(unquote_as2name(self.headers['as2-from']))
 
         if self.encrypt and \
                 self.payload.get_content_type() != 'application/pkcs7-mime':
@@ -352,8 +397,8 @@ class Message(object):
             self.encrypt = True
             self.enc_alg, decrypted_content = decrypt_message(
                 self.payload.get_payload(decode=True),
-                organization.decrypt_key,
-                partner.indefinite_length
+                receiver.decrypt_key,
+                sender.indefinite_length
             )
             self.payload = parse_mime(decrypted_content)
 
@@ -380,7 +425,7 @@ class Message(object):
             self.digest_alg = verify_message(
                 mic_content,
                 signature,
-                partner.verify_cert
+                sender.verify_cert
             )
 
             # Calculate the MIC Hash of the message to be verified
@@ -393,8 +438,28 @@ class Message(object):
             self.compress = True
             decompressed_data = decompress_message(
                 self.payload.get_payload(decode=True),
-                partner.indefinite_length
+                sender.indefinite_length
             )
             self.payload = parse_mime(decompressed_data)
 
         return mic
+
+
+class MDN(object):
+    """Class for handling AS2 MDNs. Includes functions for both
+    parsing and building them.
+    """
+
+    def __init__(self):
+        self.message = None
+        self.payload = None
+        self.mdn_mode = None
+        self.mdn_url = None
+        self.mdn_digest_alg = None
+
+    def build(self, message, mic, status, detailed_status=None):
+        pass
+
+    def parse(self, raw_content, find_message_cb):
+        status, detailed_status = None, None
+        return status, detailed_status
