@@ -12,6 +12,7 @@ from oscrypto import asymmetric
 from uuid import uuid1
 from .exceptions import *
 import logging
+import hashlib
 
 logger = logging.getLogger('pyas2lib')
 
@@ -190,7 +191,7 @@ class Message(object):
             Any additional headers to be included as part of the AS2 message.
 
         :return:
-            The MIC Content of the sent message to be used while verifying
+            The MIC Hash of the sent message to be used while verifying
             the MDN.
         """
 
@@ -233,7 +234,7 @@ class Message(object):
 
         # Read the input and convert to bytes if value is unicode/str
         # using utf-8 encoding and finally Canonicalize the payload
-        mic_content = None
+        mic = None
         self.payload = email_message.Message()
         self.payload.set_payload(data)
         self.payload.set_type(content_type)
@@ -261,13 +262,21 @@ class Message(object):
                 'signed', protocol="application/pkcs7-signature")
             del signed_message['MIME-Version']
             signed_message.attach(self.payload)
+
+            # Calculate the MIC Hash of the message to be verified
             mic_content = canonicalize(self.payload)
+            digest_func = hashlib.new(self.digest_alg)
+            digest_func.update(mic_content)
+            mic = digest_func.hexdigest()
+
+            # Create the signature mime message
             signature = email_message.Message()
             signature.set_type('application/pkcs7-signature')
             signature.set_param('name', 'smime.p7s')
             signature.set_param('smime-type', 'signed-data')
             signature.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7z')
+            del signature['MIME-Version']
             signature.set_payload(sign_message(
                 mic_content, self.digest_alg, sender.sign_key))
             encoders.encode_base64(signature)
@@ -299,7 +308,7 @@ class Message(object):
             if self.mdn_mode.mdn_mode == 'ASYNC':
                 self.headers['receipt-delivery-option'] = self.mdn_url
 
-        return mic_content
+        return mic
 
     def parse(self, raw_content, find_org_cb, find_partner_cb):
         """Function parses the RAW AS2 message; decrypts, verifies and
@@ -317,13 +326,13 @@ class Message(object):
             as2-from header value is passed as an argument to it.
 
         :return:
-            The MIC Content of the received message to be used while building
+            The MIC Hash of the received message to be used while building
             the MDN.
         """
 
         # Parse the raw MIME message and extract its content and headers
         self.payload = parse_mime(raw_content)
-        mic_content = None
+        mic = None
         for k, v in self.payload.items():
             if k.lower() == 'message-id':
                 self.message_id = v.lstrip('<').rstrip('>')
@@ -364,12 +373,19 @@ class Message(object):
                     signature = part.get_payload(decode=True)
                 else:
                     self.payload = part
-            mic_content = canonicalize(self.payload) 
+
+            # Verify the message
+            mic_content = canonicalize(self.payload)
             self.digest_alg = verify_message(
                 mic_content,
                 signature,
                 partner.verify_cert
             )
+
+            # Calculate the MIC Hash of the message to be verified
+            digest_func = hashlib.new(self.digest_alg)
+            digest_func.update(mic_content)
+            mic = digest_func.hexdigest()
 
         if self.payload.get_content_type() == 'application/pkcs7-mime' \
                 and self.payload.get_param('smime-type') == 'compressed-data':
@@ -380,4 +396,4 @@ class Message(object):
             )
             self.payload = parse_mime(decompressed_data)
 
-        return mic_content
+        return mic

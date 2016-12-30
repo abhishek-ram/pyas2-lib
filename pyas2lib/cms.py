@@ -251,7 +251,6 @@ def verify_message(message, signature, verify_cert):
         'md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
     if cms_content['content_type'].native == 'signed_data':
         for signer in cms_content['content']['signer_infos']:
-            print (signer['signed_attrs'].native)
             signed_attributes = signer['signed_attrs'].copy()
             digest_alg = signer['digest_algorithm']['algorithm'].native
             if digest_alg not in valid_digest_alg:

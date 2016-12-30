@@ -120,6 +120,8 @@ class TestBasic(unittest.TestCase):
         original_message = self.test_file.read()
         self.assertEqual(original_message,
                          in_message.payload.get_payload(decode=True))
+        self.assertTrue(in_message.sign)
+        self.assertEqual(out_mic_content, in_mic_content)
 
     def test_encrypted_signed_message(self):
         """ Test Encrypted Signed Uncompressed Message """
@@ -143,6 +145,9 @@ class TestBasic(unittest.TestCase):
         original_message = self.test_file.read()
         self.assertEqual(original_message,
                          in_message.payload.get_payload(decode=True))
+        self.assertTrue(in_message.sign)
+        self.assertTrue(in_message.encrypt)
+        self.assertEqual(out_mic_content, in_mic_content)
 
     def test_encrypted_signed_compressed_message(self):
         """ Test Encrypted Signed Compressed Message """
@@ -166,6 +171,10 @@ class TestBasic(unittest.TestCase):
         original_message = self.test_file.read()
         self.assertEqual(original_message,
                          in_message.payload.get_payload(decode=True))
+        self.assertTrue(in_message.sign)
+        self.assertTrue(in_message.encrypt)
+        self.assertTrue(in_message.compress)
+        self.assertEqual(out_mic_content, in_mic_content)
 
     def find_org(self, headers):
         return self.org
