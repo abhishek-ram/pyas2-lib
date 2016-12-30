@@ -30,11 +30,11 @@ def canonicalize(message):
         #         for k, v in part.items():
         #             part_header += '{}: {}\n'.format(k, v)
         #         part_header += '\n'
-        #         print part.as_string()
+        #         # print part.as_string()
         #         message_body += \
         #             message_boundary + \
         #             part_header.encode('utf-8') + \
-        #             part.get_payload(decode=True)
+        #             part.get_payload(decode=False)
         # message_body += message_boundary + '--'.encode('utf-8')
         # print message_body
         # message.set_boundary(uuid1())
