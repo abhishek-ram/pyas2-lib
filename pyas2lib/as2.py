@@ -253,7 +253,7 @@ class Message(object):
             compressed_message.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7z')
             compressed_message.set_payload(
-                compress_message(mime_to_bytes(self.payload, 0)))
+                compress_message(canonicalize(self.payload)))
             encoders.encode_base64(compressed_message)
             self.payload = compressed_message
 
@@ -292,7 +292,8 @@ class Message(object):
             encrypted_message.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7m')
             encrypted_message.set_payload(encrypt_message(
-                mime_to_bytes(self.payload, 0),
+                # mime_to_bytes(self.payload, 0),
+                canonicalize(self.payload),
                 self.enc_alg,
                 receiver.encrypt_cert
             ))
