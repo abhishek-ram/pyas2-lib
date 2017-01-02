@@ -35,8 +35,8 @@ class TestBasic(unittest.TestCase):
         """ Test Unencrypted Unsigned Uncompressed Message """
 
         # Build an As2 message to be transmitted to partner
-        out_message = as2.Message()
-        out_message.build(self.org, self.partner, self.test_file.read())
+        out_message = as2.Message(self.org, self.partner)
+        out_mic_content = out_message.build(self.test_file.read())
         raw_out_message = bytes(out_message)
 
         # Parse the generated AS2 message as the partner
@@ -58,9 +58,8 @@ class TestBasic(unittest.TestCase):
 
         # Build an As2 message to be transmitted to partner
         self.partner.compress = True
-        out_message = as2.Message()
-        out_message.build(
-            self.org, self.partner, self.test_file.read())
+        out_message = as2.Message(self.org, self.partner)
+        out_mic_content = out_message.build(self.test_file.read())
         raw_out_message = bytes(out_message)
 
         # Parse the generated AS2 message as the partner
@@ -82,9 +81,8 @@ class TestBasic(unittest.TestCase):
 
         # Build an As2 message to be transmitted to partner
         self.partner.encrypt = True
-        out_message = as2.Message()
-        out_message.build(
-            self.org, self.partner, self.test_file.read())
+        out_message = as2.Message(self.org, self.partner)
+        out_mic_content = out_message.build(self.test_file.read())
         raw_out_message = bytes(out_message)
 
         # Parse the generated AS2 message as the partner
@@ -105,9 +103,8 @@ class TestBasic(unittest.TestCase):
         """ Test Encrypted Unsigned Uncompressed Message """
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
-        out_message = as2.Message()
-        out_mic_content = out_message.build(
-            self.org, self.partner, self.test_file.read())
+        out_message = as2.Message(self.org, self.partner)
+        out_mic_content = out_message.build(self.test_file.read())
         raw_out_message = bytes(out_message)
 
         # Parse the generated AS2 message as the partner
@@ -132,9 +129,8 @@ class TestBasic(unittest.TestCase):
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
         self.partner.encrypt = True
-        out_message = as2.Message()
-        out_mic_content = out_message.build(
-            self.org, self.partner, self.test_file.read())
+        out_message = as2.Message(self.org, self.partner)
+        out_mic_content = out_message.build(self.test_file.read())
         raw_out_message = bytes(out_message)
 
         # Parse the generated AS2 message as the partner
@@ -161,9 +157,8 @@ class TestBasic(unittest.TestCase):
         self.partner.sign = True
         self.partner.encrypt = True
         self.partner.compress = True
-        out_message = as2.Message()
-        out_mic_content = out_message.build(
-            self.org, self.partner, self.test_file.read())
+        out_message = as2.Message(self.org, self.partner)
+        out_mic_content = out_message.build(self.test_file.read())
         raw_out_message = bytes(out_message)
 
         # Parse the generated AS2 message as the partner

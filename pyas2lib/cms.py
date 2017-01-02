@@ -271,6 +271,7 @@ def verify_message(message, signature, verify_cert):
                 digest_func = hashlib.new(digest_alg)
                 digest_func.update(message)
                 calc_message_digest = digest_func.digest()
+                # print(message)
                 print(message_digest, calc_message_digest)
                 if message_digest != calc_message_digest:
                     raise Exception('Message Digest does not match.')

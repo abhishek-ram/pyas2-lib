@@ -38,12 +38,10 @@ class TestAdvanced(unittest.TestCase):
         self.partner.sign = True
         self.partner.encrypt = True
         self.partner.compress = True
-        out_message = as2.Message()
+        out_message = as2.Message(self.org, self.partner)
         with open(os.path.join(TEST_DIR, 'payload.binary'), 'rb') as bin_file:
             original_message = bin_file.read()
             out_mic_content = out_message.build(
-                self.org,
-                self.partner,
                 original_message,
                 filename='payload.binary',
                 content_type='application/octet-stream'

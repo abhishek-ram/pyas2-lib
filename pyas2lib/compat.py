@@ -10,6 +10,7 @@ if PY2:
     from email import message_from_string as parse_mime
     from cStringIO import StringIO
     from cStringIO import StringIO as BytesIO
+    from email.generator import Generator
     from email.generator import Generator as BytesGenerator
     from email.generator import _is8bitstring
     from email.header import Header
