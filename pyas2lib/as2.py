@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 from .compat import str_cls, byte_cls, parse_mime
 from .cms import compress_message, decompress_message, decrypt_message, \
     encrypt_message, verify_message, sign_message
+from .cms import DIGEST_ALGORITHMS, ENCRYPTION_ALGORITHMS
 from .utils import canonicalize, mime_to_string, mime_to_bytes, quote_as2name, \
     unquote_as2name
 from email import utils as email_utils
@@ -9,6 +10,7 @@ from email import message as email_message
 from email import encoders
 from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
+from oscrypto.errors import SignatureError
 from uuid import uuid1
 from .exceptions import *
 import logging
@@ -19,19 +21,6 @@ logger = logging.getLogger('pyas2lib')
 AS2_VERSION = '1.2'
 MIME_VERSION = '1.0'
 EDIINT_FEATURES = 'CMS'
-DIGEST_ALGORITHMS = (
-    'md5',
-    'sha1',
-    'sha224',
-    'sha256',
-    'sha384',
-    'sha512'
-)
-ENCRYPTION_ALGORITHMS = (
-    'tripledes_192_cbc',
-    'rc2_128_cbc',
-    'rc4_128_cbc'
-)
 MDN_MODES = (
     'SYNC',
     'ASYNC'
@@ -394,6 +383,7 @@ class Message(object):
                 receiver.decrypt_key,
                 sender.indefinite_length
             )
+            raw_content = decrypted_content
             self.payload = parse_mime(decrypted_content)
 
             if self.payload.get_content_type() == 'text/plain':
@@ -408,16 +398,24 @@ class Message(object):
         if self.payload.get_content_type() == 'multipart/signed':
             self.sign = True
             signature = None
+            message_boundary = b'--{}'.format(self.payload.get_boundary())
             for part in self.payload.walk():
                 if part.get_content_type() == "application/pkcs7-signature":
                     signature = part.get_payload(decode=True)
                 else:
                     self.payload = part
 
-            # Verify the message
+            # Verify the message, first using raw message and if it fails
+            # then convert to canonical form and try again
+
             mic_content = canonicalize(self.payload)
-            self.digest_alg = verify_message(
-                mic_content, signature, sender.verify_cert)
+            try:
+                self.digest_alg = verify_message(
+                    mic_content, signature, sender.verify_cert)
+            except (SignatureError, DigestException):
+                mic_content = raw_content.split(message_boundary)[1]
+                self.digest_alg = verify_message(
+                    mic_content, signature, sender.verify_cert)
 
             # Calculate the MIC Hash of the message to be verified
             digest_func = hashlib.new(self.digest_alg)
@@ -470,23 +468,28 @@ class MDN(object):
 
         if self.payload.get_content_type() == 'multipart/signed':
             signature = None
+            message_boundary = b'--{}'.format(self.payload.get_boundary())
             for part in self.payload.walk():
                 if part.get_content_type() == 'application/pkcs7-signature':
                     signature = part.get_payload(decode=True)
                 elif part.get_content_type() == 'multipart/report':
-                    # print part.as_string()
                     self.payload = part
 
             # Verify the message
-            mic_content = canonicalize(self.payload)
-
-            self.digest_alg = verify_message(
-                mic_content, signature, orig_message.receiver.verify_cert)
+            mic_content = raw_content.split(
+                message_boundary)[1].strip() + b'\r\n'
+            try:
+                self.digest_alg = verify_message(
+                    mic_content, signature, orig_message.receiver.verify_cert)
+            except (SignatureError, DigestException):
+                mic_content = canonicalize(self.payload)
+                self.digest_alg = verify_message(
+                    mic_content, signature, orig_message.receiver.verify_cert)
 
         for part in self.payload.walk():
             if part.get_content_type() == 'message/disposition-notification':
                 mdn = part.get_payload().pop()
-                status = mdn.get('Disposition').split(';').pop()
+                status = mdn.get('Disposition').split(';').pop().strip()
                 if status == 'processed':
                     if mdn.get('Received-Content-MIC'):
                         mdn_mic = mdn.get('Received-Content-MIC').split(',')

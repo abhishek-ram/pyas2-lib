@@ -2,7 +2,6 @@ from __future__ import absolute_import, unicode_literals
 from .compat import StringIO, BytesIO, Generator, BytesGenerator
 import email
 import re
-from uuid import uuid1
 
 
 def unquote_as2name(quoted_name):
@@ -33,28 +32,8 @@ def mime_to_bytes(msg, header_len):
 def canonicalize(message):
 
     if message.is_multipart():
-        # # parts = []
-        # message.set_boundary(uuid1())
-        # message_boundary = ('--' + message.get_boundary()).encode('utf-8')
-        # message_body = ''
-        # for part in message.walk():
-        #     part_header = ''
-        #     for k, v in part.items():
-        #         part_header += '{}: {}\n'.format(k, v)
-        #     part_header += '\n'
-        #     # print part.as_string()
-        #     print part.get_payload()
-                # message_body += \
-                #     message_boundary + \
-                #     part_header.encode('utf-8') + \
-                #     part.get_payload(decode=False)
-        # message_body += message_boundary + '--'.encode('utf-8')
-        # print message_body
-        # message.set_boundary(uuid1())
-        # message_boundary = '--' + message.get_boundary()
-
         return mime_to_bytes(message, 0).replace(
-            '\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
+            b'\r\n', b'\n').replace(b'\r', b'\n').replace(b'\n', b'\r\n')
     else:
         message_header = ''
         message_body = message.get_payload(decode=True)

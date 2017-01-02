@@ -1,11 +1,26 @@
 from __future__ import absolute_import, unicode_literals
 from asn1crypto import cms, core, algos
 from oscrypto import asymmetric, symmetric, util
-from .compat import byte_cls
 from datetime import datetime
 from collections import OrderedDict
+from .compat import byte_cls
+from .exceptions import DigestException
 import hashlib
 import zlib
+
+DIGEST_ALGORITHMS = (
+    'md5',
+    'sha1',
+    'sha224',
+    'sha256',
+    'sha384',
+    'sha512'
+)
+ENCRYPTION_ALGORITHMS = (
+    'tripledes_192_cbc',
+    'rc2_128_cbc',
+    'rc4_128_cbc'
+)
 
 
 def compress_message(data_to_compress):
@@ -30,7 +45,9 @@ def compress_message(data_to_compress):
 def decompress_message(compressed_data, indefinite_length=False):
     cms_content = cms.ContentInfo.load(compressed_data)
     decompressed_content = ''
+
     if cms_content['content_type'].native == 'compressed_data':
+
         if indefinite_length:
             encapsulated_data = cms_content['content']['encap_content_info'][
                 'content'].native
@@ -103,6 +120,7 @@ def decrypt_message(encrypted_data, decryption_key, indefinite_length=False):
         key_enc_alg = recipient_info[
             'key_encryption_algorithm']['algorithm'].native
         encrypted_key = recipient_info['encrypted_key'].native
+
         if key_enc_alg == 'rsa':
             key = asymmetric.rsa_pkcs1v15_decrypt(
                 decryption_key[0], encrypted_key)
@@ -110,6 +128,7 @@ def decrypt_message(encrypted_data, decryption_key, indefinite_length=False):
                 'content_encryption_algorithm']
             encapsulated_data = cms_content['content'][
                 'encrypted_content_info']['encrypted_content'].native
+
             if indefinite_length:
                 read = 0
                 data = b''
@@ -245,16 +264,17 @@ def sign_message(message, digest_alg, sign_key, use_signed_attributes=True):
 
 def verify_message(message, signature, verify_cert):
     cms_content = cms.ContentInfo.load(signature)
-    # print cms_content.debug()
     digest_alg = None
-    valid_digest_alg = (
-        'md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')
+
     if cms_content['content_type'].native == 'signed_data':
         for signer in cms_content['content']['signer_infos']:
+
             signed_attributes = signer['signed_attrs'].copy()
             digest_alg = signer['digest_algorithm']['algorithm'].native
-            if digest_alg not in valid_digest_alg:
+
+            if digest_alg not in DIGEST_ALGORITHMS:
                 raise Exception('Unsupported Digest Algorithm')
+
             sig_alg = signer['signature_algorithm']['algorithm'].native
             sig = signer['signature'].native
             signed_data = message
@@ -267,14 +287,14 @@ def verify_message(message, signature, verify_cert):
                 message_digest = byte_cls()
                 for d in attr_dict['message_digest']:
                     message_digest += d
-                # print(repr(message))
+
                 digest_func = hashlib.new(digest_alg)
                 digest_func.update(message)
                 calc_message_digest = digest_func.digest()
-                # print(message)
+
                 print(message_digest, calc_message_digest)
                 if message_digest != calc_message_digest:
-                    raise Exception('Message Digest does not match.')
+                    raise DigestException('Message Digest does not match.')
 
                 signed_data = signed_attributes.untag().dump()
 
