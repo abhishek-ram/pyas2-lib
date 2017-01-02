@@ -412,7 +412,7 @@ class Message(object):
             try:
                 self.digest_alg = verify_message(
                     mic_content, signature, sender.verify_cert)
-            except (SignatureError, DigestException):
+            except (SignatureError, DigestError):
                 mic_content = raw_content.split(message_boundary)[1]
                 self.digest_alg = verify_message(
                     mic_content, signature, sender.verify_cert)
@@ -481,7 +481,7 @@ class MDN(object):
             try:
                 self.digest_alg = verify_message(
                     mic_content, signature, orig_message.receiver.verify_cert)
-            except (SignatureError, DigestException):
+            except (SignatureError, DigestError):
                 mic_content = canonicalize(self.payload)
                 self.digest_alg = verify_message(
                     mic_content, signature, orig_message.receiver.verify_cert)

@@ -4,7 +4,7 @@ from oscrypto import asymmetric, symmetric, util
 from datetime import datetime
 from collections import OrderedDict
 from .compat import byte_cls
-from .exceptions import DigestException
+from .exceptions import DigestError
 import hashlib
 import zlib
 
@@ -294,7 +294,7 @@ def verify_message(message, signature, verify_cert):
 
                 print(message_digest, calc_message_digest)
                 if message_digest != calc_message_digest:
-                    raise DigestException('Message Digest does not match.')
+                    raise DigestError('Message Digest does not match.')
 
                 signed_data = signed_attributes.untag().dump()
 
