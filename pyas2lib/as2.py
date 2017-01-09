@@ -473,7 +473,7 @@ class Message(object):
         if self.payload.get_content_type() == 'multipart/signed':
             self.sign = True
             signature = None
-            message_boundary = b'--{}'.format(self.payload.get_boundary())
+            message_boundary = ('--' + self.payload.get_boundary()).encode('utf-8')
             for part in self.payload.walk():
                 if part.get_content_type() == "application/pkcs7-signature":
                     signature = part.get_payload(decode=True)
@@ -681,7 +681,7 @@ class MDN(object):
 
         if self.payload.get_content_type() == 'multipart/signed':
             signature = None
-            message_boundary = b'--{}'.format(self.payload.get_boundary())
+            message_boundary = ('--' + self.payload.get_boundary()).encode('utf-8')
             for part in self.payload.walk():
                 if part.get_content_type() == 'application/pkcs7-signature':
                     signature = part.get_payload(decode=True)
