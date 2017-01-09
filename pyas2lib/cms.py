@@ -148,6 +148,7 @@ def decrypt_message(encrypted_data, decryption_key, indefinite_length=False):
 
 def sign_message(message, digest_alg, sign_key, use_signed_attributes=True):
     # print sign_key.asn1.debug()
+    # print message
 
     if use_signed_attributes:
         digest_func = hashlib.new(digest_alg)
@@ -292,7 +293,7 @@ def verify_message(message, signature, verify_cert):
                 digest_func.update(message)
                 calc_message_digest = digest_func.digest()
 
-                print(message_digest, calc_message_digest)
+                # print(message_digest, calc_message_digest)
                 if message_digest != calc_message_digest:
                     raise DigestError('Message Digest does not match.')
 

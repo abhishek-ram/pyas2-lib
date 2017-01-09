@@ -41,12 +41,12 @@ class TestAdvanced(unittest.TestCase):
         out_message = as2.Message(self.org, self.partner)
         with open(os.path.join(TEST_DIR, 'payload.binary'), 'rb') as bin_file:
             original_message = bin_file.read()
-            out_mic_content = out_message.build(
+            out_message.build(
                 original_message,
                 filename='payload.binary',
                 content_type='application/octet-stream'
             )
-        raw_out_message = bytes(out_message)
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.body
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
@@ -61,7 +61,7 @@ class TestAdvanced(unittest.TestCase):
         #                  in_message.payload.get_payload(decode=True))
         self.assertTrue(in_message.sign)
         self.assertTrue(in_message.encrypt)
-        self.assertEqual(out_mic_content, in_mic_content)
+        self.assertEqual(out_message.mic, in_message.mic)
 
     def find_org(self, headers):
         return self.org

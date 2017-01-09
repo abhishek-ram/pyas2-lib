@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 __all__ = [
     'ImproperlyConfigured', 'AS2Exception', 'AuthenticationError',
-    'DecompressionError', 'DecryptionError', 'InsufficientMessageSecurity',
+    'DecompressionError', 'DecryptionError', 'InsufficientSecurityError',
     'DigestError', 'IntegrityError', 'UnexpectedError', 'MDNNotFound'
 ]
 
@@ -54,7 +54,7 @@ class DecryptionError(AS2Exception):
         self.disposition_modifier = 'decryption-failed'
 
 
-class InsufficientMessageSecurity(AS2Exception):
+class InsufficientSecurityError(AS2Exception):
     """Exception raised when the message security is not as per the
     settings for the partner."""
 

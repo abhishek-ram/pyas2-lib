@@ -138,8 +138,11 @@ class TestMecAS2(unittest.TestCase):
             TEST_DIR, 'mecas2_unsigned.mdn')
         with open(test_file, 'rb') as fp:
             in_message = as2.MDN()
-            with self.assertRaises(exceptions.AS2Exception):
-                in_message.parse(fp.read(), find_message_cb=self.find_message)
+            status, detailed_status = in_message.parse(
+                fp.read(), find_message_cb=self.find_message)
+
+        self.assertEqual(status, 'processed/error')
+        self.assertEqual(detailed_status, ' authentication-failed')
 
     def test_signed_mdn(self):
         """ Test Signed MDN received from Mendelson AS2"""

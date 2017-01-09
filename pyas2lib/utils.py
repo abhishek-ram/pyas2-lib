@@ -31,7 +31,8 @@ def mime_to_bytes(msg, header_len):
 
 def canonicalize(message):
 
-    if message.is_multipart():
+    if message.is_multipart() \
+            or message.get('Content-Transfer-Encoding') != 'binary':
         return mime_to_bytes(message, 0).replace(
             b'\r\n', b'\n').replace(b'\r', b'\n').replace(b'\n', b'\r\n')
     else:
