@@ -164,5 +164,5 @@ class TestMecAS2(unittest.TestCase):
         message = as2.Message()
         message.sender = self.org
         message.receiver = self.partner
-        message.mic = 'O4bvrm5t2YunRfwvZicNdEUmPaPZ9vUslX8loVLDck0='
+        message.mic = b'O4bvrm5t2YunRfwvZicNdEUmPaPZ9vUslX8loVLDck0='
         return message

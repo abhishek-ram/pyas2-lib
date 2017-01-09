@@ -108,7 +108,7 @@ class TestMDN(unittest.TestCase):
         out_mdn = as2.MDN()
         status, detailed_status = out_mdn.parse(
             bytes(mdn), find_message_cb=self.find_message)
-
+        print(bytes(mdn))
         self.assertEqual(status, 'processed')
 
     def find_org(self, as2_id):

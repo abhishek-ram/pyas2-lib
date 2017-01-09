@@ -15,6 +15,7 @@ from uuid import uuid1
 from .exceptions import *
 import logging
 import hashlib
+import binascii
 
 logger = logging.getLogger('pyas2lib')
 
@@ -230,12 +231,12 @@ class Message(object):
         if self.payload.is_multipart():
             message_bytes = mime_to_bytes(
                 self.payload, 0).replace(b'\n', b'\r\n')
-            boundary = b'--' + self.payload.get_boundary()
+            boundary = b'--' + self.payload.get_boundary().encode('utf-8')
             temp = message_bytes.split(boundary)
             temp.pop(0)
             return boundary + boundary.join(temp)
         else:
-            return self.payload.get_payload()
+            return self.payload.get_payload().encode('utf-8')
 
     @property
     def headers(self):
@@ -351,7 +352,7 @@ class Message(object):
             mic_content = canonicalize(self.payload)
             digest_func = hashlib.new(self.digest_alg)
             digest_func.update(mic_content)
-            self.mic = digest_func.digest().encode('base64').strip()
+            self.mic = binascii.b2a_base64(digest_func.digest()).strip()
 
             # Create the signature mime message
             signature = email_message.Message()
@@ -494,7 +495,7 @@ class Message(object):
             # Calculate the MIC Hash of the message to be verified
             digest_func = hashlib.new(self.digest_alg)
             digest_func.update(mic_content)
-            self.mic = digest_func.digest().encode('base64').strip()
+            self.mic = binascii.b2a_base64(digest_func.digest()).strip()
 
         if self.payload.get_content_type() == 'application/pkcs7-mime' \
                 and self.payload.get_param('smime-type') == 'compressed-data':
@@ -620,7 +621,8 @@ class MDN(object):
             mdn_report += ': {}'.format(detailed_status)
         mdn_report += '\n'
         if message.mic:
-            mdn_report += 'Received-content-MIC: %s\n' % message.mic
+            mdn_report += 'Received-content-MIC: {}, {}\n'.format(
+                message.mic.decode(), message.digest_alg)
         mdn_base.set_payload(mdn_report)
         del mdn_base['MIME-Version']
         encoders.encode_7or8bit(mdn_base)
@@ -703,17 +705,15 @@ class MDN(object):
         for part in self.payload.walk():
             if part.get_content_type() == 'message/disposition-notification':
                 mdn = part.get_payload().pop()
-                mdn_status = mdn.get(
-                    'Disposition').split(';').pop().strip().split(':')
+                mdn_status = mdn['Disposition'].split(
+                    ';').pop().strip().split(':')
                 status = mdn_status[0]
                 if status == 'processed':
                     mdn_mic = mdn.get('Received-Content-MIC', '').split(',')[0]
 
                     # TODO: Check MIC for all cases
                     if mdn_mic and orig_message.mic \
-                            and mdn_mic != orig_message.mic:
-                        print(mdn_mic, orig_message.mic)
-                        print(mdn_mic != orig_message.mic)
+                            and mdn_mic != orig_message.mic.decode():
                         status = 'processed/warning'
                         detailed_status = 'Message Integrity check failed.'
                 else:

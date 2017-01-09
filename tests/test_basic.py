@@ -52,7 +52,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message,
-                         in_message.payload.get_payload(decode=False))
+                         in_message.body)
 
     def test_compressed_message(self):
         """ Test Unencrypted Unsigned Compressed Message """
@@ -75,7 +75,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.payload.get_payload(decode=False))
+                         in_message.body)
 
     def test_encrypted_message(self):
         """ Test Encrypted Unsigned Uncompressed Message """
@@ -98,7 +98,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.payload.get_payload(decode=False))
+                         in_message.body)
 
     def test_signed_message(self):
         """ Test Unencrypted Signed Uncompressed Message """
@@ -121,7 +121,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.payload.get_payload(decode=False))
+                         in_message.body)
         self.assertTrue(in_message.sign)
         self.assertEqual(out_message.mic, in_message.mic)
 
@@ -147,7 +147,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.payload.get_payload(decode=False))
+                         in_message.body)
         self.assertTrue(in_message.sign)
         self.assertTrue(in_message.encrypt)
         self.assertEqual(out_message.mic, in_message.mic)
@@ -175,7 +175,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.payload.get_payload(decode=False))
+                         in_message.body)
         self.assertTrue(in_message.sign)
         self.assertTrue(in_message.encrypt)
         self.assertTrue(in_message.compress)
