@@ -54,35 +54,11 @@ class TestMDN(unittest.TestCase):
 
         out_mdn = as2.MDN()
         status, detailed_status = out_mdn.parse(
-            bytes(mdn), find_message_cb=self.find_message)
+            mdn.headers_str + b'\r\n' + mdn.body,
+            find_message_cb=self.find_message
+        )
 
         self.assertEqual(status, 'processed')
-
-    # def test_signed_mdn_expected(self):
-    #     """ Test signed MDN expected but not returned """
-    #
-    #     # Build an As2 message to be transmitted to partner
-    #     self.partner.sign = True
-    #     self.partner.encrypt = True
-    #     self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
-    #     self.partner.mdn_digest_alg = 'sha256'
-    #     self.out_message = as2.Message(self.org, self.partner)
-    #     self.out_message.build(self.test_file.read())
-    #
-    #     # Parse the generated AS2 message as the partner
-    #     in_message = as2.Message()
-    #     _, _, mdn = in_message.parse(
-    #         bytes(self.out_message),
-    #         find_org_cb=self.find_org,
-    #         find_partner_cb=self.find_partner
-    #     )
-    #     out_mdn = as2.MDN()
-    #     status, detailed_status = out_mdn.parse(
-    #         bytes(mdn), find_message_cb=self.find_message)
-    #
-    #     self.assertEqual(status, 'failed/Failure')
-    #     self.assertEqual(detailed_status,
-    #                      'Expected signed MDN but unsigned MDN returned')
 
     def test_signed_mdn(self):
         """ Test signed MDN generation and parsing """
@@ -107,7 +83,9 @@ class TestMDN(unittest.TestCase):
 
         out_mdn = as2.MDN()
         status, detailed_status = out_mdn.parse(
-            bytes(mdn), find_message_cb=self.find_message)
+            mdn.headers_str + b'\r\n' +mdn.body,
+            find_message_cb=self.find_message
+        )
         print(bytes(mdn))
         self.assertEqual(status, 'processed')
 

@@ -34,7 +34,7 @@ class LiveTestMecAS2(unittest.TestCase):
     def tearDown(self):
         self.test_file.close()
 
-    def xtest_compressed_message(self):
+    def test_compressed_message(self):
         """ Send Unencrypted Unsigned Compressed  Message to Mendelson AS2"""
 
         self.partner.compress = True
@@ -44,7 +44,7 @@ class LiveTestMecAS2(unittest.TestCase):
         response = requests.post(
             'http://localhost:8080/as2/HttpReceiver',
             headers=self.out_message.headers,
-            data=self.out_message.extract_body()
+            data=self.out_message.body
         )
         raw_mdn = ''
         for k, v in response.headers.items():
@@ -57,7 +57,7 @@ class LiveTestMecAS2(unittest.TestCase):
             raw_mdn, find_message_cb=self.find_message)
         self.assertEqual(status, 'processed')
 
-    def xtest_encrypted_message(self):
+    def test_encrypted_message(self):
         """ Send Encrypted Unsigned Uncompressed Message to Mendelson AS2"""
 
         self.partner.encrypt = True
@@ -67,7 +67,7 @@ class LiveTestMecAS2(unittest.TestCase):
         response = requests.post(
             'http://localhost:8080/as2/HttpReceiver',
             headers=self.out_message.headers,
-            data=self.out_message.extract_body()
+            data=self.out_message.body
         )
         raw_mdn = ''
         for k, v in response.headers.items():

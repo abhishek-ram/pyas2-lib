@@ -198,28 +198,6 @@ class Message(object):
         self.payload = None
         self.mic = None
 
-    # def __str__(self):
-    #     if self.payload and self.headers:
-    #         for k, v in self.headers.items():
-    #             if self.payload.get(k):
-    #                 self.payload.replace_header(k, v)
-    #             else:
-    #                 self.payload.add_header(k, v)
-    #         return mime_to_string(self.payload, 78)
-    #     else:
-    #         return ''
-    #
-    # def __bytes__(self):
-    #     if self.payload and self.headers:
-    #         for k, v in self.headers.items():
-    #             if self.payload.get(k):
-    #                 self.payload.replace_header(k, v)
-    #             else:
-    #                 self.payload.add_header(k, v)
-    #         return mime_to_bytes(self.payload, 78)
-    #     else:
-    #         return ''
-
     @property
     def body(self):
         """Function returns the body of the email message or
@@ -506,7 +484,7 @@ class Message(object):
             )
             self.payload = parse_mime(decompressed_data)
 
-        # Update the payload headers with the orignal headers
+        # Update the payload headers with the original headers
         for k, v in as2_headers.items():
             if self.payload.get(k):
                 self.payload.replace_header(k, v)
@@ -537,33 +515,42 @@ class MDN(object):
 
     def __init__(self, mdn_mode=None, digest_alg=None, mdn_url=None):
         self.message_id = None
-        self.headers = {}
+        # self.headers = {}
         self.payload = None
         self.mdn_mode = mdn_mode
         self.digest_alg = digest_alg
         self.mdn_url = mdn_url
 
-    def __str__(self):
-        if self.payload and self.headers:
-            for k, v in self.headers.items():
-                if self.payload.get(k):
-                    self.payload.replace_header(k, v)
-                else:
-                    self.payload.add_header(k, v)
-            return canonicalize(self.payload)
+    @property
+    def body(self):
+        """Function returns the body of the email message or
+        multipart object"""
+
+        if self.payload:
+            message_bytes = mime_to_bytes(
+                self.payload, 0).replace(b'\n', b'\r\n')
+            boundary = b'--' + self.payload.get_boundary().encode('utf-8')
+            temp = message_bytes.split(boundary)
+            temp.pop(0)
+            return boundary + boundary.join(temp)
         else:
             return ''
 
-    def __bytes__(self):
-        if self.payload and self.headers:
-            for k, v in self.headers.items():
-                if self.payload.get(k):
-                    self.payload.replace_header(k, v)
-                else:
-                    self.payload.add_header(k, v)
-            return canonicalize(self.payload)
+    @property
+    def headers(self):
+        if self.payload:
+            body = self.body
+            return dict(self.payload.items())
         else:
-            return ''
+            return {}
+
+    @property
+    def headers_str(self):
+        message_header = ''
+        if self.payload:
+            for k, v in self.headers.items():
+                message_header += '{}: {}\r\n'.format(k, v)
+        return message_header.encode('utf-8')
 
     def build(self, message, status, detailed_status=None):
 
@@ -571,7 +558,7 @@ class MDN(object):
         self.message_id = str(uuid1())
 
         # Set up the message headers
-        self.headers = {
+        mdn_headers = {
             'AS2-Version': AS2_VERSION,
             'ediint-features': EDIINT_FEATURES,
             'Message-ID': '<{}>'.format(self.message_id),
@@ -658,7 +645,12 @@ class MDN(object):
 
             self.payload = signed_mdn
 
-        self.headers.update(self.payload.items())
+        # Update the headers of the final payload
+        for k, v in mdn_headers.items():
+            if self.payload.get(k):
+                self.payload.replace_header(k, v)
+            else:
+                self.payload.add_header(k, v)
 
     def parse(self, raw_content, find_message_cb):
         status, detailed_status = None, None
@@ -669,11 +661,12 @@ class MDN(object):
         orig_message = find_message_cb(orig_message_id, orig_recipient)
 
         # Extract the headers and save it
+        mdn_headers = {}
         for k, v in self.payload.items():
             k = k.lower()
             if k == 'message-id':
                 self.message_id = v.lstrip('<').rstrip('>')
-            self.headers[k] = v
+            mdn_headers[k] = v
 
         if orig_message.receiver.mdn_digest_alg \
                 and self.payload.get_content_type() != 'multipart/signed':
@@ -731,7 +724,7 @@ class MDN(object):
                     mdn_message = self.payload
 
         if not mdn_message:
-            raise MDNNotFound('No MDN found in the received m')
+            raise MDNNotFound('No MDN found in the received message')
 
         message_id, message_recipient = None, None
         for part in mdn_message.walk():
