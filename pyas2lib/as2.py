@@ -5,6 +5,7 @@ from .cms import compress_message, decompress_message, decrypt_message, \
 from .cms import DIGEST_ALGORITHMS, ENCRYPTION_ALGORITHMS
 from .utils import canonicalize, mime_to_string, mime_to_bytes, quote_as2name, \
     unquote_as2name
+from .exceptions import *
 from email import utils as email_utils
 from email import message as email_message
 from email import encoders
@@ -12,7 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
 from oscrypto.errors import SignatureError
 from uuid import uuid1
-from .exceptions import *
+from copy import copy
 import logging
 import hashlib
 import binascii
@@ -84,8 +85,7 @@ class Partner(object):
     def __init__(self, as2_id, verify_cert=None, encrypt_cert=None,
                  compress=False, sign=False, digest_alg='sha256',
                  encrypt=False, enc_alg='tripledes_192_cbc', mdn_mode=None,
-                 mdn_digest_alg=None, mdn_confirm_text=MDN_CONFIRM_TEXT,
-                 indefinite_length=False):
+                 mdn_digest_alg=None, mdn_confirm_text=MDN_CONFIRM_TEXT):
         """
         :param as2_id: The unique AS2 name for this partner.
 
@@ -119,10 +119,6 @@ class Partner(object):
 
         :param mdn_confirm_text: The text to be used in the MDN for successfully
             processed messages received from this partner.
-
-        :param indefinite_length: Set this to flag to `True` if the partner's
-            AS2 software uses indefinite length octets in its ASN1
-            structures. (default `False`)
 
        """
 
@@ -168,7 +164,6 @@ class Partner(object):
         self.mdn_mode = mdn_mode
         self.mdn_digest_alg = mdn_digest_alg
         self.mdn_confirm_text = mdn_confirm_text
-        self.indefinite_length = indefinite_length
 
 
 class Message(object):
@@ -214,7 +209,10 @@ class Message(object):
             temp.pop(0)
             return boundary + boundary.join(temp)
         else:
-            return self.payload.get_payload().encode('utf-8')
+            new_payload = copy(self.payload)
+            for key in new_payload.keys():
+                del new_payload[key]
+            return mime_to_bytes(new_payload, 0).lstrip()
 
     @property
     def headers(self):
@@ -432,8 +430,7 @@ class Message(object):
             self.encrypt = True
             self.enc_alg, decrypted_content = decrypt_message(
                 self.payload.get_payload(decode=True),
-                self.receiver.decrypt_key,
-                self.sender.indefinite_length
+                self.receiver.decrypt_key
             )
             raw_content = decrypted_content
             self.payload = parse_mime(decrypted_content)
@@ -479,9 +476,7 @@ class Message(object):
                 and self.payload.get_param('smime-type') == 'compressed-data':
             self.compress = True
             decompressed_data = decompress_message(
-                self.payload.get_payload(decode=True),
-                self.sender.indefinite_length
-            )
+                self.payload.get_payload(decode=True))
             self.payload = parse_mime(decompressed_data)
 
         # Update the payload headers with the original headers

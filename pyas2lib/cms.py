@@ -4,7 +4,7 @@ from oscrypto import asymmetric, symmetric, util
 from datetime import datetime
 from collections import OrderedDict
 from .compat import byte_cls
-from .exceptions import DigestError
+from .exceptions import *
 import hashlib
 import zlib
 
@@ -42,25 +42,30 @@ def compress_message(data_to_compress):
     }).dump()
 
 
-def decompress_message(compressed_data, indefinite_length=False):
-    cms_content = cms.ContentInfo.load(compressed_data)
+def decompress_message(compressed_data):
+
     decompressed_content = ''
+    try:
+        cms_content = cms.ContentInfo.load(compressed_data)
 
-    if cms_content['content_type'].native == 'compressed_data':
+        if cms_content['content_type'].native == 'compressed_data':
 
-        if indefinite_length:
-            encapsulated_data = cms_content['content']['encap_content_info'][
-                'content'].native
-            read = 0
-            data = b''
-            while read < len(encapsulated_data):
-                value, read = core._parse_build(encapsulated_data, read)
-                data += value.native
-            decompressed_content = zlib.decompress(data)
-        else:
+            # This step seems to be needed to handle indefinite length encodings
+            try:
+                cms_content['content']['encap_content_info']['content'].parse()
+            except ValueError:
+                pass
+
             decompressed_content = cms_content['content'].decompressed
+        else:
+            raise ValueError('Compressed data not found in ASN.1 ')
 
-    return decompressed_content
+    except Exception as e:
+        raise DecompressionError(
+            'Decompression failed with cause: {}'.format(e))
+
+    finally:
+        return decompressed_content
 
 
 def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
@@ -111,7 +116,7 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
     }).dump()
 
 
-def decrypt_message(encrypted_data, decryption_key, indefinite_length=False):
+def decrypt_message(encrypted_data, decryption_key):
     cms_content = cms.ContentInfo.load(encrypted_data)
     cipher, decrypted_content = None, None
 
@@ -126,16 +131,18 @@ def decrypt_message(encrypted_data, decryption_key, indefinite_length=False):
                 decryption_key[0], encrypted_key)
             alg = cms_content['content']['encrypted_content_info'][
                 'content_encryption_algorithm']
-            encapsulated_data = cms_content['content'][
-                'encrypted_content_info']['encrypted_content'].native
 
-            if indefinite_length:
+            encapsulated_data = cms_content['content'][
+                'encrypted_content_info']['encrypted_content'].contents
+
+            # This step seems to be needed to handle indefinite length encodings
+            try:
                 read = 0
                 data = b''
                 while read < len(encapsulated_data):
                     value, read = core._parse_build(encapsulated_data, read)
                     data += value.native
-            else:
+            except (ValueError, TypeError, AttributeError):
                 data = encapsulated_data
 
             if alg.encryption_cipher == 'tripledes':

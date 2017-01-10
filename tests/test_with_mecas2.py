@@ -20,13 +20,13 @@ class TestMecAS2(unittest.TestCase):
                 decrypt_key=key,
                 decrypt_key_pass='test'.encode('utf-8')
             )
-        with open(os.path.join(TEST_DIR, 'cert_mecas2_public.pem'), 'rb') as c_file:
+        with open(os.path.join(
+                TEST_DIR, 'cert_mecas2_public.pem'), 'rb') as c_file:
             cert = c_file.read()
             self.partner = as2.Partner(
                 as2_id='mecas2',
                 verify_cert=cert,
-                encrypt_cert=cert,
-                indefinite_length=True
+                encrypt_cert=cert
             )
 
     def tearDown(self):
@@ -67,7 +67,7 @@ class TestMecAS2(unittest.TestCase):
         self.assertTrue(in_message.encrypt)
         self.assertEqual(in_message.enc_alg, 'tripledes_192_cbc')
         self.assertEqual(
-            self.test_file.read(), in_message.payload.get_payload())
+            self.test_file.read(), in_message.body)
 
     def test_signed_message(self):
         """ Test Unencrypted Signed Uncompressed Message from Mendelson AS2"""

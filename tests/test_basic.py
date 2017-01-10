@@ -26,7 +26,7 @@ class TestBasic(unittest.TestCase):
             self.partner = as2.Partner(
                 as2_id='some_partner',
                 verify_cert=cert,
-                encrypt_cert=cert,
+                encrypt_cert=cert
             )
 
     def tearDown(self):
