@@ -27,7 +27,6 @@ class LiveTestMecAS2(unittest.TestCase):
                 as2_id='mecas2',
                 verify_cert=cert,
                 encrypt_cert=cert,
-                indefinite_length=True
             )
         self.out_message = None
 

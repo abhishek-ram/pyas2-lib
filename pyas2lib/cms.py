@@ -49,13 +49,6 @@ def decompress_message(compressed_data):
         cms_content = cms.ContentInfo.load(compressed_data)
 
         if cms_content['content_type'].native == 'compressed_data':
-
-            # This step seems to be needed to handle indefinite length encodings
-            try:
-                cms_content['content']['encap_content_info']['content'].parse()
-            except ValueError:
-                pass
-
             decompressed_content = cms_content['content'].decompressed
         else:
             raise ValueError('Compressed data not found in ASN.1 ')
@@ -133,22 +126,13 @@ def decrypt_message(encrypted_data, decryption_key):
                 'content_encryption_algorithm']
 
             encapsulated_data = cms_content['content'][
-                'encrypted_content_info']['encrypted_content'].contents
-
-            # This step seems to be needed to handle indefinite length encodings
-            try:
-                read = 0
-                data = b''
-                while read < len(encapsulated_data):
-                    value, read = core._parse_build(encapsulated_data, read)
-                    data += value.native
-            except (ValueError, TypeError, AttributeError):
-                data = encapsulated_data
+                'encrypted_content_info']['encrypted_content'].native
 
             if alg.encryption_cipher == 'tripledes':
                 cipher = 'tripledes_192_cbc'
                 decrypted_content = symmetric.tripledes_cbc_pkcs5_decrypt(
-                    key, data, alg.encryption_iv)
+                    key, encapsulated_data, alg.encryption_iv)
+
 
     return cipher, decrypted_content
 
