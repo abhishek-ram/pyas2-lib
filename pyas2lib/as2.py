@@ -189,7 +189,6 @@ class Message(object):
         self.encrypt = False
         self.enc_alg = None
         self.message_id = None
-        # self.headers = {}
         self.payload = None
         self.mic = None
 
@@ -209,11 +208,10 @@ class Message(object):
             temp.pop(0)
             return boundary + boundary.join(temp)
         else:
-            # new_payload = copy(self.payload)
-            # for key in new_payload.keys():
-            #     del new_payload[key]
-            # return mime_to_bytes(new_payload, 0).lstrip()
-            return self.payload.get_payload()
+            content = self.payload.get_payload()
+            if isinstance(content, str_cls):
+                content = content.encode('utf-8')
+            return content
 
     @property
     def headers(self):
