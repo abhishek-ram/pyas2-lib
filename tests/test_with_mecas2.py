@@ -67,7 +67,7 @@ class TestMecAS2(unittest.TestCase):
         self.assertTrue(in_message.encrypt)
         self.assertEqual(in_message.enc_alg, 'tripledes_192_cbc')
         self.assertEqual(
-            self.test_file.read(), in_message.body)
+            self.test_file.read(), in_message.content)
 
     def test_signed_message(self):
         """ Test Unencrypted Signed Uncompressed Message from Mendelson AS2"""

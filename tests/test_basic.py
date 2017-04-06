@@ -38,7 +38,7 @@ class TestBasic(unittest.TestCase):
         # Build an As2 message to be transmitted to partner
         out_message = as2.Message(self.org, self.partner)
         out_message.build(self.test_file.read())
-        raw_out_message = out_message.headers_str + b'\r\n' + out_message.body
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
@@ -52,7 +52,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message,
-                         in_message.body)
+                         in_message.content)
 
     def test_compressed_message(self):
         """ Test Unencrypted Unsigned Compressed Message """
@@ -61,7 +61,7 @@ class TestBasic(unittest.TestCase):
         self.partner.compress = True
         out_message = as2.Message(self.org, self.partner)
         out_message.build(self.test_file.read())
-        raw_out_message = out_message.headers_str + b'\r\n' + out_message.body
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
@@ -75,7 +75,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.body)
+                         in_message.content)
 
     def test_encrypted_message(self):
         """ Test Encrypted Unsigned Uncompressed Message """
@@ -84,7 +84,7 @@ class TestBasic(unittest.TestCase):
         self.partner.encrypt = True
         out_message = as2.Message(self.org, self.partner)
         out_message.build(self.test_file.read())
-        raw_out_message = out_message.headers_str + b'\r\n' + out_message.body
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
@@ -98,7 +98,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.body)
+                         in_message.content)
 
     def test_signed_message(self):
         """ Test Unencrypted Signed Uncompressed Message """
@@ -107,10 +107,11 @@ class TestBasic(unittest.TestCase):
         self.partner.sign = True
         out_message = as2.Message(self.org, self.partner)
         out_message.build(self.test_file.read())
-        raw_out_message = out_message.headers_str + b'\r\n' + out_message.body
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
+        print(raw_out_message)
         in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
@@ -121,7 +122,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.body)
+                         in_message.content)
         self.assertTrue(in_message.sign)
         self.assertEqual(out_message.mic, in_message.mic)
 
@@ -133,7 +134,7 @@ class TestBasic(unittest.TestCase):
         self.partner.encrypt = True
         out_message = as2.Message(self.org, self.partner)
         out_message.build(self.test_file.read())
-        raw_out_message = out_message.headers_str + b'\r\n' + out_message.body
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
@@ -147,7 +148,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.body)
+                         in_message.content)
         self.assertTrue(in_message.sign)
         self.assertTrue(in_message.encrypt)
         self.assertEqual(out_message.mic, in_message.mic)
@@ -161,7 +162,7 @@ class TestBasic(unittest.TestCase):
         self.partner.compress = True
         out_message = as2.Message(self.org, self.partner)
         out_message.build(self.test_file.read())
-        raw_out_message = out_message.headers_str + b'\r\n' + out_message.body
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
@@ -175,7 +176,7 @@ class TestBasic(unittest.TestCase):
         self.test_file.seek(0)
         original_message = self.test_file.read()
         self.assertEqual(original_message.replace(b'\n', b'\r\n'),
-                         in_message.body)
+                         in_message.content)
         self.assertTrue(in_message.sign)
         self.assertTrue(in_message.encrypt)
         self.assertTrue(in_message.compress)

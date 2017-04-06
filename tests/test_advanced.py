@@ -46,7 +46,7 @@ class TestAdvanced(unittest.TestCase):
                 filename='payload.binary',
                 content_type='application/octet-stream'
             )
-        raw_out_message = out_message.headers_str + b'\r\n' + out_message.body
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()

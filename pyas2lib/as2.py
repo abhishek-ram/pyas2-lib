@@ -4,7 +4,7 @@ from .cms import compress_message, decompress_message, decrypt_message, \
     encrypt_message, verify_message, sign_message
 from .cms import DIGEST_ALGORITHMS, ENCRYPTION_ALGORITHMS
 from .utils import canonicalize, mime_to_string, mime_to_bytes, quote_as2name, \
-    unquote_as2name
+    unquote_as2name, make_mime_boundary
 from .exceptions import *
 from email import utils as email_utils
 from email import message as email_message
@@ -194,7 +194,7 @@ class Message(object):
         self.mic = None
 
     @property
-    def body(self):
+    def content(self):
         """Function returns the body of the email message or
         multipart object"""
 
@@ -209,15 +209,15 @@ class Message(object):
             temp.pop(0)
             return boundary + boundary.join(temp)
         else:
-            new_payload = copy(self.payload)
-            for key in new_payload.keys():
-                del new_payload[key]
-            return mime_to_bytes(new_payload, 0).lstrip()
+            # new_payload = copy(self.payload)
+            # for key in new_payload.keys():
+            #     del new_payload[key]
+            # return mime_to_bytes(new_payload, 0).lstrip()
+            return self.payload.get_payload()
 
     @property
     def headers(self):
         if self.payload:
-            body = self.body
             return dict(self.payload.items())
         else:
             return {}
@@ -375,12 +375,14 @@ class Message(object):
                         'is set to ASYNC')
                 as2_headers['receipt-delivery-option'] = self.sender.mdn_url
 
-        # Update the headers of the final payload
+        # Update the headers of the final payload and set its boundary
         for k, v in as2_headers.items():
             if self.payload.get(k):
                 self.payload.replace_header(k, v)
             else:
                 self.payload.add_header(k, v)
+        if self.payload.is_multipart():
+            self.payload.set_boundary(make_mime_boundary())
 
     def parse(self, raw_content, find_org_cb, find_partner_cb):
         """Function parses the RAW AS2 message; decrypts, verifies and
@@ -517,7 +519,7 @@ class MDN(object):
         self.mdn_url = mdn_url
 
     @property
-    def body(self):
+    def content(self):
         """Function returns the body of the email message or
         multipart object"""
 
@@ -534,7 +536,6 @@ class MDN(object):
     @property
     def headers(self):
         if self.payload:
-            body = self.body
             return dict(self.payload.items())
         else:
             return {}
@@ -640,12 +641,14 @@ class MDN(object):
 
             self.payload = signed_mdn
 
-        # Update the headers of the final payload
+        # Update the headers of the final payload and set message boundary
         for k, v in mdn_headers.items():
             if self.payload.get(k):
                 self.payload.replace_header(k, v)
             else:
                 self.payload.add_header(k, v)
+        if self.payload.is_multipart():
+            self.payload.set_boundary(make_mime_boundary())
 
     def parse(self, raw_content, find_message_cb):
         status, detailed_status = None, None

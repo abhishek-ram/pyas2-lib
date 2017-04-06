@@ -44,7 +44,7 @@ class TestMDN(unittest.TestCase):
 
         # Parse the generated AS2 message as the partner
         raw_out_message = \
-            self.out_message.headers_str + b'\r\n' + self.out_message.body
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
         in_message = as2.Message()
         _, _, mdn = in_message.parse(
             raw_out_message,
@@ -54,7 +54,7 @@ class TestMDN(unittest.TestCase):
 
         out_mdn = as2.MDN()
         status, detailed_status = out_mdn.parse(
-            mdn.headers_str + b'\r\n' + mdn.body,
+            mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message
         )
 
@@ -73,7 +73,7 @@ class TestMDN(unittest.TestCase):
 
         # Parse the generated AS2 message as the partner
         raw_out_message = \
-            self.out_message.headers_str + b'\r\n' + self.out_message.body
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
         in_message = as2.Message()
         _, _, mdn = in_message.parse(
             raw_out_message,
@@ -83,10 +83,9 @@ class TestMDN(unittest.TestCase):
 
         out_mdn = as2.MDN()
         status, detailed_status = out_mdn.parse(
-            mdn.headers_str + b'\r\n' +mdn.body,
+            mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message
         )
-        print(bytes(mdn))
         self.assertEqual(status, 'processed')
 
     def find_org(self, as2_id):

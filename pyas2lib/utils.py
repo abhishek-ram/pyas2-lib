@@ -2,6 +2,8 @@ from __future__ import absolute_import, unicode_literals
 from .compat import StringIO, BytesIO, Generator, BytesGenerator
 import email
 import re
+import sys
+import random
 
 
 def unquote_as2name(quoted_name):
@@ -42,3 +44,25 @@ def canonicalize(message):
             message_header += '{}: {}\r\n'.format(k, v)
         message_header += '\r\n'
         return message_header.encode('utf-8') + message_body
+
+
+def make_mime_boundary(text=None):
+    # Craft a random boundary.  If text is given, ensure that the chosen
+    # boundary doesn't appear in the text.
+
+    width = len(repr(sys.maxint - 1))
+    fmt = '%%0%dd' % width
+
+    token = random.randrange(sys.maxint)
+    boundary = ('=' * 15) + (fmt % token) + '=='
+    if text is None:
+        return boundary
+    b = boundary
+    counter = 0
+    while True:
+        cre = re.compile('^--' + re.escape(b) + '(--)?$', re.MULTILINE)
+        if not cre.search(text):
+            break
+        b = boundary + '.' + str(counter)
+        counter += 1
+    return b

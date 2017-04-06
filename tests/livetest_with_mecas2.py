@@ -43,7 +43,7 @@ class LiveTestMecAS2(unittest.TestCase):
         response = requests.post(
             'http://localhost:8080/as2/HttpReceiver',
             headers=self.out_message.headers,
-            data=self.out_message.body
+            data=self.out_message.content
         )
         raw_mdn = ''
         for k, v in response.headers.items():
@@ -66,7 +66,7 @@ class LiveTestMecAS2(unittest.TestCase):
         response = requests.post(
             'http://localhost:8080/as2/HttpReceiver',
             headers=self.out_message.headers,
-            data=self.out_message.body
+            data=self.out_message.content
         )
         raw_mdn = ''
         for k, v in response.headers.items():
@@ -88,7 +88,7 @@ class LiveTestMecAS2(unittest.TestCase):
 
         response = requests.post(
             'http://localhost:8080/as2/HttpReceiver',
-            data=self.out_message.body,
+            data=self.out_message.content,
             headers=self.out_message.headers,
         )
 
@@ -112,7 +112,7 @@ class LiveTestMecAS2(unittest.TestCase):
 
         response = requests.post(
             'http://localhost:8080/as2/HttpReceiver',
-            data=self.out_message.body,
+            data=self.out_message.content,
             headers=self.out_message.headers,
         )
 
@@ -137,7 +137,7 @@ class LiveTestMecAS2(unittest.TestCase):
 
         response = requests.post(
             'http://localhost:8080/as2/HttpReceiver',
-            data=self.out_message.body,
+            data=self.out_message.content,
             headers=self.out_message.headers,
         )
 
