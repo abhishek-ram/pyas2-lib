@@ -50,10 +50,10 @@ def make_mime_boundary(text=None):
     # Craft a random boundary.  If text is given, ensure that the chosen
     # boundary doesn't appear in the text.
 
-    width = len(repr(sys.maxint - 1))
+    width = len(repr(sys.maxsize - 1))
     fmt = '%%0%dd' % width
 
-    token = random.randrange(sys.maxint)
+    token = random.randrange(sys.maxsize)
     boundary = ('=' * 15) + (fmt % token) + '=='
     if text is None:
         return boundary
