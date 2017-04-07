@@ -18,9 +18,9 @@ class LiveTestMecAS2(PYAS2TestCase):
         )
 
         self.partner = as2.Partner(
-            as2_id='mecas2',
-            verify_cert=self.mecas2_public_key,
-            encrypt_cert=self.mecas2_public_key,
+            as2_id='pyas2idev',
+            verify_cert=self.oldpyas2_public_key,
+            encrypt_cert=self.oldpyas2_public_key,
             mdn_mode=as2.SYNCHRONOUS_MDN,
             mdn_digest_alg='sha256'
         )
@@ -34,7 +34,7 @@ class LiveTestMecAS2(PYAS2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            'http://localhost:8080/pyas2/as2receive',
             headers=self.out_message.headers,
             data=self.out_message.content
         )
@@ -57,7 +57,7 @@ class LiveTestMecAS2(PYAS2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            'http://localhost:8080/pyas2/as2receive',
             headers=self.out_message.headers,
             data=self.out_message.content
         )
@@ -80,7 +80,7 @@ class LiveTestMecAS2(PYAS2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            'http://localhost:8080/pyas2/as2receive',
             data=self.out_message.content,
             headers=self.out_message.headers,
         )
@@ -104,7 +104,7 @@ class LiveTestMecAS2(PYAS2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            'http://localhost:8080/pyas2/as2receive',
             data=self.out_message.content,
             headers=self.out_message.headers,
         )
@@ -129,7 +129,7 @@ class LiveTestMecAS2(PYAS2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            'http://localhost:8080/pyas2/as2receive',
             data=self.out_message.content,
             headers=self.out_message.headers,
         )

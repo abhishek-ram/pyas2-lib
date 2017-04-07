@@ -73,3 +73,14 @@ def make_mime_boundary(text=None):
         b = boundary + '.' + str(counter)
         counter += 1
     return b
+
+
+def extract_first_part(message, boundary):
+    """ Function to extract the first part of a multipart message"""
+    first_message = message.split(boundary)[1].lstrip()
+    if first_message.endswith('\r\n'):
+        first_message = first_message[:-2]
+    else:
+        first_message = first_message[:-1]
+    return first_message
+

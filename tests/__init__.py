@@ -26,3 +26,7 @@ class PYAS2TestCase(unittest.TestCase):
         with open(os.path.join(
                 cls.TEST_DIR, 'cert_mecas2_public.pem'), 'rb') as pub_file:
             cls.mecas2_public_key = pub_file.read()
+
+        with open(os.path.join(
+                cls.TEST_DIR, 'cert_oldpyas2_public.pem'), 'rb') as pub_file:
+            cls.oldpyas2_public_key = pub_file.read()

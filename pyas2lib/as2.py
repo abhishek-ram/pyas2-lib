@@ -3,8 +3,8 @@ from .compat import str_cls, byte_cls, parse_mime
 from .cms import compress_message, decompress_message, decrypt_message, \
     encrypt_message, verify_message, sign_message
 from .cms import DIGEST_ALGORITHMS, ENCRYPTION_ALGORITHMS
-from .utils import canonicalize, mime_to_string, mime_to_bytes, quote_as2name, \
-    unquote_as2name, make_mime_boundary
+from .utils import canonicalize, mime_to_bytes, quote_as2name, unquote_as2name,\
+    make_mime_boundary, extract_first_part
 from .exceptions import *
 from email import utils as email_utils
 from email import message as email_message
@@ -705,8 +705,7 @@ class MDN(object):
 
             # Verify the message, first using raw message and if it fails
             # then convert to canonical form and try again
-            mic_content = raw_content.split(
-                message_boundary)[1].strip() + b'\r\n'
+            mic_content = extract_first_part(raw_content, message_boundary)
             try:
                 self.digest_alg = verify_message(
                     mic_content, signature, orig_message.receiver.verify_cert)
