@@ -1,5 +1,5 @@
 from __future__ import absolute_import, unicode_literals
-from .compat import StringIO, BytesIO, Generator, BytesGenerator
+from .compat import StringIO, BytesIO, Generator, BytesGenerator, is_py2, _ver
 import email
 import re
 import sys
@@ -35,7 +35,14 @@ def canonicalize(message):
 
     if message.is_multipart() \
             or message.get('Content-Transfer-Encoding') != 'binary':
-        return mime_to_bytes(message, 0).replace(
+
+        flattened_message = mime_to_bytes(message, 0)
+
+        # Hack to fix email generator bug in python version <=2.7.6
+        if is_py2 and _ver[2] <= 6:
+            flattened_message += b'\n'
+
+        return flattened_message.replace(
             b'\r\n', b'\n').replace(b'\r', b'\n').replace(b'\n', b'\r\n')
     else:
         message_header = ''

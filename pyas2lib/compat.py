@@ -1,9 +1,17 @@
 from __future__ import unicode_literals, absolute_import
 import sys
 
-PY2 = sys.version_info[0] == 2
+# Syntax sugar.
+_ver = sys.version_info
 
-if PY2:
+#: Python 2.x?
+is_py2 = (_ver[0] == 2)
+
+#: Python 3.x?
+is_py3 = (_ver[0] == 3)
+
+
+if is_py2:
     str_cls = unicode  # noqa
     byte_cls = str
     int_types = (int, long)  # noqa
@@ -13,7 +21,7 @@ if PY2:
     from email.generator import Generator
     from email.generator import Generator as BytesGenerator
 
-else:
+elif is_py3:
     str_cls = str
     byte_cls = bytes
     int_types = int
