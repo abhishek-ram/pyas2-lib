@@ -187,8 +187,7 @@ def sign_message(data_to_sign, digest_alg, sign_key,
 
     :return: A CMS ASN.1 byte string of the signed data.    
     """
-    print(data_to_sign)
-    print(digest_alg)
+
     if use_signed_attributes:
         digest_func = hashlib.new(digest_alg)
         digest_func.update(data_to_sign)
@@ -344,9 +343,7 @@ def verify_message(data_to_verify, signature, verify_cert):
                 digest_func = hashlib.new(digest_alg)
                 digest_func.update(data_to_verify)
                 calc_message_digest = digest_func.digest()
-
-                print(data_to_verify)
-                print(message_digest, calc_message_digest)
+                
                 if message_digest != calc_message_digest:
                     raise DigestError('Message Digest does not match.')
 

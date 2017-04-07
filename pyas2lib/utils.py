@@ -39,7 +39,7 @@ def canonicalize(message):
         flattened_message = mime_to_bytes(message, 0)
 
         # Hack to fix email generator bug in python version <=2.7.6
-        if is_py2 and _ver[2] <= 6:
+        if message.is_multipart() and is_py2 and _ver[2] <= 6:
             flattened_message += b'\n'
 
         return flattened_message.replace(
