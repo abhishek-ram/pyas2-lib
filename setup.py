@@ -1,22 +1,19 @@
 from setuptools import setup, find_packages
 from pyas2lib import __versionstr__
+from os.path import join, dirname
 
-# f = open(join(dirname(__file__), 'README.md'))
-# long_description = f.read().strip()
-# f.close()
+f = open(join(dirname(__file__), 'README.md'))
+long_description = f.read().strip()
+f.close()
 
 install_requires = [
     'asn1crypto==0.22.0',
     'oscrypto==0.18.0'
-    # 'cryptography==1.5.2',
 ]
 
 tests_require = [
     'nose',
-    # 'coverage',
-    # 'mock',
-    # 'pyaml',
-    # 'nosexcover'
+    'requests',
 ]
 
 setup(

@@ -343,7 +343,7 @@ def verify_message(data_to_verify, signature, verify_cert):
                 digest_func = hashlib.new(digest_alg)
                 digest_func.update(data_to_verify)
                 calc_message_digest = digest_func.digest()
-                
+
                 if message_digest != calc_message_digest:
                     raise DigestError('Message Digest does not match.')
 
