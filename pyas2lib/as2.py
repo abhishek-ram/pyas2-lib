@@ -194,8 +194,7 @@ class Message(object):
 
     @property
     def content(self):
-        """Function returns the body of the email message or
-        multipart object"""
+        """Function returns the body of the as2 payload as a bytes object"""
 
         if not self.payload:
             return ''
@@ -253,12 +252,9 @@ class Message(object):
         """
 
         # Validations
-        assert isinstance(self.sender, Organization), \
-            'Parameter sender must be of type {}'.format(Organization)
-        assert isinstance(self.receiver, Partner), \
-            'Parameter receiver must be of type {}'.format(Partner)
         assert type(data) is byte_cls, \
             'Parameter data must be of type {}'.format(byte_cls)
+
         additional_headers = additional_headers if additional_headers else {}
         assert type(additional_headers) is dict
 
@@ -510,7 +506,6 @@ class MDN(object):
 
     def __init__(self, mdn_mode=None, digest_alg=None, mdn_url=None):
         self.message_id = None
-        # self.headers = {}
         self.payload = None
         self.mdn_mode = mdn_mode
         self.digest_alg = digest_alg
@@ -518,8 +513,7 @@ class MDN(object):
 
     @property
     def content(self):
-        """Function returns the body of the email message or
-        multipart object"""
+        """Function returns the body of the mdn message as a byte string"""
 
         if self.payload:
             message_bytes = mime_to_bytes(
@@ -547,6 +541,17 @@ class MDN(object):
         return message_header.encode('utf-8')
 
     def build(self, message, status, detailed_status=None):
+        """Function builds and signs an AS2 MDN message.
+
+        :param message: The received AS2 message for which this is an MDN.
+
+        :param status: The status of processing of the received AS2 message.
+
+        :param detailed_status:
+            The optional detailed status of processing of the received AS2 
+            message. Used to give additional error info (default "None")
+            
+        """
 
         # Generate message id using UUID 1 as it uses both hostname and time
         self.message_id = str(uuid1())
@@ -579,7 +584,7 @@ class MDN(object):
         self.payload = MIMEMultipart(
             'report', report_type='disposition-notification')
 
-        # Create and attache the MDN Text Message
+        # Create and attach the MDN Text Message
         mdn_text = email_message.Message()
         mdn_text.set_payload('%s\n' % confirmation_text)
         mdn_text.set_type('text/plain')
@@ -649,6 +654,24 @@ class MDN(object):
             self.payload.set_boundary(make_mime_boundary())
 
     def parse(self, raw_content, find_message_cb):
+        """Function parses the RAW AS2 MDN, verifies it and extracts the
+        processing status of the orginal AS2 message.
+
+        :param raw_content:
+            A byte string of the received HTTP headers followed by the body.
+
+        :param find_message_cb:
+            A callback the must returns the original Message Object. The
+            original message-id and original recipient AS2 ID are passed 
+            as arguments to it.
+
+        :returns:
+            A two element tuple containing (status, detailed_status). The
+            status is a string indicating the status of the transaction. The
+            optional detailed_status gives additional information about the 
+            processing status.
+        """
+
         status, detailed_status = None, None
         self.payload = parse_mime(raw_content)
         orig_message_id, orig_recipient = self.detect_mdn()
@@ -672,7 +695,8 @@ class MDN(object):
 
         if self.payload.get_content_type() == 'multipart/signed':
             signature = None
-            message_boundary = ('--' + self.payload.get_boundary()).encode('utf-8')
+            message_boundary = (
+                '--' + self.payload.get_boundary()).encode('utf-8')
             for part in self.payload.walk():
                 if part.get_content_type() == 'application/pkcs7-signature':
                     signature = part.get_payload(decode=True)
@@ -711,6 +735,16 @@ class MDN(object):
         return status, detailed_status
 
     def detect_mdn(self):
+        """ Function checks if the received raw message is an AS2 MDN or not.
+        
+        :raises MDNNotFound: If the received payload is not an MDN then this 
+        exception is raised.
+        
+        :return:
+            A two element tuple containing (message_id, message_recipient). The
+            message_id is the original AS2 message id and the message_recipient
+            is the original AS2 message recipient.
+        """
         mdn_message = None
         if self.payload.get_content_type() == 'multipart/report':
             mdn_message = self.payload
