@@ -2,8 +2,6 @@ from __future__ import unicode_literals, absolute_import, print_function
 from . import PYAS2TestCase, as2
 import os
 
-TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testdata')
-
 
 class TestAdvanced(PYAS2TestCase):
 
@@ -54,8 +52,144 @@ class TestAdvanced(PYAS2TestCase):
         self.assertTrue(in_message.encrypt)
         self.assertEqual(out_message.mic, in_message.mic)
 
+    def test_partner_not_found(self):
+        """ Test case where partner and organization is not found """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.sign = True
+        self.partner.encrypt = True
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = \
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_none
+        )
+
+        out_mdn = as2.MDN()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+        self.assertEqual(status, 'processed/Error')
+        self.assertEqual(detailed_status, 'unknown-trading-partner')
+
+        # Parse again but this time make without organization
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_none,
+            find_partner_cb=self.find_partner
+        )
+
+        out_mdn = as2.MDN()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+        self.assertEqual(status, 'processed/Error')
+        self.assertEqual(detailed_status, 'unknown-trading-partner')
+
+    def test_insufficient_security(self):
+        """ Test case where message security is not as per the configuration """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        self.partner.sign = True
+        self.partner.encrypt = True
+        raw_out_message = \
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
+
+        out_mdn = as2.MDN()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+        self.assertEqual(status, 'processed/Error')
+        self.assertEqual(detailed_status, 'insufficient-message-security')
+
+    def test_failed_decryption(self):
+        """ Test case where message decryption has failed """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.encrypt = True
+        self.partner.encrypt_cert = self.partner.load_cert(
+            self.mecas2_public_key)
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = \
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        in_message = as2.Message()
+        _, exec_info, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
+
+        out_mdn = as2.MDN()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+        self.assertEqual(status, 'processed/Error')
+        self.assertEqual(detailed_status, 'decryption-failed')
+
+    def test_failed_signature(self):
+        """ Test case where signature verification has failed """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.sign = True
+        self.partner.verify_cert = self.partner.load_cert(
+            self.mecas2_public_key)
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = \
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        in_message = as2.Message()
+        _, exec_info, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
+
+        out_mdn = as2.MDN()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+        self.assertEqual(status, 'processed/Error')
+        self.assertEqual(detailed_status, 'authentication-failed')
+
     def find_org(self, headers):
         return self.org
 
     def find_partner(self, headers):
         return self.partner
+
+    def find_none(self, as2_id):
+        return None
+
+    def find_message(self, message_id, message_recipient):
+        return self.out_message

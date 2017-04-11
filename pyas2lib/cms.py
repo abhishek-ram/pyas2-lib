@@ -64,7 +64,7 @@ def decompress_message(compressed_data):
         if cms_content['content_type'].native == 'compressed_data':
             decompressed_content = cms_content['content'].decompressed
         else:
-            raise ValueError('Compressed data not found in ASN.1 ')
+            raise DecompressionError('Compressed data not found in ASN.1 ')
 
     except Exception as e:
         raise DecompressionError(
@@ -155,18 +155,28 @@ def decrypt_message(encrypted_data, decryption_key):
         encrypted_key = recipient_info['encrypted_key'].native
 
         if key_enc_alg == 'rsa':
-            key = asymmetric.rsa_pkcs1v15_decrypt(
-                decryption_key[0], encrypted_key)
+            try:
+                key = asymmetric.rsa_pkcs1v15_decrypt(
+                    decryption_key[0], encrypted_key)
+            except Exception:
+                raise DecryptionError('Failed to decrypt the payload: '
+                                      'Could not extract decryption key.')
             alg = cms_content['content']['encrypted_content_info'][
                 'content_encryption_algorithm']
 
             encapsulated_data = cms_content['content'][
                 'encrypted_content_info']['encrypted_content'].native
 
-            if alg.encryption_cipher == 'tripledes':
-                cipher = 'tripledes_192_cbc'
-                decrypted_content = symmetric.tripledes_cbc_pkcs5_decrypt(
-                    key, encapsulated_data, alg.encryption_iv)
+            try:
+                if alg.encryption_cipher == 'tripledes':
+                    cipher = 'tripledes_192_cbc'
+                    decrypted_content = symmetric.tripledes_cbc_pkcs5_decrypt(
+                        key, encapsulated_data, alg.encryption_iv)
+                else:
+                    raise AS2Exception('Unsupported Encryption Algorithm')
+            except Exception as e:
+                raise DecryptionError(
+                    'Failed to decrypt the payload: {}'.format(e))
 
     return cipher, decrypted_content
 
@@ -345,17 +355,22 @@ def verify_message(data_to_verify, signature, verify_cert):
                 calc_message_digest = digest_func.digest()
 
                 if message_digest != calc_message_digest:
-                    raise DigestError('Message Digest does not match.')
+                    raise IntegrityError('Failed to verify message signature: '
+                                         'Message Digest does not match.')
 
                 signed_data = signed_attributes.untag().dump()
 
-            if sig_alg == 'rsassa_pkcs1v15':
-                asymmetric.rsa_pkcs1v15_verify(
-                    verify_cert, sig, signed_data, digest_alg)
-            elif sig_alg == 'rsassa_pss':
-                asymmetric.rsa_pss_verify(
-                    verify_cert, sig, signed_data, digest_alg)
-            else:
-                raise Exception('Unsupported Signature Algorithm')
+            try:
+                if sig_alg == 'rsassa_pkcs1v15':
+                    asymmetric.rsa_pkcs1v15_verify(
+                        verify_cert, sig, signed_data, digest_alg)
+                elif sig_alg == 'rsassa_pss':
+                    asymmetric.rsa_pss_verify(
+                        verify_cert, sig, signed_data, digest_alg)
+                else:
+                    raise AS2Exception('Unsupported Signature Algorithm')
+            except Exception as e:
+                raise IntegrityError(
+                    'Failed to verify message signature: {}'.format(e))
 
     return digest_alg

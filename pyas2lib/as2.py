@@ -12,8 +12,8 @@ from email import encoders
 from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
 from oscrypto.errors import SignatureError
-from uuid import uuid1
-from copy import copy
+from asn1crypto import pem
+from certvalidator import CertificateValidator, ValidationContext
 import logging
 import hashlib
 import binascii
@@ -61,8 +61,6 @@ class Organization(object):
         :param mdn_url: The URL where the receiver is expected to post
             asynchronous MDNs.
         """
-
-        # TODO: Need to give option to include CA certificates
         if sign_key:
             self.sign_key = asymmetric.load_pkcs12(
                 sign_key, byte_cls(sign_key_pass))
@@ -70,8 +68,6 @@ class Organization(object):
             self.sign_key = None
         self.decrypt_key = asymmetric.load_pkcs12(
             decrypt_key, byte_cls(decrypt_key_pass)) if decrypt_key else None
-
-        # TODO: Need to verify the certificate here.
 
         self.as2_id = as2_id
         self.mdn_url = mdn_url
@@ -82,9 +78,10 @@ class Partner(object):
     """Class represents an AS2 partner and defines the certificates and
     settings to be used when sending and receiving messages."""
 
-    def __init__(self, as2_id, verify_cert=None, encrypt_cert=None,
-                 compress=False, sign=False, digest_alg='sha256',
-                 encrypt=False, enc_alg='tripledes_192_cbc', mdn_mode=None,
+    def __init__(self, as2_id, verify_cert=None, verify_cert_ca=None,
+                 encrypt_cert=None, encrypt_cert_ca=None, compress=False,
+                 sign=False, digest_alg='sha256', encrypt=False,
+                 enc_alg='tripledes_192_cbc', mdn_mode=None,
                  mdn_digest_alg=None, mdn_confirm_text=MDN_CONFIRM_TEXT):
         """
         :param as2_id: The unique AS2 name for this partner.
@@ -147,14 +144,6 @@ class Partner(object):
                 'Unsupported MDN Digest Algorithm {}, must be '
                 'one of {}'.format(mdn_digest_alg, DIGEST_ALGORITHMS))
 
-        # TODO: Need to give option to include CA certificates
-
-        self.verify_cert = asymmetric.load_certificate(
-            verify_cert) if verify_cert else None
-        self.encrypt_cert = asymmetric.load_certificate(
-            encrypt_cert) if encrypt_cert else None
-
-        # TODO: Need to verify the certificate here.
         self.as2_id = as2_id
         self.compress = compress
         self.sign = sign
@@ -164,6 +153,22 @@ class Partner(object):
         self.mdn_mode = mdn_mode
         self.mdn_digest_alg = mdn_digest_alg
         self.mdn_confirm_text = mdn_confirm_text
+        self.verify_cert = self.load_cert(
+            verify_cert, verify_cert_ca) if verify_cert else None
+        self.encrypt_cert = self.load_cert(
+            encrypt_cert, encrypt_cert) if encrypt_cert else None
+
+    @staticmethod
+    def load_cert(cert, cert_ca=None):
+        # Open the certificate for validation
+        trust_roots = [pem.unarmor(cert)[2]]
+        if cert_ca:
+            for _, _, der_bytes in pem.unarmor(cert_ca, multiple=True):
+                trust_roots.append(der_bytes)
+        context = ValidationContext(extra_trust_roots=trust_roots)
+        validator = CertificateValidator(cert, validation_context=context)
+        cert_path = validator.validate_usage(set([]))
+        return asymmetric.load_certificate(cert_path.first)
 
 
 class Message(object):
@@ -269,7 +274,7 @@ class Message(object):
                 'for the receiver.')
 
         # Generate message id using UUID 1 as it uses both hostname and time
-        self.message_id = str(uuid1())
+        self.message_id = email_utils.make_msgid().lstrip('<').rstrip('>')
 
         # Set up the message headers
         as2_headers = {
@@ -290,8 +295,6 @@ class Message(object):
         self.payload.set_payload(data)
         self.payload.set_type(content_type)
         encoders.encode_7or8bit(self.payload)
-
-        # self.payload.add_header('Content-Transfer-Encoding', '8bit')
 
         if filename:
             self.payload.add_header(
@@ -402,7 +405,7 @@ class Message(object):
         """
 
         # Parse the raw MIME message and extract its content and headers
-        status, exception, mdn = 'processed', None, None
+        status, detailed_status, exception, mdn = 'processed', None, None, None
         self.payload = parse_mime(raw_content)
         as2_headers = {}
         for k, v in self.payload.items():
@@ -411,92 +414,110 @@ class Message(object):
                 self.message_id = v.lstrip('<').rstrip('>')
             as2_headers[k] = v
 
-        # Get the organization and partner for this transmission
-        self.receiver = find_org_cb(unquote_as2name(as2_headers['as2-to']))
-        self.sender = find_partner_cb(unquote_as2name(as2_headers['as2-from']))
+        try:
+            # Get the organization and partner for this transmission
+            org_id = unquote_as2name(as2_headers['as2-to'])
+            self.receiver = find_org_cb(org_id)
+            if not self.receiver:
+                raise PartnerNotFound(
+                    'Unknown AS2 organization with id {}'.format(org_id))
 
-        if self.sender.encrypt and \
-                self.payload.get_content_type() != 'application/pkcs7-mime':
-            raise InsufficientSecurityError(
-                'Incoming messages from partner {} are defined to be encrypted '
-                'but encrypted message not found.'.format(self.receiver.as2_id))
+            partner_id = unquote_as2name(as2_headers['as2-from'])
+            self.sender = find_partner_cb(partner_id)
+            if not self.sender:
+                raise PartnerNotFound(
+                    'Unknown AS2 partner with id {}'.format(partner_id))
 
-        if self.payload.get_content_type() == 'application/pkcs7-mime' \
-                and self.payload.get_param('smime-type') == 'enveloped-data':
-            self.encrypt = True
-            self.enc_alg, decrypted_content = decrypt_message(
-                self.payload.get_payload(decode=True),
-                self.receiver.decrypt_key
-            )
-            raw_content = decrypted_content
-            self.payload = parse_mime(decrypted_content)
+            if self.sender.encrypt and \
+                    self.payload.get_content_type() != 'application/pkcs7-mime':
+                raise InsufficientSecurityError(
+                    'Incoming messages from partner {} are must be encrypted'
+                    ' but encrypted message not found.'.format(partner_id))
 
-            if self.payload.get_content_type() == 'text/plain':
-                self.payload = email_message.Message()
-                self.payload.set_payload(decrypted_content)
-                self.payload.set_type('application/edi-consent')
+            if self.payload.get_content_type() == 'application/pkcs7-mime' \
+                    and self.payload.get_param('smime-type') == 'enveloped-data':
+                self.encrypt = True
+                self.enc_alg, decrypted_content = decrypt_message(
+                    self.payload.get_payload(decode=True),
+                    self.receiver.decrypt_key
+                )
+                raw_content = decrypted_content
+                self.payload = parse_mime(decrypted_content)
 
-        if self.sender.sign and \
-                self.payload.get_content_type() != 'multipart/signed':
-            raise InsufficientSecurityError(
-                'Incoming messages from partner {} are defined to be signed '
-                'but signed message not found.'.format(self.receiver.as2_id))
+                if self.payload.get_content_type() == 'text/plain':
+                    self.payload = email_message.Message()
+                    self.payload.set_payload(decrypted_content)
+                    self.payload.set_type('application/edi-consent')
 
-        if self.payload.get_content_type() == 'multipart/signed':
-            self.sign = True
-            signature = None
-            message_boundary = ('--' + self.payload.get_boundary()).encode('utf-8')
-            for part in self.payload.walk():
-                if part.get_content_type() == "application/pkcs7-signature":
-                    signature = part.get_payload(decode=True)
-                else:
-                    self.payload = part
+            if self.sender.sign and \
+                    self.payload.get_content_type() != 'multipart/signed':
+                raise InsufficientSecurityError(
+                    'Incoming messages from partner {} are must be signed '
+                    'but signed message not found.'.format(partner_id))
 
-            # Verify the message, first using raw message and if it fails
-            # then convert to canonical form and try again
-            mic_content = canonicalize(self.payload)
-            try:
-                self.digest_alg = verify_message(
-                    mic_content, signature, self.sender.verify_cert)
-            except (SignatureError, DigestError):
-                mic_content = raw_content.split(message_boundary)[1]
-                self.digest_alg = verify_message(
-                    mic_content, signature, self.sender.verify_cert)
+            if self.payload.get_content_type() == 'multipart/signed':
+                self.sign = True
+                signature = None
+                message_boundary = (
+                    '--' + self.payload.get_boundary()).encode('utf-8')
+                for part in self.payload.walk():
+                    if part.get_content_type() == "application/pkcs7-signature":
+                        signature = part.get_payload(decode=True)
+                    else:
+                        self.payload = part
 
-            # Calculate the MIC Hash of the message to be verified
-            digest_func = hashlib.new(self.digest_alg)
-            digest_func.update(mic_content)
-            self.mic = binascii.b2a_base64(digest_func.digest()).strip()
+                # Verify the message, first using raw message and if it fails
+                # then convert to canonical form and try again
+                mic_content = canonicalize(self.payload)
+                try:
+                    self.digest_alg = verify_message(
+                        mic_content, signature, self.sender.verify_cert)
+                except IntegrityError:
+                    mic_content = raw_content.split(message_boundary)[1]
+                    self.digest_alg = verify_message(
+                        mic_content, signature, self.sender.verify_cert)
 
-        if self.payload.get_content_type() == 'application/pkcs7-mime' \
-                and self.payload.get_param('smime-type') == 'compressed-data':
-            self.compress = True
-            decompressed_data = decompress_message(
-                self.payload.get_payload(decode=True))
-            self.payload = parse_mime(decompressed_data)
+                # Calculate the MIC Hash of the message to be verified
+                digest_func = hashlib.new(self.digest_alg)
+                digest_func.update(mic_content)
+                self.mic = binascii.b2a_base64(digest_func.digest()).strip()
 
-        # Update the payload headers with the original headers
-        for k, v in as2_headers.items():
-            if self.payload.get(k):
-                self.payload.replace_header(k, v)
-            else:
+            if self.payload.get_content_type() == 'application/pkcs7-mime' \
+                    and self.payload.get_param('smime-type') == 'compressed-data':
+                self.compress = True
+                decompressed_data = decompress_message(
+                    self.payload.get_payload(decode=True))
+                self.payload = parse_mime(decompressed_data)
+
+        except Exception as e:
+            status = getattr(e, 'disposition_type', 'processed/Error')
+            detailed_status = getattr(
+                e, 'disposition_modifier', 'unexpected-processing-error')
+            exception = e
+        finally:
+            # Update the payload headers with the original headers
+            for k, v in as2_headers.items():
+                if self.payload.get(k):
+                    del self.payload[k]
                 self.payload.add_header(k, v)
 
-        if as2_headers.get('disposition-notification-to'):
-            mdn_mode = SYNCHRONOUS_MDN
+            if as2_headers.get('disposition-notification-to'):
+                mdn_mode = SYNCHRONOUS_MDN
 
-            mdn_url = as2_headers.get('receipt-delivery-option')
-            if mdn_url:
-                mdn_mode = ASYNCHRONOUS_MDN
+                mdn_url = as2_headers.get('receipt-delivery-option')
+                if mdn_url:
+                    mdn_mode = ASYNCHRONOUS_MDN
 
-            digest_alg = as2_headers.get('disposition-notification-options')
-            if digest_alg:
-                digest_alg = digest_alg.split(';')[-1].split(',')[-1].strip()
+                digest_alg = as2_headers.get('disposition-notification-options')
+                if digest_alg:
+                    digest_alg = digest_alg.split(';')[-1].split(',')[-1].strip()
+                mdn = MDN(
+                    mdn_mode=mdn_mode, mdn_url=mdn_url, digest_alg=digest_alg)
+                mdn.build(message=self,
+                          status=status,
+                          detailed_status=detailed_status)
 
-            mdn = MDN(mdn_mode=mdn_mode, mdn_url=mdn_url, digest_alg=digest_alg)
-            mdn.build(message=self, status=status)
-
-        return status, exception, mdn
+            return status, exception, mdn
 
 
 class MDN(object):
@@ -554,7 +575,7 @@ class MDN(object):
         """
 
         # Generate message id using UUID 1 as it uses both hostname and time
-        self.message_id = str(uuid1())
+        self.message_id = email_utils.make_msgid().lstrip('<').rstrip('>')
 
         # Set up the message headers
         mdn_headers = {
@@ -709,7 +730,7 @@ class MDN(object):
             try:
                 self.digest_alg = verify_message(
                     mic_content, signature, orig_message.receiver.verify_cert)
-            except (SignatureError, DigestError):
+            except IntegrityError:
                 mic_content = canonicalize(self.payload)
                 self.digest_alg = verify_message(
                     mic_content, signature, orig_message.receiver.verify_cert)
@@ -729,7 +750,7 @@ class MDN(object):
                         status = 'processed/warning'
                         detailed_status = 'Message Integrity check failed.'
                 else:
-                    detailed_status = ' '.join(mdn_status[1:])
+                    detailed_status = ' '.join(mdn_status[1:]).strip()
 
         return status, detailed_status
 

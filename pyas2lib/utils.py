@@ -17,13 +17,6 @@ def quote_as2name(unquoted_name):
         return unquoted_name
 
 
-def mime_to_string(msg, header_len):
-    fp = StringIO()
-    g = Generator(fp, maxheaderlen=header_len)
-    g.flatten(msg)
-    return fp.getvalue()
-
-
 def mime_to_bytes(msg, header_len):
     fp = BytesIO()
     g = BytesGenerator(fp, maxheaderlen=header_len)

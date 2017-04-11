@@ -124,7 +124,7 @@ class TestMecAS2(PYAS2TestCase):
                 fp.read(), find_message_cb=self.find_message)
 
         self.assertEqual(status, 'processed/error')
-        self.assertEqual(detailed_status, ' authentication-failed')
+        self.assertEqual(detailed_status, 'authentication-failed')
 
     def test_signed_mdn(self):
         """ Test Signed MDN received from Mendelson AS2"""

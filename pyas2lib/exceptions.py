@@ -1,9 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
 __all__ = [
-    'ImproperlyConfigured', 'AS2Exception', 'AuthenticationError',
-    'DecompressionError', 'DecryptionError', 'InsufficientSecurityError',
-    'DigestError', 'IntegrityError', 'UnexpectedError', 'MDNNotFound'
+    'ImproperlyConfigured', 'AS2Exception', 'DecompressionError',
+    'DecryptionError', 'InsufficientSecurityError', 'IntegrityError',
+    'UnexpectedError', 'MDNNotFound', 'PartnerNotFound', 'DuplicateDocument'
 ]
 
 
@@ -26,14 +26,33 @@ class AS2Exception(Exception):
         self.disposition_modifier = disposition_modifier
 
 
-class AuthenticationError(AS2Exception):
-    """Raised when the partner sending the message could not be found
+class PartnerNotFound(AS2Exception):
+    """Raised when the partner/organization for the message could not be found
     in the system"""
 
     def __init__(self, *args, **kwargs):
         super(AS2Exception, self).__init__(*args, **kwargs)
         self.disposition_type = 'processed/Error'
-        self.disposition_modifier = 'authentication-failed'
+        self.disposition_modifier = 'unknown-trading-partner'
+
+
+class DuplicateDocument(AS2Exception):
+    """Raised when a message with a duplicate message ID has been received"""
+
+    def __init__(self, *args, **kwargs):
+        super(AS2Exception, self).__init__(*args, **kwargs)
+        self.disposition_type = 'processed/Warning'
+        self.disposition_modifier = 'duplicate-document'
+
+
+class InsufficientSecurityError(AS2Exception):
+    """Exception raised when the message security is not as per the
+    settings for the partner."""
+
+    def __init__(self, *args, **kwargs):
+        super(AS2Exception, self).__init__(*args, **kwargs)
+        self.disposition_type = 'processed/Error'
+        self.disposition_modifier = 'insufficient-message-security'
 
 
 class DecompressionError(AS2Exception):
@@ -52,23 +71,6 @@ class DecryptionError(AS2Exception):
         super(AS2Exception, self).__init__(*args, **kwargs)
         self.disposition_type = 'processed/Error'
         self.disposition_modifier = 'decryption-failed'
-
-
-class InsufficientSecurityError(AS2Exception):
-    """Exception raised when the message security is not as per the
-    settings for the partner."""
-
-    def __init__(self, *args, **kwargs):
-        super(AS2Exception, self).__init__(*args, **kwargs)
-        self.disposition_type = 'processed/Error'
-        self.disposition_modifier = 'insufficient-message-security'
-
-
-class DigestError(AS2Exception):
-    """
-    Raised when the message digest in the CMS signature does not match the
-    calculated message digest.
-    """
 
 
 class IntegrityError(AS2Exception):
