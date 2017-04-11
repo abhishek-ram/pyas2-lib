@@ -2,13 +2,10 @@ from setuptools import setup, find_packages
 from pyas2lib import __versionstr__
 from os.path import join, dirname
 
-f = open(join(dirname(__file__), 'README.md'))
-long_description = f.read().strip()
-f.close()
-
 install_requires = [
     'asn1crypto==0.22.0',
-    'oscrypto==0.18.0'
+    'oscrypto==0.18.0',
+    'certvalidator==0.11.1'
 ]
 
 tests_require = [
