@@ -1,5 +1,5 @@
 from __future__ import absolute_import, unicode_literals
-from .compat import StringIO, BytesIO, Generator, BytesGenerator, is_py2, _ver
+from .compat import BytesIO, BytesGenerator, is_py2, _ver
 import email
 import re
 import sys
@@ -29,13 +29,7 @@ def canonicalize(message):
     if message.is_multipart() \
             or message.get('Content-Transfer-Encoding') != 'binary':
 
-        flattened_message = mime_to_bytes(message, 0)
-
-        # Hack to fix email generator bug in python version <=2.7.6
-        if message.is_multipart() and is_py2 and _ver[2] <= 6:
-            flattened_message += b'\n'
-
-        return flattened_message.replace(
+        return mime_to_bytes(message, 0).replace(
             b'\r\n', b'\n').replace(b'\r', b'\n').replace(b'\n', b'\r\n')
     else:
         message_header = ''
@@ -71,7 +65,7 @@ def make_mime_boundary(text=None):
 def extract_first_part(message, boundary):
     """ Function to extract the first part of a multipart message"""
     first_message = message.split(boundary)[1].lstrip()
-    if first_message.endswith('\r\n'):
+    if first_message.endswith(b'\r\n'):
         first_message = first_message[:-2]
     else:
         first_message = first_message[:-1]
