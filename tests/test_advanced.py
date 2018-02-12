@@ -195,7 +195,7 @@ class TestAdvanced(PYAS2TestCase):
                 )
             except as2.AS2Exception as e:
                 self.assertIn(
-                    'unable to get local issuer certificate', e.message)
+                    'unable to get local issuer certificate', str(e))
 
         # Test with an expired certificate
         cert_path = os.path.join(self.TEST_DIR, 'verify_cert_test2.cer')
@@ -207,7 +207,7 @@ class TestAdvanced(PYAS2TestCase):
                 )
             except as2.AS2Exception as e:
                 self.assertIn(
-                    'certificate has expired', e.message)
+                    'certificate has expired', str(e))
 
         # Test with a chain certificate
         cert_path = os.path.join(self.TEST_DIR, 'verify_cert_test3.pem')
@@ -219,7 +219,7 @@ class TestAdvanced(PYAS2TestCase):
                 )
             except as2.AS2Exception as e:
                 self.assertIn(
-                    'unable to get local issuer certificate', e.message)
+                    'unable to get local issuer certificate', str(e))
 
         # Test chain certificate with the ca
         cert_ca_path = os.path.join(self.TEST_DIR, 'verify_cert_test3.ca')
@@ -244,7 +244,7 @@ class TestAdvanced(PYAS2TestCase):
                 as2.Organization(
                     as2_id='some_org',
                     sign_key=cert_file.read(),
-                    sign_key_pass='test'
+                    sign_key_pass=b'test'
                 )
             except as2.AS2Exception as e:
                 self.fail('Failed to load p12 private key: %s' % e)
@@ -256,7 +256,7 @@ class TestAdvanced(PYAS2TestCase):
                 as2.Organization(
                     as2_id='some_org',
                     sign_key=cert_file.read(),
-                    sign_key_pass='test'
+                    sign_key_pass=b'test'
                 )
             except as2.AS2Exception as e:
                 self.fail('Failed to load pem private key: %s' % e)
