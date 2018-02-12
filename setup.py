@@ -5,7 +5,7 @@ from os.path import join, dirname
 install_requires = [
     'asn1crypto==0.24.0',
     'oscrypto==0.19.1',
-    'certvalidator==0.11.1'
+    'pyOpenSSL==17.5.0'
 ]
 
 tests_require = [
