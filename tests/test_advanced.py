@@ -27,8 +27,8 @@ class TestAdvanced(PYAS2TestCase):
         self.partner.encrypt = True
         self.partner.compress = True
         out_message = as2.Message(self.org, self.partner)
-        with open(os.path.join(
-                self.TEST_DIR, 'payload.binary'), 'rb') as bin_file:
+        test_message_path = os.path.join(self.TEST_DIR, 'payload.binary')
+        with open(test_message_path, 'rb') as bin_file:
             original_message = bin_file.read()
             out_message.build(
                 original_message,
@@ -48,8 +48,8 @@ class TestAdvanced(PYAS2TestCase):
         # Compare the mic contents of the input and output messages
         # self.assertEqual(original_message,
         #                  in_message.payload.get_payload(decode=True))
-        self.assertTrue(in_message.sign)
-        self.assertTrue(in_message.encrypt)
+        self.assertTrue(in_message.signed)
+        self.assertTrue(in_message.encrypted)
         self.assertEqual(out_message.mic, in_message.mic)
 
     def test_partner_not_found(self):
@@ -130,7 +130,7 @@ class TestAdvanced(PYAS2TestCase):
         # Build an As2 message to be transmitted to partner
         self.partner.encrypt = True
         self.partner.encrypt_cert = self.partner.load_cert(
-            self.mecas2_public_key)
+            self.mecas2_public_key, validate_certs=False)
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
         self.out_message = as2.Message(self.org, self.partner)
         self.out_message.build(self.test_data)
@@ -159,7 +159,7 @@ class TestAdvanced(PYAS2TestCase):
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
         self.partner.verify_cert = self.partner.load_cert(
-            self.mecas2_public_key)
+            self.mecas2_public_key, validate_certs=False)
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
         self.out_message = as2.Message(self.org, self.partner)
         self.out_message.build(self.test_data)
@@ -181,6 +181,85 @@ class TestAdvanced(PYAS2TestCase):
         )
         self.assertEqual(status, 'processed/Error')
         self.assertEqual(detailed_status, 'authentication-failed')
+
+    def test_verify_certificate(self):
+        """ Test case where we have try to load an expired cert  """
+
+        # First test with a certificate with invalid root
+        cert_path = os.path.join(self.TEST_DIR, 'verify_cert_test1.pem')
+        with open(cert_path, 'rb') as cert_file:
+            try:
+                as2.Partner(
+                    as2_id='some_partner',
+                    verify_cert=cert_file.read()
+                )
+            except as2.AS2Exception as e:
+                self.assertIn(
+                    'unable to get local issuer certificate', e.message)
+
+        # Test with an expired certificate
+        cert_path = os.path.join(self.TEST_DIR, 'verify_cert_test2.cer')
+        with open(cert_path, 'rb') as cert_file:
+            try:
+                as2.Partner(
+                    as2_id='some_partner',
+                    verify_cert=cert_file.read()
+                )
+            except as2.AS2Exception as e:
+                self.assertIn(
+                    'certificate has expired', e.message)
+
+        # Test with a chain certificate
+        cert_path = os.path.join(self.TEST_DIR, 'verify_cert_test3.pem')
+        with open(cert_path, 'rb') as cert_file:
+            try:
+                as2.Partner(
+                    as2_id='some_partner',
+                    verify_cert=cert_file.read()
+                )
+            except as2.AS2Exception as e:
+                self.assertIn(
+                    'unable to get local issuer certificate', e.message)
+
+        # Test chain certificate with the ca
+        cert_ca_path = os.path.join(self.TEST_DIR, 'verify_cert_test3.ca')
+        with open(cert_path, 'rb') as cert_file:
+            with open(cert_ca_path, 'rb') as cert_ca_file:
+                try:
+                    as2.Partner(
+                        as2_id='some_partner',
+                        verify_cert=cert_file.read(),
+                        verify_cert_ca=cert_ca_file.read()
+                    )
+                except as2.AS2Exception as e:
+                    self.fail('Failed to load chain certificate: %s' % e)
+
+    def test_load_private_key(self):
+        """ Test case where we have try to load keys in different formats """
+
+        # First test with a pkcs12 key file
+        cert_path = os.path.join(self.TEST_DIR, 'cert_test.p12')
+        with open(cert_path, 'rb') as cert_file:
+            try:
+                as2.Organization(
+                    as2_id='some_org',
+                    sign_key=cert_file.read(),
+                    sign_key_pass='test'
+                )
+            except as2.AS2Exception as e:
+                self.fail('Failed to load p12 private key: %s' % e)
+
+        # Now test with a pem encoded key file
+        cert_path = os.path.join(self.TEST_DIR, 'cert_test.pem')
+        with open(cert_path, 'rb') as cert_file:
+            try:
+                as2.Organization(
+                    as2_id='some_org',
+                    sign_key=cert_file.read(),
+                    sign_key_pass='test'
+                )
+            except as2.AS2Exception as e:
+                self.fail('Failed to load pem private key: %s' % e)
 
     def find_org(self, headers):
         return self.org

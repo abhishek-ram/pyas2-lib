@@ -158,7 +158,7 @@ def decrypt_message(encrypted_data, decryption_key):
             try:
                 key = asymmetric.rsa_pkcs1v15_decrypt(
                     decryption_key[0], encrypted_key)
-            except Exception:
+            except Exception as e:
                 raise DecryptionError('Failed to decrypt the payload: '
                                       'Could not extract decryption key.')
             alg = cms_content['content']['encrypted_content_info'][

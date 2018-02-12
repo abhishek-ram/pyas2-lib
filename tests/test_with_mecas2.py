@@ -16,7 +16,8 @@ class TestMecAS2(PYAS2TestCase):
         self.partner = as2.Partner(
             as2_id='mecas2',
             verify_cert=self.mecas2_public_key,
-            encrypt_cert=self.mecas2_public_key
+            encrypt_cert=self.mecas2_public_key,
+            validate_certs=False
         )
 
     def test_compressed_message(self):
@@ -33,7 +34,7 @@ class TestMecAS2(PYAS2TestCase):
             )
 
         # Compare the mic contents of the input and output messages
-        self.assertTrue(in_message.compress)
+        self.assertTrue(in_message.compressed)
         self.assertEqual(self.test_data, in_message.content)
 
     def test_encrypted_message(self):
@@ -50,7 +51,7 @@ class TestMecAS2(PYAS2TestCase):
             )
 
         # Compare the mic contents of the input and output messages
-        self.assertTrue(in_message.encrypt)
+        self.assertTrue(in_message.encrypted)
         self.assertEqual(in_message.enc_alg, 'tripledes_192_cbc')
         self.assertEqual(self.test_data, in_message.content)
 
@@ -67,7 +68,7 @@ class TestMecAS2(PYAS2TestCase):
             )
 
         # Compare the mic contents of the input and output messages
-        self.assertTrue(in_message.sign)
+        self.assertTrue(in_message.signed)
         self.assertEqual(in_message.digest_alg, 'sha1')
         self.assertEqual(self.test_data, in_message.content)
 
@@ -86,9 +87,9 @@ class TestMecAS2(PYAS2TestCase):
             )
 
         # Compare the mic contents of the input and output messages
-        self.assertTrue(in_message.encrypt)
+        self.assertTrue(in_message.encrypted)
         self.assertEqual(in_message.enc_alg, 'tripledes_192_cbc')
-        self.assertTrue(in_message.sign)
+        self.assertTrue(in_message.signed)
         self.assertEqual(in_message.digest_alg, 'sha1')
         self.assertEqual(self.test_data, in_message.content)
 
@@ -107,9 +108,9 @@ class TestMecAS2(PYAS2TestCase):
             )
 
         # Compare the mic contents of the input and output messages
-        self.assertTrue(in_message.encrypt)
+        self.assertTrue(in_message.encrypted)
         self.assertEqual(in_message.enc_alg, 'tripledes_192_cbc')
-        self.assertTrue(in_message.sign)
+        self.assertTrue(in_message.signed)
         self.assertEqual(in_message.digest_alg, 'sha1')
         self.assertEqual(self.test_data, in_message.content)
 

@@ -101,7 +101,7 @@ class TestBasic(PYAS2TestCase):
         # Compare the mic contents of the input and output messages
         self.assertEqual(
             self.test_data.replace(b'\n', b'\r\n'), in_message.content)
-        self.assertTrue(in_message.sign)
+        self.assertTrue(in_message.signed)
         self.assertEqual(out_message.mic, in_message.mic)
 
     def test_encrypted_signed_message(self):
@@ -125,8 +125,8 @@ class TestBasic(PYAS2TestCase):
         # Compare the mic contents of the input and output messages
         self.assertEqual(
             self.test_data.replace(b'\n', b'\r\n'), in_message.content)
-        self.assertTrue(in_message.sign)
-        self.assertTrue(in_message.encrypt)
+        self.assertTrue(in_message.signed)
+        self.assertTrue(in_message.encrypted)
         self.assertEqual(out_message.mic, in_message.mic)
 
     def test_encrypted_signed_compressed_message(self):
@@ -151,9 +151,9 @@ class TestBasic(PYAS2TestCase):
         # Compare the mic contents of the input and output messages
         self.assertEqual(
             self.test_data.replace(b'\n', b'\r\n'), in_message.content)
-        self.assertTrue(in_message.sign)
-        self.assertTrue(in_message.encrypt)
-        self.assertTrue(in_message.compress)
+        self.assertTrue(in_message.signed)
+        self.assertTrue(in_message.encrypted)
+        self.assertTrue(in_message.compressed)
         self.assertEqual(out_message.mic, in_message.mic)
 
     def find_org(self, as2_id):

@@ -4,16 +4,14 @@ from .cms import compress_message, decompress_message, decrypt_message, \
     encrypt_message, verify_message, sign_message
 from .cms import DIGEST_ALGORITHMS, ENCRYPTION_ALGORITHMS
 from .utils import canonicalize, mime_to_bytes, quote_as2name, unquote_as2name,\
-    make_mime_boundary, extract_first_part
+    make_mime_boundary, extract_first_part, pem_to_der, \
+    verify_certificate_chain
 from .exceptions import *
 from email import utils as email_utils
 from email import message as email_message
 from email import encoders
 from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
-from oscrypto.errors import SignatureError
-from asn1crypto import pem
-from certvalidator import CertificateValidator, ValidationContext
 import logging
 import hashlib
 import binascii
@@ -21,7 +19,10 @@ import binascii
 logger = logging.getLogger('pyas2lib')
 
 AS2_VERSION = '1.2'
+
 EDIINT_FEATURES = 'CMS'
+
+IGNORE_SELF_SIGNED_CERTS = True
 
 SYNCHRONOUS_MDN = 'SYNC'
 ASYNCHRONOUS_MDN = 'ASYNC'
@@ -61,17 +62,35 @@ class Organization(object):
         :param mdn_url: The URL where the receiver is expected to post
             asynchronous MDNs.
         """
-        if sign_key:
-            self.sign_key = asymmetric.load_pkcs12(
-                sign_key, byte_cls(sign_key_pass))
-        else:
-            self.sign_key = None
-        self.decrypt_key = asymmetric.load_pkcs12(
+        self.sign_key = self.load_key(
+            sign_key, byte_cls(sign_key_pass)) if sign_key else None
+
+        self.decrypt_key = self.load_key(
             decrypt_key, byte_cls(decrypt_key_pass)) if decrypt_key else None
 
         self.as2_id = as2_id
         self.mdn_url = mdn_url
         self.mdn_confirm_text = mdn_confirm_text
+
+    @staticmethod
+    def load_key(key_str, key_pass):
+        """ Function to load password protected key file in p12 or pem format"""
+
+        # First try to parse as a p12 file
+        try:
+            key, cert, _ = asymmetric.load_pkcs12(key_str, byte_cls(key_pass))
+        except ValueError:
+            key, cert = None, None
+            # Now try to parse as a pem file
+            for kc in pem_to_der(key_str):
+                try:
+                    key = asymmetric.load_private_key(kc, key_pass)
+                except ValueError:
+                    cert = asymmetric.load_certificate(kc)
+            if not key or not cert:
+                raise AS2Exception(
+                    'Invalid Private key file or Public key not included.')
+        return key, cert
 
 
 class Partner(object):
@@ -79,8 +98,8 @@ class Partner(object):
     settings to be used when sending and receiving messages."""
 
     def __init__(self, as2_id, verify_cert=None, verify_cert_ca=None,
-                 encrypt_cert=None, encrypt_cert_ca=None, compress=False,
-                 sign=False, digest_alg='sha256', encrypt=False,
+                 encrypt_cert=None, encrypt_cert_ca=None, validate_certs=True,
+                 compress=False, sign=False, digest_alg='sha256', encrypt=False,
                  enc_alg='tripledes_192_cbc', mdn_mode=None,
                  mdn_digest_alg=None, mdn_confirm_text=MDN_CONFIRM_TEXT):
         """
@@ -89,8 +108,17 @@ class Partner(object):
         :param verify_cert: A byte string of the certificate to be used for
             verifying signatures of inbound messages and MDNs.
 
+        :param verify_cert_ca: A byte string of the ca certificate if any of
+            the verification cert
+
         :param encrypt_cert: A byte string of the certificate to be used for
             encrypting outbound message.
+
+        :param encrypt_cert_ca: A byte string of the ca certificate if any of
+            the encryption cert
+
+        :param validate_certs: Set this flag to `False` to disable validations of
+            the encryption and verification certificates. (default `True`)
 
         :param compress: Set this flag to `True` to compress outgoing
             messages. (default `False`)
@@ -154,21 +182,30 @@ class Partner(object):
         self.mdn_digest_alg = mdn_digest_alg
         self.mdn_confirm_text = mdn_confirm_text
         self.verify_cert = self.load_cert(
-            verify_cert, verify_cert_ca) if verify_cert else None
+            verify_cert, verify_cert_ca, validate_certs) if verify_cert else None
         self.encrypt_cert = self.load_cert(
-            encrypt_cert, encrypt_cert) if encrypt_cert else None
+            encrypt_cert, encrypt_cert_ca, validate_certs) if encrypt_cert else None
 
     @staticmethod
-    def load_cert(cert, cert_ca=None):
-        # Open the certificate for validation
-        trust_roots = [pem.unarmor(cert)[2]]
-        if cert_ca:
-            for _, _, der_bytes in pem.unarmor(cert_ca, multiple=True):
-                trust_roots.append(der_bytes)
-        context = ValidationContext(extra_trust_roots=trust_roots)
-        validator = CertificateValidator(cert, validation_context=context)
-        cert_path = validator.validate_usage(set([]))
-        return asymmetric.load_certificate(cert_path.first)
+    def load_cert(cert, cert_ca=None, validate_certs=True):
+        """ Function validates and loads the partners certificates"""
+        # Validate the certificate if option is set
+        if validate_certs:
+            # Convert the certificate to DER format
+            cert = pem_to_der(cert, return_multiple=False)
+
+            # Convert the ca certificate to DER format
+            if cert_ca:
+                trust_roots = pem_to_der(cert_ca)
+            else:
+                trust_roots = []
+
+            # Verify the certificate against the trusted roots
+            verify_certificate_chain(
+                cert, trust_roots, ignore_self_signed=IGNORE_SELF_SIGNED_CERTS)
+
+        # Return the parsed certificate
+        return asymmetric.load_certificate(cert)
 
 
 class Message(object):
@@ -188,10 +225,10 @@ class Message(object):
         """
         self.sender = sender
         self.receiver = receiver
-        self.compress = False
-        self.sign = False
+        self.compressed = False
+        self.signed = False
         self.digest_alg = None
-        self.encrypt = False
+        self.encrypted = False
         self.enc_alg = None
         self.message_id = None
         self.payload = None
@@ -263,12 +300,12 @@ class Message(object):
         additional_headers = additional_headers if additional_headers else {}
         assert type(additional_headers) is dict
 
-        if self.sign and not self.sender.sign_key:
+        if self.receiver.sign and not self.sender.sign_key:
             raise ImproperlyConfigured(
                 'Signing of messages is enabled but sign key is not set '
                 'for the sender.')
 
-        if self.encrypt and not self.receiver.encrypt_cert:
+        if self.receiver.encrypt and not self.receiver.encrypt_cert:
             raise ImproperlyConfigured(
                 'Encryption of messages is enabled but encrypt key is not set '
                 'for the receiver.')
@@ -302,7 +339,7 @@ class Message(object):
         del self.payload['MIME-Version']
 
         if self.receiver.compress:
-            self.compress = True
+            self.compressed = True
             compressed_message = email_message.Message()
             compressed_message.set_type('application/pkcs7-mime')
             compressed_message.set_param('name', 'smime.p7z')
@@ -315,7 +352,7 @@ class Message(object):
             self.payload = compressed_message
 
         if self.receiver.sign:
-            self.sign, self.digest_alg = True, self.receiver.digest_alg
+            self.signed, self.digest_alg = True, self.receiver.digest_alg
             signed_message = MIMEMultipart(
                 'signed', protocol="application/pkcs7-signature")
             del signed_message['MIME-Version']
@@ -343,7 +380,7 @@ class Message(object):
             self.payload = signed_message
 
         if self.receiver.encrypt:
-            self.encrypt, self.enc_alg = True, self.receiver.enc_alg
+            self.encrypted, self.enc_alg = True, self.receiver.enc_alg
             encrypted_message = email_message.Message()
             encrypted_message.set_type('application/pkcs7-mime')
             encrypted_message.set_param('name', 'smime.p7m')
@@ -436,7 +473,7 @@ class Message(object):
 
             if self.payload.get_content_type() == 'application/pkcs7-mime' \
                     and self.payload.get_param('smime-type') == 'enveloped-data':
-                self.encrypt = True
+                self.encrypted = True
                 self.enc_alg, decrypted_content = decrypt_message(
                     self.payload.get_payload(decode=True),
                     self.receiver.decrypt_key
@@ -456,7 +493,7 @@ class Message(object):
                     'but signed message not found.'.format(partner_id))
 
             if self.payload.get_content_type() == 'multipart/signed':
-                self.sign = True
+                self.signed = True
                 signature = None
                 message_boundary = (
                     '--' + self.payload.get_boundary()).encode('utf-8')
@@ -484,7 +521,7 @@ class Message(object):
 
             if self.payload.get_content_type() == 'application/pkcs7-mime' \
                     and self.payload.get_param('smime-type') == 'compressed-data':
-                self.compress = True
+                self.compressed = True
                 decompressed_data = decompress_message(
                     self.payload.get_payload(decode=True))
                 self.payload = parse_mime(decompressed_data)

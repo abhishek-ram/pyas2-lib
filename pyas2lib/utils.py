@@ -1,5 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 from .compat import BytesIO, BytesGenerator, is_py2, _ver
+from .exceptions import AS2Exception
+from OpenSSL import crypto
+from asn1crypto import pem
 import email
 import re
 import sys
@@ -71,3 +74,52 @@ def extract_first_part(message, boundary):
         first_message = first_message[:-1]
     return first_message
 
+
+def pem_to_der(cert, return_multiple=True):
+    """ Converts a given certificate or list to PEM format"""
+
+    # initialize the certificate array
+    cert_list = []
+
+    # If certificate is in DER then un-armour it
+    if pem.detect(cert):
+        for _, _, der_bytes in pem.unarmor(cert, multiple=True):
+            cert_list.append(der_bytes)
+    else:
+        cert_list.append(cert)
+
+    # return multiple if return_multiple is set else first element
+    if return_multiple:
+        return cert_list
+    else:
+        return cert_list.pop()
+
+
+def verify_certificate_chain(cert_str, trusted_certs, ignore_self_signed=True):
+    """ Verify a given certificate against a trust store"""
+
+    # Load the certificate
+    certificate = crypto.load_certificate(crypto.FILETYPE_ASN1, cert_str)
+
+    # Create a certificate store and add your trusted certs
+    try:
+        store = crypto.X509Store()
+
+        if ignore_self_signed:
+            store.add_cert(certificate)
+
+        # Assuming the certificates are in PEM format in a trusted_certs list
+        for _cert in trusted_certs:
+            store.add_cert(
+                crypto.load_certificate(crypto.FILETYPE_ASN1, _cert))
+
+        # Create a certificate context using the store and the certificate
+        store_ctx = crypto.X509StoreContext(store, certificate)
+
+        # Verify the certificate, returns None if certificate is not valid
+        store_ctx.verify_certificate()
+
+        return True
+
+    except crypto.X509StoreContextError as e:
+        raise AS2Exception('Partner Certificate Invalid: %s' % e.message[-1])
