@@ -1,50 +1,163 @@
 from __future__ import unicode_literals, absolute_import, print_function
-from .context import pyas2lib
-import unittest
-import os
-
-TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testdata')
+from . import as2, PYAS2TestCase
 
 
-class TestBasic(unittest.TestCase):
+class TestBasic(PYAS2TestCase):
 
     def setUp(self):
-        self.test_file = open(
-                os.path.join(TEST_DIR, 'payload.txt'), 'rb')
-
-    def tearDown(self):
-        self.test_file.close()
+        self.org = as2.Organization(
+            as2_id='some_organization',
+            sign_key=self.private_key,
+            sign_key_pass='test'.encode('utf-8'),
+            decrypt_key=self.private_key,
+            decrypt_key_pass='test'.encode('utf-8')
+        )
+        self.partner = as2.Partner(
+            as2_id='some_partner',
+            verify_cert=self.public_key,
+            encrypt_cert=self.public_key
+        )
 
     def test_plain_message(self):
         """ Test Unencrypted Unsigned Uncompressed Message """
 
         # Build an As2 message to be transmitted to partner
-        out_message = pyas2lib.AS2Message()
-        out_message.build(
-            'some_organization', 'some_partner', self.test_file)
-        raw_out_message = bytes(out_message)
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        raw_out_message = \
+            out_message.headers_str + b'\r\n' + out_message.content
 
         # Parse the generated AS2 message as the partner
-        in_message = pyas2lib.AS2Message()
-        in_message.parse(raw_out_message)
+        in_message = as2.Message()
+        in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
 
-        # Compare the mic contents of the input and output messages
-        self.test_file.seek(0)
-        original_message = self.test_file.read()
-        self.assertEqual(original_message,
-                         in_message.payload.get_payload(decode=True))
+        # Compare contents of the input and output messages
+        self.assertEqual(self.test_data, in_message.content)
 
     def test_compressed_message(self):
         """ Test Unencrypted Unsigned Compressed Message """
 
         # Build an As2 message to be transmitted to partner
-        out_message = pyas2lib.AS2Message(compress=True)
-        out_mic_content = out_message.build(
-            'some_organization', 'some_partner', self.test_file)
-        raw_out_message = bytes(out_message)
+        self.partner.compress = True
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
+
         # Parse the generated AS2 message as the partner
-        in_message = pyas2lib.AS2Message()
-        in_mic_content = in_message.parse(raw_out_message)
+        in_message = as2.Message()
+        in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
 
         # Compare the mic contents of the input and output messages
-        self.assertEqual(out_mic_content, in_mic_content.decode('utf-8'))
+        self.assertEqual(
+            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+
+    def test_encrypted_message(self):
+        """ Test Encrypted Unsigned Uncompressed Message """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.encrypt = True
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
+
+        # Parse the generated AS2 message as the partner
+        in_message = as2.Message()
+        in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
+
+        # Compare the mic contents of the input and output messages
+        self.assertEqual(
+            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+
+    def test_signed_message(self):
+        """ Test Unencrypted Signed Uncompressed Message """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.sign = True
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
+
+        # Parse the generated AS2 message as the partner
+        in_message = as2.Message()
+        print(raw_out_message)
+        in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
+
+        # Compare the mic contents of the input and output messages
+        self.assertEqual(
+            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+        self.assertTrue(in_message.signed)
+        self.assertEqual(out_message.mic, in_message.mic)
+
+    def test_encrypted_signed_message(self):
+        """ Test Encrypted Signed Uncompressed Message """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.sign = True
+        self.partner.encrypt = True
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
+
+        # Parse the generated AS2 message as the partner
+        in_message = as2.Message()
+        in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
+
+        # Compare the mic contents of the input and output messages
+        self.assertEqual(
+            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+        self.assertTrue(in_message.signed)
+        self.assertTrue(in_message.encrypted)
+        self.assertEqual(out_message.mic, in_message.mic)
+
+    def test_encrypted_signed_compressed_message(self):
+        """ Test Encrypted Signed Compressed Message """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.sign = True
+        self.partner.encrypt = True
+        self.partner.compress = True
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
+
+        # Parse the generated AS2 message as the partner
+        in_message = as2.Message()
+        in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
+
+        # Compare the mic contents of the input and output messages
+        self.assertEqual(
+            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+        self.assertTrue(in_message.signed)
+        self.assertTrue(in_message.encrypted)
+        self.assertTrue(in_message.compressed)
+        self.assertEqual(out_message.mic, in_message.mic)
+
+    def find_org(self, as2_id):
+        return self.org
+
+    def find_partner(self, as2_id):
+        return self.partner

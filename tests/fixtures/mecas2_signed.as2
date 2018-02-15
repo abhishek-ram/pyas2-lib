@@ -1,0 +1,90 @@
+from: as2@company.com
+ediint-features: multiple-attachments, CEM
+message-id: <mendelson_opensource_AS2-1480406596475-6@mecas2_pyas2mac>
+content-length: 4080
+user-agent: mendelson opensource AS2 1.1 build 47 - www.mendelson-e-c.com
+connection: close, TE
+mime-version: 1.0
+subject: AS2 message
+as2-to: pyas2mac
+host: 127.0.0.1:8081
+expect: 100-continue
+as2-from: mecas2
+disposition-notification-options: signed-receipt-protocol=optional, pkcs7-signature; signed-receipt-micalg=optional, sha1
+disposition-notification-to: http://localhost:8080/as2/HttpReceiver
+date: Tue, 29 Nov 2016 13:33:36 IST
+recipient-address: http://127.0.0.1:8081/pyas2/as2receive
+as2-version: 1.2
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1;  boundary="----=_Part_1_1464954728.1480403996634"
+
+------=_Part_1_1464954728.1480403996634
+Content-Type: application/EDI-Consent
+Content-Transfer-Encoding: binary
+Content-Disposition: attachment; filename=payload.txt
+
+UNB+UNOA:2+<Sender GLN>:14+<Receiver GLN>:14+140407:0910+5++++1+EANCOM'
+UNH+1+ORDERS:D:96A:UN:EAN008'
+BGM+220+1AA1TEST+9'
+DTM+137:20140407:102'
+DTM+63:20140421:102'
+DTM+64:20140414:102'
+RFF+ADE:1234'
+RFF+PD:1704'
+NAD+BY+5450534000024::9'
+NAD+SU+<Supplier GLN>::9'
+NAD+DP+5450534000109::9+++++++GB'
+NAD+IV+5450534000055::9++AMAZON EU SARL:5 RUE PLAETIS LUXEMBOURG+CO PO BOX 4558+SLOUGH++SL1 0TX+GB'
+RFF+VA:GB727255821'
+CUX+2:EUR:9'
+LIN+1++9783898307529:EN'
+QTY+21:5'
+PRI+AAA:27.5'
+LIN+2++390787706322:UP'
+QTY+21:1'
+PRI+AAA:10.87'
+LIN+3'
+PIA+5+3899408268X-39:SA'
+QTY+21:3'
+PRI+AAA:3.85'
+UNS+S'
+CNT+2:3'
+UNT+26+1'
+UNZ+1+5'
+
+------=_Part_1_1464954728.1480403996634
+Content-Type: application/pkcs7-signature; name=smime.p7s; smime-type=signed-data
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIAwggPoMIIC
+0KADAgECAgRXcQQVMA0GCSqGSIb3DQEBBQUAMIG1MS8wLQYJKoZIhvcNAQkBFiB3ZWJtYXN0ZXJA
+bWFpbGFkZHJlc3NvbmRvbWFpbi50bzELMAkGA1UEBhMCZGUxEzARBgNVBAgMClN0YXRlIG5hbWUx
+FjAUBgNVBAcMDUxvY2FsaXR5IG5hbWUxFTATBgNVBAoMDFlvdXIgY29tcGFueTEgMB4GA1UECwwX
+WW91ciBjb21wYW55IGRlcGFydG1lbnQxDzANBgNVBAMMBm1lY2FzMjAeFw0xNjA2MjcxMDQ2NDVa
+Fw0xNzA2MjcxMDQ2NDVaMIG1MS8wLQYJKoZIhvcNAQkBFiB3ZWJtYXN0ZXJAbWFpbGFkZHJlc3Nv
+bmRvbWFpbi50bzELMAkGA1UEBhMCZGUxEzARBgNVBAgMClN0YXRlIG5hbWUxFjAUBgNVBAcMDUxv
+Y2FsaXR5IG5hbWUxFTATBgNVBAoMDFlvdXIgY29tcGFueTEgMB4GA1UECwwXWW91ciBjb21wYW55
+IGRlcGFydG1lbnQxDzANBgNVBAMMBm1lY2FzMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
+ggEBAJCqCqiYaoyXX6c0c+FgTvn1pFqlmoqc9vvfPlfdhND5KzRaERgWJg8LcN+C/WubGvvezmKk
+5l6kt+w/Mwhafovn/WOZtwyzd1umZhRHthFefqi/gxBkzsdVPMrDAdvVjrHmSdnrNayVPQnZ6n4G
+d89CQ9+eEBSXqN1cl75RuOz8Nz8qCNRBzlzsePbcH9a6gUvDt0pDsx6lgKoi0pTZtRXQxkLxQ94C
+UuqXoLHEEe2sZeA7wX+ViB1ORSFeptcthtG8OJjcQKRZMaJjTzGjXWldg5O6HTRt7BCGLamvfbcd
+4b7jiDSzCjg/eT6sG2ZTBsfukfOAxn8QFgpHRQ3w95UCAwEAATANBgkqhkiG9w0BAQUFAAOCAQEA
+GUkqGzlZeIHaiJEPksTkK8mH/ovaBzsTWnoLFCfiduYXoyR4eBudCmSVyZWMAHkRf+HY7wmvX1gg
+AhYCmeRixrfb8SGeO/my2F97JGuORK3PjcduXnPxdO+uJRinTqSx+vd+7miDbzFBay3qsxA6IZTI
+OlHkK+pw3HbGx1GA32/x0vq1w+Qy0oupNJzDfG0wvCeWlVX/HrVt4xlM65leSV6oG0cjUXdsc5bn
+kfZV8IZcu5gXKRHWVLmFUZRbpQR8ruZEPfDbb+40NRRpi+MHO2tvv7lkxIJyc2hrL0RshZWW33vC
+dWJOnAmyyDB1Ifgfi8n9Nes8fUGEPNiDkecrlgAAMYICfDCCAngCAQEwgb4wgbUxLzAtBgkqhkiG
+9w0BCQEWIHdlYm1hc3RlckBtYWlsYWRkcmVzc29uZG9tYWluLnRvMQswCQYDVQQGEwJkZTETMBEG
+A1UECAwKU3RhdGUgbmFtZTEWMBQGA1UEBwwNTG9jYWxpdHkgbmFtZTEVMBMGA1UECgwMWW91ciBj
+b21wYW55MSAwHgYDVQQLDBdZb3VyIGNvbXBhbnkgZGVwYXJ0bWVudDEPMA0GA1UEAwwGbWVjYXMy
+AgRXcQQVMAkGBSsOAwIaBQCggZMwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0B
+CQUxDxcNMTYxMTI5MDcyMDAxWjAjBgkqhkiG9w0BCQQxFgQU6ODtTdZVjneUeoN+ChUV5Npf4jEw
+NAYJKoZIhvcNAQkPMScwJTAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwBwYFKw4DAgcwDQYJ
+KoZIhvcNAQEBBQAEggEAYuRdE2cFCNzX9bgG38QYShPpoNsRGcQeXdZwwjY8mvXzJnGZdVoY8xk2
+zkgZewVSuVyQ/GpoC3QnSvusJaoA0wjobqQOaRzqvN4y9GMgpxk0jd4d+s6G/SUyjZK/TeVh2o1P
+ZEaP8MtdkL3DeXhCKSgQ+iBUOiP8rd15NB2CQOKAxQ7XL7+SEudbT4CTByRZRfvbopGYxielCjWY
+z08c4dqtkJv5PHj8gMAVUp6aXC2SdPSv3/hZSge7ovPJz4peOUZMjbRXc6sY6Tnale00H5AWOt/y
+nff3ayr901968vxmobirT9Pw4dj+OMVwm671ORUlOvr4lMPUEFUHh9nVNAAAAAAAAA==
+------=_Part_1_1464954728.1480403996634--

@@ -1,0 +1,34 @@
+Content-Type: multipart/report; report-type=disposition-notification;
+	boundary="----=_Part_0_1043598301.1483093396911"
+
+------=_Part_0_1043598301.1483093396911
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+
+Thank you for exchanging AS2 messages with mendelson opensource AS2.
+Please download your free copy of mendelson opensource AS2 + today at http://opensource.mendelson-e-c.com.
+
+An error occured during the AS2 message processing: Error verifying the senders digital signature: Verification failed
+
+Signature certificate information:
+Serial number (DEC): 10764467591157972577
+Issuer: C=AU,ST=Some-State,O=Internet Widgits Pty Ltd,CN=as2server
+
+Verification certificate information:
+Serial number (DEC): 18119724683039678424
+Serial number (HEX): FB763198C8751FD8
+Finger print (SHA-1): 2E:07:C4:DB:11:BF:76:B2:22:85:B8:8E:7B:34:3E:78:A1:98:BE:ED
+Valid from: 11/29/16
+Valid to: 11/28/21
+Issuer: CN=pyas2lib, O=Internet Widgits Pty Ltd, ST=Some-State, C=AU.
+------=_Part_0_1043598301.1483093396911
+Content-Type: message/disposition-notification
+Content-Transfer-Encoding: 7bit
+
+Reporting-UA: mendelson opensource AS2
+Original-Recipient: rfc822; mecas2
+Final-Recipient: rfc822; mecas2
+Original-Message-ID: <20161230102316.10728.85252@imac.local>
+Disposition: automatic-action/MDN-sent-automatically; processed/error: authentication-failed
+
+------=_Part_0_1043598301.1483093396911--

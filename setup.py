@@ -1,26 +1,16 @@
 from setuptools import setup, find_packages
+from pyas2lib import __versionstr__
 from os.path import join, dirname
 
-VERSION = (0, 1, 'dev0')
-__version__ = VERSION
-__versionstr__ = '.'.join(map(str, VERSION))
-
-# f = open(join(dirname(__file__), 'README.md'))
-# long_description = f.read().strip()
-# f.close()
-
 install_requires = [
-    'asn1crypto>=0.19.0',
-    'oscrypto>=0.17.2'
-    # 'cryptography==1.5.2',
+    'asn1crypto==0.24.0',
+    'oscrypto==0.19.1',
+    'pyOpenSSL==17.5.0'
 ]
 
 tests_require = [
     'nose',
-    # 'coverage',
-    # 'mock',
-    # 'pyaml',
-    # 'nosexcover'
+    'requests',
 ]
 
 setup(
@@ -46,11 +36,9 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.2",
-        "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: Implementation :: PyPy",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Security :: Cryptography",
         "Topic :: Communications",
 

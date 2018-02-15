@@ -1,39 +1,33 @@
+message-id: <mendelson_opensource_AS2-1483093497174-1@mecas2_pyas2mac>
+content-type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1;  boundary="----=_Part_8_1315897558.1483093497177"
 
-------=_Part_1_1464954728.1480403996634
-Content-Type: application/EDI-Consent
-Content-Transfer-Encoding: binary
-Content-Disposition: attachment; filename=payload.txt
 
-UNB+UNOA:2+<Sender GLN>:14+<Receiver GLN>:14+140407:0910+5++++1+EANCOM'
-UNH+1+ORDERS:D:96A:UN:EAN008'
-BGM+220+1AA1TEST+9'
-DTM+137:20140407:102'
-DTM+63:20140421:102'
-DTM+64:20140414:102'
-RFF+ADE:1234'
-RFF+PD:1704'
-NAD+BY+5450534000024::9'
-NAD+SU+<Supplier GLN>::9'
-NAD+DP+5450534000109::9+++++++GB'
-NAD+IV+5450534000055::9++AMAZON EU SARL:5 RUE PLAETIS LUXEMBOURG+CO PO BOX 4558+SLOUGH++SL1 0TX+GB'
-RFF+VA:GB727255821'
-CUX+2:EUR:9'
-LIN+1++9783898307529:EN'
-QTY+21:5'
-PRI+AAA:27.5'
-LIN+2++390787706322:UP'
-QTY+21:1'
-PRI+AAA:10.87'
-LIN+3'
-PIA+5+3899408268X-39:SA'
-QTY+21:3'
-PRI+AAA:3.85'
-UNS+S'
-CNT+2:3'
-UNT+26+1'
-UNZ+1+5'
+------=_Part_8_1315897558.1483093497177
+Content-Type: multipart/report; report-type=disposition-notification; 
+	boundary="----=_Part_5_2083852873.1483093497175"
 
-------=_Part_1_1464954728.1480403996634
+------=_Part_5_2083852873.1483093497175
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+
+The AS2 message has been received. Thank you for exchanging AS2 messages with mendelson opensource AS2.
+Please download your free copy of mendelson opensource AS2 today at http://opensource.mendelson-e-c.com
+
+
+------=_Part_5_2083852873.1483093497175
+Content-Type: message/disposition-notification
+Content-Transfer-Encoding: 7bit
+
+Reporting-UA: mendelson opensource AS2
+Original-Recipient: rfc822; mecas2
+Final-Recipient: rfc822; mecas2
+Original-Message-ID: <20161230102456.10748.40759@imac.local>
+Disposition: automatic-action/MDN-sent-automatically; processed
+Received-Content-MIC: O4bvrm5t2YunRfwvZicNdEUmPaPZ9vUslX8loVLDck0=, sha-256
+
+------=_Part_5_2083852873.1483093497175--
+
+------=_Part_8_1315897558.1483093497177
 Content-Type: application/pkcs7-signature; name=smime.p7s; smime-type=signed-data
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -62,11 +56,12 @@ dWJOnAmyyDB1Ifgfi8n9Nes8fUGEPNiDkecrlgAAMYICfDCCAngCAQEwgb4wgbUxLzAtBgkqhkiG
 A1UECAwKU3RhdGUgbmFtZTEWMBQGA1UEBwwNTG9jYWxpdHkgbmFtZTEVMBMGA1UECgwMWW91ciBj
 b21wYW55MSAwHgYDVQQLDBdZb3VyIGNvbXBhbnkgZGVwYXJ0bWVudDEPMA0GA1UEAwwGbWVjYXMy
 AgRXcQQVMAkGBSsOAwIaBQCggZMwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0B
-CQUxDxcNMTYxMTI5MDcyMDAxWjAjBgkqhkiG9w0BCQQxFgQU6ODtTdZVjneUeoN+ChUV5Npf4jEw
+CQUxDxcNMTYxMjMwMTAyNDU3WjAjBgkqhkiG9w0BCQQxFgQUS7j1nnJZHD1Iq89ZwaZizEiSIpAw
 NAYJKoZIhvcNAQkPMScwJTAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwBwYFKw4DAgcwDQYJ
-KoZIhvcNAQEBBQAEggEAYuRdE2cFCNzX9bgG38QYShPpoNsRGcQeXdZwwjY8mvXzJnGZdVoY8xk2
-zkgZewVSuVyQ/GpoC3QnSvusJaoA0wjobqQOaRzqvN4y9GMgpxk0jd4d+s6G/SUyjZK/TeVh2o1P
-ZEaP8MtdkL3DeXhCKSgQ+iBUOiP8rd15NB2CQOKAxQ7XL7+SEudbT4CTByRZRfvbopGYxielCjWY
-z08c4dqtkJv5PHj8gMAVUp6aXC2SdPSv3/hZSge7ovPJz4peOUZMjbRXc6sY6Tnale00H5AWOt/y
-nff3ayr901968vxmobirT9Pw4dj+OMVwm671ORUlOvr4lMPUEFUHh9nVNAAAAAAAAA==
-------=_Part_1_1464954728.1480403996634--
+KoZIhvcNAQEBBQAEggEAjpYnGzuj7fmBIIheWneJp4oP6wfCe9/M1lSX4Q1Q3evIcKY5N3O3VFTC
+c16y4Q3NGsZcn+lQWmVY4SM49m92b4FOQcm+OPXvciuzC9YQtR9ZbF6XxSwVUfEtRlR+w2Ej1+YC
+qY45Jafw+YE1swkofJpg4be5BJBQ1SjDT19LoY5nE1D39Pw0f1Lyqs3lMdTO0xE0wyvTjQOHy3+N
+I2upyPDmjuDpPInFbTp7PAkl4kVaYmC+leAa3KkrAleA5iX82mDwDWj8dYUD0o+7DuXR91hNRpSX
+jEhYLgGFnbSYin1TT+JfOQ2m6ATPvT7sE6uQs6j26C7T75EtaC6im/NS1gAAAAAAAA==
+------=_Part_8_1315897558.1483093497177--
+
