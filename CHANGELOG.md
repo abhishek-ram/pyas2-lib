@@ -1,7 +1,5 @@
 # Release History
 
-## 0.1.0 - dev
+## 1.0.0 - 2018-02-15
 
-> **Note:**
->
-> This version is not yet released and is under active development.
+* Initial release.

@@ -1,5 +1,6 @@
 # pyas2-lib
 
+[![pypi package](https://img.shields.io/pypi/v/pyas2lib.svg)](https://pypi.python.org/pypi/pyas2lib/)
 [![Build Status](https://travis-ci.org/abhishek-ram/pyas2-lib.svg?branch=master)](https://travis-ci.org/abhishek-ram/pyas2-lib) 
 [![codecov](https://codecov.io/gh/abhishek-ram/pyas2-lib/branch/master/graph/badge.svg)](https://codecov.io/gh/abhishek-ram/pyas2-lib)
 
