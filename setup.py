@@ -5,12 +5,13 @@ from os.path import join, dirname
 install_requires = [
     'asn1crypto==0.24.0',
     'oscrypto==0.19.1',
-    'pyOpenSSL==17.5.0'
+    'pyOpenSSL==17.5.0',
 ]
 
 tests_require = [
-    'nose',
-    'requests',
+    'pytest==3.4.0',
+    'pytest-cov==2.5.1',
+    'coverage==4.3.4'
 ]
 
 setup(

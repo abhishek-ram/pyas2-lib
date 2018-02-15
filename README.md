@@ -1,5 +1,8 @@
 # pyas2-lib
 
+[![Build Status](https://travis-ci.org/abhishek-ram/pyas2-lib.svg?branch=master)](https://travis-ci.org/abhishek-ram/pyas2-lib) 
+[![codecov](https://codecov.io/gh/abhishek-ram/pyas2-lib/branch/master/graph/badge.svg)](https://codecov.io/gh/abhishek-ram/pyas2-lib)
+
 A pure python library for building and parsing message as part of the AS2 messaging protocol. The message definitions follow the AS2 version 1.2 as defined in the [RFC 4130][1].The library is intended to decouple the message construction/deconstruction from the web server/client implementation. The following functionality is part of this library:
    
 * Compress, Sign and Encrypt the payload to be transmitted.
