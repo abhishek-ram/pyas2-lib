@@ -1,9 +1,9 @@
 from __future__ import unicode_literals, absolute_import, print_function
-from . import PYAS2TestCase, as2
+from . import Pyas2TestCase, as2
 import os
 
 
-class TestAdvanced(PYAS2TestCase):
+class TestAdvanced(Pyas2TestCase):
 
     def setUp(self):
         self.org = as2.Organization(
@@ -274,7 +274,7 @@ class TestAdvanced(PYAS2TestCase):
         return self.out_message
 
 
-class SterlingIntegratorTest(PYAS2TestCase):
+class SterlingIntegratorTest(Pyas2TestCase):
 
     def setUp(self):
         self.org = as2.Organization(
@@ -294,7 +294,8 @@ class SterlingIntegratorTest(PYAS2TestCase):
 
     def xtest_process_message(self):
         """ Test processing message received from Sterling Integrator"""
-        with open(os.path.join(self.TEST_DIR, 'sb2bi_signed_cmp.msg')) as msg:
+        with open(os.path.join(
+                self.TEST_DIR, 'sb2bi_signed_cmp.msg'), 'rb') as msg:
             as2message = as2.Message()
             status, exception, as2mdn = as2message.parse(
                 msg.read(),
@@ -312,7 +313,8 @@ class SterlingIntegratorTest(PYAS2TestCase):
 
         as2mdn = as2.Mdn()
         # Parse the mdn and get the message status
-        with open(os.path.join(self.TEST_DIR, 'sb2bi_signed.mdn')) as mdn:
+        with open(os.path.join(
+                self.TEST_DIR, 'sb2bi_signed.mdn'), 'rb') as mdn:
             status, detailed_status = as2mdn.parse(
                 mdn.read(), lambda x, y: message)
         self.assertEqual(status, 'processed')

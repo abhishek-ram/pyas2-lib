@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath('..'))
 from pyas2lib import as2, exceptions
 
 
-class PYAS2TestCase(unittest.TestCase):
+class Pyas2TestCase(unittest.TestCase):
     TEST_DIR = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 

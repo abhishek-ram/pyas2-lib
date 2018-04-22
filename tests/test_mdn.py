@@ -1,8 +1,8 @@
 from __future__ import unicode_literals, absolute_import, print_function
-from . import as2, PYAS2TestCase
+from . import as2, Pyas2TestCase
 
 
-class TestMDN(PYAS2TestCase):
+class TestMDN(Pyas2TestCase):
 
     def setUp(self):
 

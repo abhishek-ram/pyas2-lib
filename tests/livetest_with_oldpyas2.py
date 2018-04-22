@@ -1,16 +1,16 @@
 from __future__ import unicode_literals, absolute_import, print_function
-from . import as2, PYAS2TestCase
+from . import as2, Pyas2TestCase
 import requests
 import os
 
 TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
 
-class LiveTestMecAS2(PYAS2TestCase):
+class LiveTestMecAS2(Pyas2TestCase):
 
     def setUp(self):
         self.org = as2.Organization(
-            as2_id='pyas2lib',
+            as2_name='pyas2lib',
             sign_key=self.private_key,
             sign_key_pass='test'.encode('utf-8'),
             decrypt_key=self.private_key,
@@ -18,7 +18,7 @@ class LiveTestMecAS2(PYAS2TestCase):
         )
 
         self.partner = as2.Partner(
-            as2_id='pyas2idev',
+            as2_name='pyas2idev',
             verify_cert=self.oldpyas2_public_key,
             encrypt_cert=self.oldpyas2_public_key,
             mdn_mode=as2.SYNCHRONOUS_MDN,
@@ -44,7 +44,7 @@ class LiveTestMecAS2(PYAS2TestCase):
 
         raw_mdn = raw_mdn + '\n' + response.text
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             raw_mdn, find_message_cb=self.find_message)
         self.assertEqual(status, 'processed')
@@ -67,7 +67,7 @@ class LiveTestMecAS2(PYAS2TestCase):
 
         raw_mdn = raw_mdn + '\n' + response.text
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             raw_mdn, find_message_cb=self.find_message)
         self.assertEqual(status, 'processed')
@@ -90,7 +90,7 @@ class LiveTestMecAS2(PYAS2TestCase):
             raw_mdn += '{}: {}\n'.format(k, v)
         raw_mdn = raw_mdn + '\n' + response.text
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             raw_mdn, find_message_cb=self.find_message)
         self.assertEqual(status, 'processed')
@@ -114,7 +114,7 @@ class LiveTestMecAS2(PYAS2TestCase):
             raw_mdn += '{}: {}\n'.format(k, v)
         raw_mdn = raw_mdn + '\n' + response.text
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             raw_mdn, find_message_cb=self.find_message)
         self.assertEqual(status, 'processed')
@@ -139,7 +139,7 @@ class LiveTestMecAS2(PYAS2TestCase):
             raw_mdn += '{}: {}\n'.format(k, v)
         raw_mdn = raw_mdn + '\n' + response.text
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             raw_mdn, find_message_cb=self.find_message)
         self.assertEqual(status, 'processed')

@@ -1,9 +1,9 @@
 from __future__ import unicode_literals, absolute_import, print_function
-from . import PYAS2TestCase, as2
+from . import Pyas2TestCase, as2
 import os
 
 
-class TestMecAS2(PYAS2TestCase):
+class TestMecAS2(Pyas2TestCase):
 
     def setUp(self):
         self.org = as2.Organization(
