@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 # from pyas2lib.as2 import DIGEST_ALGORITHMS, ENCRYPTION_ALGORITHMS,\
-#     MDN_CONFIRM_TEXT, MDN_FAILED_TEXT, Partner, Organization, Message, MDN
+#     MDN_CONFIRM_TEXT, MDN_FAILED_TEXT, Partner, Organization, Message, Mdn
 import sys
 
-VERSION = (1, 0, 0)
+VERSION = (1, 0, 1)
 __version__ = '.'.join(map(str, VERSION))
 
 
@@ -16,7 +16,7 @@ __all__ = [
     # 'Partner',
     # 'Organization',
     # 'Message',
-    # 'MDN'
+    # 'Mdn'
 ]
 
 if (2, 7) <= sys.version_info < (3, 2):
