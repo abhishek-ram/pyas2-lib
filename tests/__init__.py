@@ -16,17 +16,33 @@ class PYAS2TestCase(unittest.TestCase):
             cls.test_data = t_file.read()
 
         with open(os.path.join(
-                cls.TEST_DIR, 'cert_test.p12'), 'rb') as key_file:
-            cls.private_key = key_file.read()
+                cls.TEST_DIR, 'cert_test.p12'), 'rb') as fp:
+            cls.private_key = fp.read()
 
         with open(os.path.join(
-                cls.TEST_DIR, 'cert_test_public.pem'), 'rb') as pub_file:
-            cls.public_key = pub_file.read()
+                cls.TEST_DIR, 'cert_test_public.pem'), 'rb') as fp:
+            cls.public_key = fp.read()
 
         with open(os.path.join(
-                cls.TEST_DIR, 'cert_mecas2_public.pem'), 'rb') as pub_file:
-            cls.mecas2_public_key = pub_file.read()
+                cls.TEST_DIR, 'cert_mecas2_public.pem'), 'rb') as fp:
+            cls.mecas2_public_key = fp.read()
 
         with open(os.path.join(
-                cls.TEST_DIR, 'cert_oldpyas2_public.pem'), 'rb') as pub_file:
-            cls.oldpyas2_public_key = pub_file.read()
+                cls.TEST_DIR, 'cert_oldpyas2_public.pem'), 'rb') as fp:
+            cls.oldpyas2_public_key = fp.read()
+
+        with open(os.path.join(
+                cls.TEST_DIR, 'cert_oldpyas2_public.pem'), 'rb') as fp:
+            cls.oldpyas2_public_key = fp.read()
+
+        with open(os.path.join(
+                cls.TEST_DIR, 'cert_oldpyas2_private.pem'), 'rb') as fp:
+            cls.oldpyas2_private_key = fp.read()
+
+        with open(os.path.join(
+                cls.TEST_DIR, 'cert_sb2bi_public.pem'), 'rb') as fp:
+            cls.sb2bi_public_key = fp.read()
+
+        with open(os.path.join(
+                cls.TEST_DIR, 'cert_sb2bi_public.ca'), 'rb') as fp:
+            cls.sb2bi_public_ca = fp.read()

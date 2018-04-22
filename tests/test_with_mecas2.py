@@ -7,14 +7,14 @@ class TestMecAS2(PYAS2TestCase):
 
     def setUp(self):
         self.org = as2.Organization(
-            as2_id='some_organization',
+            as2_name='some_organization',
             sign_key=self.private_key,
             sign_key_pass='test'.encode('utf-8'),
             decrypt_key=self.private_key,
             decrypt_key_pass='test'.encode('utf-8')
         )
         self.partner = as2.Partner(
-            as2_id='mecas2',
+            as2_name='mecas2',
             verify_cert=self.mecas2_public_key,
             encrypt_cert=self.mecas2_public_key,
             validate_certs=False
@@ -120,7 +120,7 @@ class TestMecAS2(PYAS2TestCase):
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(self.TEST_DIR, 'mecas2_unsigned.mdn')
         with open(received_file, 'rb') as fp:
-            in_message = as2.MDN()
+            in_message = as2.Mdn()
             status, detailed_status = in_message.parse(
                 fp.read(), find_message_cb=self.find_message)
 
@@ -133,7 +133,7 @@ class TestMecAS2(PYAS2TestCase):
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(self.TEST_DIR, 'mecas2_signed.mdn')
         with open(received_file, 'rb') as fp:
-            in_message = as2.MDN()
+            in_message = as2.Mdn()
             in_message.parse(fp.read(), find_message_cb=self.find_message)
 
     def find_org(self, headers):

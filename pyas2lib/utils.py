@@ -10,10 +10,22 @@ import random
 
 
 def unquote_as2name(quoted_name):
+    """
+    Function converts as2 name from quoted to unquoted format
+
+    :param quoted_name: the as2 name in quoted format
+    :return: the as2 name in unquoted format
+    """
     return email.utils.unquote(quoted_name)
 
 
 def quote_as2name(unquoted_name):
+    """
+    Function converts as2 name from unquoted to quoted format
+    :param unquoted_name: the as2 name in unquoted format
+    :return: the as2 name in unquoted format
+    """
+
     if re.search(r'[\\" ]', unquoted_name, re.M):
         return '"' + email.utils.quote(unquoted_name) + '"'
     else:
@@ -21,6 +33,12 @@ def quote_as2name(unquoted_name):
 
 
 def mime_to_bytes(msg, header_len):
+    """
+    Function to convert and email Message to flat string format
+    :param msg: email.Message to be converted to string
+    :param header_len: the msx length of the header per line
+    :return: the byte string representation of the email message
+    """
     fp = BytesIO()
     g = BytesGenerator(fp, maxheaderlen=header_len)
     g.flatten(msg)
@@ -28,6 +46,12 @@ def mime_to_bytes(msg, header_len):
 
 
 def canonicalize(message):
+    """
+    Function to convert an email Message to standard format string
+
+    :param message: email.Message to be converted to standard string
+    :return: the standard representation of the email message in bytes
+    """
 
     if message.is_multipart() \
             or message.get('Content-Transfer-Encoding') != 'binary':
@@ -95,6 +119,32 @@ def pem_to_der(cert, return_multiple=True):
         return cert_list.pop()
 
 
+def split_pem(pem_bytes):
+    """
+        Split a give PEM file with multiple certificates
+    :param pem_bytes: The pem data in bytes with multiple certs
+    :return: yields a list of certificates contained in the pem file
+    """
+    started, pem_data = False, b''
+    for line in pem_bytes.splitlines(False):
+
+        if line == b'' and not started:
+            continue
+
+        if line[0:5] in (b'-----', b'---- '):
+            if not started:
+                started = True
+            else:
+                pem_data = pem_data + line + b'\r\n'
+                yield pem_data
+
+                started = False
+                pem_data = b''
+
+        if started:
+            pem_data = pem_data + line + b'\r\n'
+
+
 def verify_certificate_chain(cert_str, trusted_certs, ignore_self_signed=True):
     """ Verify a given certificate against a trust store"""
 
@@ -123,4 +173,3 @@ def verify_certificate_chain(cert_str, trusted_certs, ignore_self_signed=True):
 
     except crypto.X509StoreContextError as e:
         raise AS2Exception('Partner Certificate Invalid: %s' % e.args[-1][-1])
-

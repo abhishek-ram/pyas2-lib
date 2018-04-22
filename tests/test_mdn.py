@@ -7,14 +7,14 @@ class TestMDN(PYAS2TestCase):
     def setUp(self):
 
         self.org = as2.Organization(
-            as2_id='some_organization',
+            as2_name='some_organization',
             sign_key=self.private_key,
             sign_key_pass='test'.encode('utf-8'),
             decrypt_key=self.private_key,
             decrypt_key_pass='test'.encode('utf-8')
         )
         self.partner = as2.Partner(
-            as2_id='some_partner',
+            as2_name='some_partner',
             verify_cert=self.public_key,
             encrypt_cert=self.public_key,
         )
@@ -40,7 +40,7 @@ class TestMDN(PYAS2TestCase):
             find_partner_cb=self.find_partner
         )
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message
@@ -69,7 +69,7 @@ class TestMDN(PYAS2TestCase):
             find_partner_cb=self.find_partner
         )
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message

@@ -7,14 +7,14 @@ class TestAdvanced(PYAS2TestCase):
 
     def setUp(self):
         self.org = as2.Organization(
-            as2_id='some_organization',
+            as2_name='some_organization',
             sign_key=self.private_key,
             sign_key_pass='test'.encode('utf-8'),
             decrypt_key=self.private_key,
             decrypt_key_pass='test'.encode('utf-8')
         )
         self.partner = as2.Partner(
-            as2_id='some_partner',
+            as2_name='some_partner',
             verify_cert=self.public_key,
             encrypt_cert=self.public_key,
         )
@@ -72,7 +72,7 @@ class TestAdvanced(PYAS2TestCase):
             find_partner_cb=self.find_none
         )
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message
@@ -88,7 +88,7 @@ class TestAdvanced(PYAS2TestCase):
             find_partner_cb=self.find_partner
         )
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message
@@ -116,7 +116,7 @@ class TestAdvanced(PYAS2TestCase):
             find_partner_cb=self.find_partner
         )
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message
@@ -129,8 +129,8 @@ class TestAdvanced(PYAS2TestCase):
 
         # Build an As2 message to be transmitted to partner
         self.partner.encrypt = True
-        self.partner.encrypt_cert = self.partner.load_cert(
-            self.mecas2_public_key, validate_certs=False)
+        self.partner.encrypt_cert = self.mecas2_public_key
+        self.partner.validate_certs = False
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
         self.out_message = as2.Message(self.org, self.partner)
         self.out_message.build(self.test_data)
@@ -145,7 +145,7 @@ class TestAdvanced(PYAS2TestCase):
             find_partner_cb=self.find_partner
         )
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message
@@ -158,8 +158,8 @@ class TestAdvanced(PYAS2TestCase):
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
-        self.partner.verify_cert = self.partner.load_cert(
-            self.mecas2_public_key, validate_certs=False)
+        self.partner.verify_cert = self.mecas2_public_key
+        self.partner.validate_certs = False
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
         self.out_message = as2.Message(self.org, self.partner)
         self.out_message.build(self.test_data)
@@ -174,7 +174,7 @@ class TestAdvanced(PYAS2TestCase):
             find_partner_cb=self.find_partner
         )
 
-        out_mdn = as2.MDN()
+        out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
             mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message
@@ -190,7 +190,7 @@ class TestAdvanced(PYAS2TestCase):
         with open(cert_path, 'rb') as cert_file:
             try:
                 as2.Partner(
-                    as2_id='some_partner',
+                    as2_name='some_partner',
                     verify_cert=cert_file.read()
                 )
             except as2.AS2Exception as e:
@@ -202,7 +202,7 @@ class TestAdvanced(PYAS2TestCase):
         with open(cert_path, 'rb') as cert_file:
             try:
                 as2.Partner(
-                    as2_id='some_partner',
+                    as2_name='some_partner',
                     verify_cert=cert_file.read()
                 )
             except as2.AS2Exception as e:
@@ -214,7 +214,7 @@ class TestAdvanced(PYAS2TestCase):
         with open(cert_path, 'rb') as cert_file:
             try:
                 as2.Partner(
-                    as2_id='some_partner',
+                    as2_name='some_partner',
                     verify_cert=cert_file.read()
                 )
             except as2.AS2Exception as e:
@@ -227,7 +227,7 @@ class TestAdvanced(PYAS2TestCase):
             with open(cert_ca_path, 'rb') as cert_ca_file:
                 try:
                     as2.Partner(
-                        as2_id='some_partner',
+                        as2_name='some_partner',
                         verify_cert=cert_file.read(),
                         verify_cert_ca=cert_ca_file.read()
                     )
@@ -242,7 +242,7 @@ class TestAdvanced(PYAS2TestCase):
         with open(cert_path, 'rb') as cert_file:
             try:
                 as2.Organization(
-                    as2_id='some_org',
+                    as2_name='some_org',
                     sign_key=cert_file.read(),
                     sign_key_pass=b'test'
                 )
@@ -254,7 +254,7 @@ class TestAdvanced(PYAS2TestCase):
         with open(cert_path, 'rb') as cert_file:
             try:
                 as2.Organization(
-                    as2_id='some_org',
+                    as2_name='some_org',
                     sign_key=cert_file.read(),
                     sign_key_pass=b'test'
                 )
@@ -272,3 +272,47 @@ class TestAdvanced(PYAS2TestCase):
 
     def find_message(self, message_id, message_recipient):
         return self.out_message
+
+
+class SterlingIntegratorTest(PYAS2TestCase):
+
+    def setUp(self):
+        self.org = as2.Organization(
+            as2_name='AS2 Server',
+            sign_key=self.oldpyas2_private_key,
+            sign_key_pass='password'.encode('utf-8'),
+            decrypt_key=self.oldpyas2_private_key,
+            decrypt_key_pass='password'.encode('utf-8')
+        )
+        self.partner = as2.Partner(
+            as2_name='Sterling B2B Integrator',
+            verify_cert=self.sb2bi_public_key,
+            verify_cert_ca=self.sb2bi_public_ca,
+            encrypt_cert=self.sb2bi_public_key,
+            encrypt_cert_ca=self.sb2bi_public_ca,
+        )
+
+    def xtest_process_message(self):
+        """ Test processing message received from Sterling Integrator"""
+        with open(os.path.join(self.TEST_DIR, 'sb2bi_signed_cmp.msg')) as msg:
+            as2message = as2.Message()
+            status, exception, as2mdn = as2message.parse(
+                msg.read(),
+                lambda x: self.org,
+                lambda y: self.partner
+            )
+            print(status, exception, as2mdn)
+            self.assertEqual(status, 'processed')
+
+    def test_process_mdn(self):
+        """ Test processing mdn received from Sterling Integrator"""
+        message = as2.Message(sender=self.org, receiver=self.partner)
+        message.message_id = '151694007918.24690.7052273208458909245@' \
+                             'ip-172-31-14-209.ec2.internal'
+
+        as2mdn = as2.Mdn()
+        # Parse the mdn and get the message status
+        with open(os.path.join(self.TEST_DIR, 'sb2bi_signed.mdn')) as mdn:
+            status, detailed_status = as2mdn.parse(
+                mdn.read(), lambda x, y: message)
+        self.assertEqual(status, 'processed')

@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
-from pyas2lib import __versionstr__
-from os.path import join, dirname
+
+version = __import__('pyas2lib').__version__
 
 install_requires = [
     'asn1crypto==0.24.0',
@@ -23,7 +23,7 @@ setup(
     long_description="Docs for this project are maintained at "
                      "https://github.com/abhishek-ram/pyas2-lib/blob/"
                      "master/README.md",
-    version=__versionstr__,
+    version=version,
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",
     packages=find_packages(

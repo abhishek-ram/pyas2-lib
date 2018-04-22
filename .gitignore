@@ -90,4 +90,4 @@ ENV/
 
 # IDEA
 .idea
-experiment.py
+.pytest_cache/
