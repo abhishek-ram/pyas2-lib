@@ -3,7 +3,7 @@ from __future__ import absolute_import
 #     MDN_CONFIRM_TEXT, MDN_FAILED_TEXT, Partner, Organization, Message, Mdn
 import sys
 
-VERSION = (1, 0, 2)
+VERSION = (1, 0, 3)
 __version__ = '.'.join(map(str, VERSION))
 
 
