@@ -57,21 +57,17 @@ def decompress_message(compressed_data):
 
     :return: A byte string containing the decompressed original message.    
     """
-    decompressed_content = ''
     try:
         cms_content = cms.ContentInfo.load(compressed_data)
 
         if cms_content['content_type'].native == 'compressed_data':
-            decompressed_content = cms_content['content'].decompressed
+            return cms_content['content'].decompressed
         else:
             raise DecompressionError('Compressed data not found in ASN.1 ')
 
     except Exception as e:
         raise DecompressionError(
             'Decompression failed with cause: {}'.format(e))
-
-    finally:
-        return decompressed_content
 
 
 def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):

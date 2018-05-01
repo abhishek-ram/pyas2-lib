@@ -42,7 +42,8 @@ class TestAdvanced(Pyas2TestCase):
         in_mic_content = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
-            find_partner_cb=self.find_partner
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False
         )
 
         # Compare the mic contents of the input and output messages
@@ -69,7 +70,8 @@ class TestAdvanced(Pyas2TestCase):
         _, _, mdn = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
-            find_partner_cb=self.find_none
+            find_partner_cb=self.find_none,
+            find_message_cb=lambda x, y: False
         )
 
         out_mdn = as2.Mdn()
@@ -85,7 +87,8 @@ class TestAdvanced(Pyas2TestCase):
         _, _, mdn = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_none,
-            find_partner_cb=self.find_partner
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False
         )
 
         out_mdn = as2.Mdn()
@@ -95,6 +98,62 @@ class TestAdvanced(Pyas2TestCase):
         )
         self.assertEqual(status, 'processed/Error')
         self.assertEqual(detailed_status, 'unknown-trading-partner')
+
+    def test_duplicate_message(self):
+        """ Test case where a duplicate message is sent to the partner """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.sign = True
+        self.partner.encrypt = True
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = \
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: True
+        )
+
+        out_mdn = as2.Mdn()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+        self.assertEqual(status, 'processed/Warning')
+        self.assertEqual(detailed_status, 'duplicate-document')
+
+    def test_failed_decompression(self):
+        """ Test case where message decompression has failed """
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.compress = True
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = \
+            self.out_message.headers_str + b'\r\n' + 'xxxxx'
+        in_message = as2.Message()
+        _, exec_info, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner,
+        )
+
+        out_mdn = as2.Mdn()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+        self.assertEqual(status, 'processed/Error')
+        self.assertEqual(detailed_status, 'decompression-failed')
 
     def test_insufficient_security(self):
         """ Test case where message security is not as per the configuration """
@@ -113,7 +172,8 @@ class TestAdvanced(Pyas2TestCase):
         _, _, mdn = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
-            find_partner_cb=self.find_partner
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False
         )
 
         out_mdn = as2.Mdn()
@@ -142,7 +202,8 @@ class TestAdvanced(Pyas2TestCase):
         _, exec_info, mdn = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
-            find_partner_cb=self.find_partner
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False
         )
 
         out_mdn = as2.Mdn()
@@ -171,7 +232,8 @@ class TestAdvanced(Pyas2TestCase):
         _, exec_info, mdn = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
-            find_partner_cb=self.find_partner
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False
         )
 
         out_mdn = as2.Mdn()
@@ -300,7 +362,8 @@ class SterlingIntegratorTest(Pyas2TestCase):
             status, exception, as2mdn = as2message.parse(
                 msg.read(),
                 lambda x: self.org,
-                lambda y: self.partner
+                lambda y: self.partner,
+                lambda x, y: False
             )
             print(status, exception, as2mdn)
             self.assertEqual(status, 'processed')

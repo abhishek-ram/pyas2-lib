@@ -376,6 +376,8 @@ class Message(object):
                 compress_message(canonicalize(self.payload)))
             encoders.encode_base64(compressed_message)
             self.payload = compressed_message
+            logger.debug('Compressed message %s payload as:\n%s' % (
+                self.message_id, self.payload.as_string()))
 
         if self.receiver.sign:
             self.signed, self.digest_alg = True, self.receiver.digest_alg
@@ -405,6 +407,9 @@ class Message(object):
             signed_message.attach(signature)
             self.payload = signed_message
 
+            logger.debug('Signed message %s payload as:\n%s' % (
+                self.message_id, self.payload.as_string()))
+
         if self.receiver.encrypt:
             self.encrypted, self.enc_alg = True, self.receiver.enc_alg
             encrypted_message = email_message.Message()
@@ -421,6 +426,8 @@ class Message(object):
             ))
             encoders.encode_base64(encrypted_message)
             self.payload = encrypted_message
+            logger.debug('Encrypted message %s payload as:\n%s' % (
+                self.message_id, self.payload.as_string()))
 
         if self.receiver.mdn_mode:
             as2_headers['disposition-notification-to'] = 'no-reply@pyas2.com'
@@ -445,7 +452,8 @@ class Message(object):
         if self.payload.is_multipart():
             self.payload.set_boundary(make_mime_boundary())
 
-    def parse(self, raw_content, find_org_cb, find_partner_cb):
+    def parse(self, raw_content, find_org_cb, find_partner_cb,
+              find_message_cb=None):
         """Function parses the RAW AS2 message; decrypts, verifies and
         decompresses it and extracts the payload.
 
@@ -459,6 +467,11 @@ class Message(object):
         :param find_partner_cb:
             A callback the returns an Partner object if exists. The
             as2-from header value is passed as an argument to it.
+
+        :param find_message_cb:
+            An optional callback the returns an Message object if exists in
+            order to check for duplicates. The message id and partner id is
+            passed as arguments to it.
 
         :return:
             A three element tuple containing (status, (exception, traceback)
@@ -493,6 +506,12 @@ class Message(object):
                 raise PartnerNotFound(
                     'Unknown AS2 partner with id {}'.format(partner_id))
 
+            if find_message_cb and \
+                    find_message_cb(self.message_id, partner_id):
+                raise DuplicateDocument(
+                    'Duplicate message received, message with this ID '
+                    'already processed.')
+
             if self.sender.encrypt and \
                     self.payload.get_content_type() != 'application/pkcs7-mime':
                 raise InsufficientSecurityError(
@@ -500,11 +519,13 @@ class Message(object):
                     ' but encrypted message not found.'.format(partner_id))
 
             if self.payload.get_content_type() == 'application/pkcs7-mime' \
-                    and self.payload.get_param(
-                'smime-type') == 'enveloped-data':
+                    and self.payload.get_param('smime-type') == 'enveloped-data':
+                encrypted_data = self.payload.get_payload(decode=True)
+                logger.debug(b'Decrypting the payload :\n%s' % encrypted_data)
+
                 self.encrypted = True
                 self.enc_alg, decrypted_content = decrypt_message(
-                    self.payload.get_payload(decode=True),
+                    encrypted_data,
                     self.receiver.decrypt_key
                 )
                 raw_content = decrypted_content
@@ -522,6 +543,8 @@ class Message(object):
                     'but signed message not found.'.format(partner_id))
 
             if self.payload.get_content_type() == 'multipart/signed':
+                logger.debug(b'Verifying the signed payload:\n{0:s}'.format(
+                    self.payload.as_string()))
                 self.signed = True
                 signature = None
                 message_boundary = (
@@ -540,7 +563,6 @@ class Message(object):
                     self.digest_alg = verify_message(
                         mic_content, signature, verify_cert)
                 except IntegrityError:
-                    print(self.payload.is_multipart())
                     mic_content = raw_content.split(message_boundary)[
                         1].replace(b'\n', b'\r\n')
                     self.digest_alg = verify_message(
@@ -552,11 +574,14 @@ class Message(object):
                 self.mic = binascii.b2a_base64(digest_func.digest()).strip()
 
             if self.payload.get_content_type() == 'application/pkcs7-mime' \
-                    and self.payload.get_param(
-                'smime-type') == 'compressed-data':
+                    and self.payload.get_param('smime-type') == 'compressed-data':
+
+                compressed_data = self.payload.get_payload(decode=True)
+                logger.debug(
+                    b'Decompressing the payload:\n%s' % compressed_data)
+
                 self.compressed = True
-                decompressed_data = decompress_message(
-                    self.payload.get_payload(decode=True))
+                decompressed_data = decompress_message(compressed_data)
                 self.payload = parse_mime(decompressed_data)
 
         except Exception as e:
@@ -567,7 +592,7 @@ class Message(object):
         finally:
             # Update the payload headers with the original headers
             for k, v in as2_headers.items():
-                if self.payload.get(k):
+                if self.payload.get(k) and k.lower() != 'content-disposition':
                     del self.payload[k]
                 self.payload.add_header(k, v)
 
@@ -708,6 +733,9 @@ class Mdn(object):
         encoders.encode_7or8bit(mdn_base)
         self.payload.attach(mdn_base)
 
+        logger.debug('MDN for message %s created:\n%s' % (
+            message.message_id, mdn_base.as_string()))
+
         # Sign the MDN if it is requested by the sender
         if message.headers.get('disposition-notification-options') and \
                 message.receiver and message.receiver.sign_key:
@@ -733,6 +761,8 @@ class Mdn(object):
                 message.receiver.sign_key
             ))
             encoders.encode_base64(signature)
+            logger.debug(
+                'Signature for MDN created:\n%s' % signature.as_string())
             signed_mdn.set_param('micalg', self.digest_alg)
             signed_mdn.attach(signature)
 
@@ -811,6 +841,9 @@ class Mdn(object):
 
         for part in self.payload.walk():
             if part.get_content_type() == 'message/disposition-notification':
+                logger.debug('Found MDN report for message %s:\n%s' % (
+                    orig_message.message_id, part.as_string()))
+
                 mdn = part.get_payload()[-1]
                 mdn_status = mdn['Disposition'].split(
                     ';').pop().strip().split(':')

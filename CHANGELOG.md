@@ -1,5 +1,12 @@
 # Release History
 
+## 1.0.2 - 2018-05-01
+
+* Fix an issue with message decompression.
+* Add optional callback for checking duplicate messages in parse
+* Add test cases for decompression and duplicate errors
+* Add debug logging in parse and build
+
 ## 1.0.1 - 2018-04-22
 
 * Check for incorrect passphrase when loading the private key.
