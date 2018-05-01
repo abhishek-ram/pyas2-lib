@@ -1,5 +1,9 @@
 # Release History
 
+## 1.0.3 - 2018-05-01
+
+* Remove unnecessary conversions to bytes.
+
 ## 1.0.2 - 2018-05-01
 
 * Fix an issue with message decompression.

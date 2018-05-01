@@ -64,10 +64,10 @@ class Organization(object):
             asynchronous MDNs.
         """
         self.sign_key = self.load_key(
-            sign_key, byte_cls(sign_key_pass)) if sign_key else None
+            sign_key, sign_key_pass) if sign_key else None
 
         self.decrypt_key = self.load_key(
-            decrypt_key, byte_cls(decrypt_key_pass)) if decrypt_key else None
+            decrypt_key, decrypt_key_pass) if decrypt_key else None
 
         self.as2_name = as2_name
         self.mdn_url = mdn_url
@@ -79,7 +79,7 @@ class Organization(object):
 
         try:
             # First try to parse as a p12 file
-            key, cert, _ = asymmetric.load_pkcs12(key_str, byte_cls(key_pass))
+            key, cert, _ = asymmetric.load_pkcs12(key_str, key_pass)
         except ValueError as e:
             # If it fails due to invalid password raise error here
             if e.args[0] == 'Password provided is invalid':
@@ -92,8 +92,7 @@ class Organization(object):
                     cert = asymmetric.load_certificate(kc)
                 except (ValueError, TypeError):
                     try:
-                        key = asymmetric.load_private_key(kc,
-                                                          byte_cls(key_pass))
+                        key = asymmetric.load_private_key(kc, key_pass)
                     except OSError:
                         raise AS2Exception(
                             'Invalid Private Key or password is not correct.')
