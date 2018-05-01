@@ -11,7 +11,8 @@ install_requires = [
 tests_require = [
     'pytest==3.4.0',
     'pytest-cov==2.5.1',
-    'coverage==4.3.4'
+    'coverage==4.3.4',
+    'nose',
 ]
 
 setup(

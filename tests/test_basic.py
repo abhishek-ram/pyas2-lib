@@ -91,7 +91,6 @@ class TestBasic(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
-        print(raw_out_message)
         in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,

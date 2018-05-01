@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, absolute_import, print_function
 from . import Pyas2TestCase, as2
 import os
+import base64
 
 
 class TestAdvanced(Pyas2TestCase):
@@ -139,7 +140,7 @@ class TestAdvanced(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         raw_out_message = \
-            self.out_message.headers_str + b'\r\n' + 'xxxxx'
+            self.out_message.headers_str + b'\r\n' + base64.b64encode(b'xxxxx')
         in_message = as2.Message()
         _, exec_info, mdn = in_message.parse(
             raw_out_message,

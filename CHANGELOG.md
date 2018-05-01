@@ -5,7 +5,6 @@
 * Fix an issue with message decompression.
 * Add optional callback for checking duplicate messages in parse
 * Add test cases for decompression and duplicate errors
-* Add debug logging in parse and build
 
 ## 1.0.1 - 2018-04-22
 
