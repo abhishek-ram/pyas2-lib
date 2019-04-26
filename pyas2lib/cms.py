@@ -59,7 +59,6 @@ def decompress_message(compressed_data):
     """
     try:
         cms_content = cms.ContentInfo.load(compressed_data)
-
         if cms_content['content_type'].native == 'compressed_data':
             return cms_content['content'].decompressed
         else:

@@ -448,8 +448,18 @@ class Message(object):
                 self.payload.replace_header(k, v)
             else:
                 self.payload.add_header(k, v)
+
         if self.payload.is_multipart():
             self.payload.set_boundary(make_mime_boundary())
+
+    @staticmethod
+    def decompress_data(payload):
+        if payload.get_content_type() == 'application/pkcs7-mime' \
+                and payload.get_param('smime-type') == 'compressed-data':
+            compressed_data = payload.get_payload(decode=True)
+            decompressed_data = decompress_message(compressed_data)
+            return True, parse_mime(decompressed_data)
+        return False, payload
 
     def parse(self, raw_content, find_org_cb, find_partner_cb,
               find_message_cb=None):
@@ -536,6 +546,9 @@ class Message(object):
                     self.payload.set_payload(decrypted_content)
                     self.payload.set_type('application/edi-consent')
 
+            # Check for compressed data here
+            self.compressed, self.payload = self.decompress_data(self.payload)
+
             if self.sender.sign and \
                     self.payload.get_content_type() != 'multipart/signed':
                 raise InsufficientSecurityError(
@@ -573,16 +586,9 @@ class Message(object):
                 digest_func.update(mic_content)
                 self.mic = binascii.b2a_base64(digest_func.digest()).strip()
 
-            if self.payload.get_content_type() == 'application/pkcs7-mime' \
-                    and self.payload.get_param('smime-type') == 'compressed-data':
-
-                compressed_data = self.payload.get_payload(decode=True)
-                # logger.debug(
-                #     b'Decompressing the payload:\n%s' % compressed_data)
-
-                self.compressed = True
-                decompressed_data = decompress_message(compressed_data)
-                self.payload = parse_mime(decompressed_data)
+            # Check for compressed data here
+            if not self.compressed:
+                self.compressed, self.payload = self.decompress_data(self.payload)
 
         except Exception as e:
             status = getattr(e, 'disposition_type', 'processed/Error')
