@@ -7,12 +7,10 @@ from pyas2lib.as2 import Message
 from pyas2lib.as2 import Organization
 from pyas2lib.as2 import Partner
 
-VERSION = (1, 1, 0)
-__version__ = '.'.join(map(str, VERSION))
+__version__ = '1.1.0'
 
 
 __all__ = [
-    'VERSION',
     'DIGEST_ALGORITHMS',
     'ENCRYPTION_ALGORITHMS',
     'MDN_CONFIRM_TEXT',
