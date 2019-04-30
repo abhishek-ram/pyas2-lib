@@ -1,12 +1,11 @@
-from __future__ import absolute_import, unicode_literals
-from asn1crypto import cms, core, algos
-from oscrypto import asymmetric, symmetric, util
-from datetime import datetime
-from collections import OrderedDict
-from .compat import byte_cls
-from .exceptions import *
 import hashlib
 import zlib
+from asn1crypto import cms, core, algos
+from collections import OrderedDict
+from datetime import datetime
+from oscrypto import asymmetric, symmetric, util
+
+from pyas2lib.exceptions import *
 
 DIGEST_ALGORITHMS = (
     'md5',
@@ -378,7 +377,7 @@ def verify_message(data_to_verify, signature, verify_cert):
                 for attr in signed_attributes.native:
                     attr_dict[attr['type']] = attr['values']
 
-                message_digest = byte_cls()
+                message_digest = bytes()
                 for d in attr_dict['message_digest']:
                     message_digest += d
 

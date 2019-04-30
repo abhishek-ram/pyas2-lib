@@ -1,21 +1,32 @@
-from __future__ import absolute_import, unicode_literals
-from .compat import str_cls, byte_cls, parse_mime
-from .cms import compress_message, decompress_message, decrypt_message, \
-    encrypt_message, verify_message, sign_message
-from .cms import DIGEST_ALGORITHMS, ENCRYPTION_ALGORITHMS
-from .utils import canonicalize, mime_to_bytes, quote_as2name, unquote_as2name, \
-    make_mime_boundary, extract_first_part, pem_to_der, split_pem, \
-    verify_certificate_chain
-from .exceptions import *
-from email import utils as email_utils
-from email import message as email_message
-from email import encoders
-from email.mime.multipart import MIMEMultipart
-from oscrypto import asymmetric
 import logging
 import hashlib
 import binascii
 import traceback
+from email import encoders
+from email import message as email_message
+from email import message_from_bytes as parse_mime
+from email import utils as email_utils
+from email.mime.multipart import MIMEMultipart
+from oscrypto import asymmetric
+
+from pyas2lib.cms import DIGEST_ALGORITHMS
+from pyas2lib.cms import ENCRYPTION_ALGORITHMS
+from pyas2lib.cms import compress_message
+from pyas2lib.cms import decompress_message
+from pyas2lib.cms import decrypt_message
+from pyas2lib.cms import encrypt_message
+from pyas2lib.cms import sign_message
+from pyas2lib.cms import verify_message
+from pyas2lib.exceptions import *
+from pyas2lib.utils import canonicalize
+from pyas2lib.utils import extract_first_part
+from pyas2lib.utils import make_mime_boundary
+from pyas2lib.utils import mime_to_bytes
+from pyas2lib.utils import pem_to_der
+from pyas2lib.utils import quote_as2name
+from pyas2lib.utils import split_pem
+from pyas2lib.utils import unquote_as2name
+from pyas2lib.utils import verify_certificate_chain
 
 logger = logging.getLogger('pyas2lib')
 
@@ -275,7 +286,7 @@ class Message(object):
             return boundary + boundary.join(temp)
         else:
             content = self.payload.get_payload()
-            if isinstance(content, str_cls):
+            if isinstance(content, str):
                 content = content.encode('utf-8')
             return content
 
@@ -319,8 +330,8 @@ class Message(object):
         """
 
         # Validations
-        assert type(data) is byte_cls, \
-            'Parameter data must be of type {}'.format(byte_cls)
+        assert type(data) is bytes, \
+            'Parameter data must be of bytes type.'
 
         additional_headers = additional_headers if additional_headers else {}
         assert type(additional_headers) is dict
@@ -371,10 +382,13 @@ class Message(object):
             compressed_message.set_param('smime-type', 'compressed-data')
             compressed_message.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7z')
+            # compressed_message['Content-Transfer-Encoding'] = 'binary'
             compressed_message.set_payload(
                 compress_message(canonicalize(self.payload)))
+
             encoders.encode_base64(compressed_message)
             self.payload = compressed_message
+
             # logger.debug(b'Compressed message %s payload as:\n%s' % (
             #     self.message_id, self.payload.as_string()))
 
@@ -402,6 +416,7 @@ class Message(object):
             signature.set_payload(sign_message(
                 mic_content, self.digest_alg, self.sender.sign_key))
             encoders.encode_base64(signature)
+
             signed_message.set_param('micalg', self.digest_alg)
             signed_message.attach(signature)
             self.payload = signed_message
@@ -459,6 +474,7 @@ class Message(object):
             compressed_data = payload.get_payload(decode=True)
             decompressed_data = decompress_message(compressed_data)
             return True, parse_mime(decompressed_data)
+
         return False, payload
 
     def parse(self, raw_content, find_org_cb, find_partner_cb,
@@ -535,9 +551,8 @@ class Message(object):
 
                 self.encrypted = True
                 self.enc_alg, decrypted_content = decrypt_message(
-                    encrypted_data,
-                    self.receiver.decrypt_key
-                )
+                    encrypted_data, self.receiver.decrypt_key)
+
                 raw_content = decrypted_content
                 self.payload = parse_mime(decrypted_content)
 
@@ -594,8 +609,8 @@ class Message(object):
             status = getattr(e, 'disposition_type', 'processed/Error')
             detailed_status = getattr(
                 e, 'disposition_modifier', 'unexpected-processing-error')
-            print(traceback.format_exc())
             exception = (e, traceback.format_exc())
+            logger.error('Failed to parse AS2 message\n: %s' % traceback.format_exc())
         finally:
             # Update the payload headers with the original headers
             for k, v in as2_headers.items():

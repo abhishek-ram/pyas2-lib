@@ -1,5 +1,11 @@
 # Release History
 
+## 1.0.4 - 2019-04-26
+
+* Handle cases where compression is done before signing.
+* Add support for additional encryption algorithms
+* Remove support for Python 2.
+
 ## 1.0.3 - 2018-05-01
 
 * Remove unnecessary conversions to bytes.

@@ -1,12 +1,13 @@
-from __future__ import absolute_import, unicode_literals
-from .compat import BytesIO, BytesGenerator, is_py2, _ver
-from .exceptions import AS2Exception
-from OpenSSL import crypto
-from asn1crypto import pem
 import email
+import random
 import re
 import sys
-import random
+from OpenSSL import crypto
+from asn1crypto import pem
+from email.generator import BytesGenerator
+from io import BytesIO
+
+from pyas2lib.exceptions import AS2Exception
 
 
 def unquote_as2name(quoted_name):

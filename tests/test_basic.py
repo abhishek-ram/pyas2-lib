@@ -141,13 +141,14 @@ class TestBasic(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
-        in_message.parse(
+        status, _, _ = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
             find_partner_cb=self.find_partner
         )
 
         # Compare the mic contents of the input and output messages
+        self.assertEqual(status, 'processed')
         self.assertEqual(
             self.test_data.replace(b'\n', b'\r\n'), in_message.content)
         self.assertTrue(in_message.signed)

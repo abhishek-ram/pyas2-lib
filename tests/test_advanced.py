@@ -40,7 +40,7 @@ class TestAdvanced(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
-        in_mic_content = in_message.parse(
+        status, _, _ = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
             find_partner_cb=self.find_partner,
@@ -50,6 +50,7 @@ class TestAdvanced(Pyas2TestCase):
         # Compare the mic contents of the input and output messages
         # self.assertEqual(original_message,
         #                  in_message.payload.get_payload(decode=True))
+        self.assertEqual(status, 'processed')
         self.assertTrue(in_message.signed)
         self.assertTrue(in_message.encrypted)
         self.assertEqual(out_message.mic, in_message.mic)
@@ -366,7 +367,6 @@ class SterlingIntegratorTest(Pyas2TestCase):
                 lambda y: self.partner,
                 lambda x, y: False
             )
-            print(status, exception, as2mdn)
             self.assertEqual(status, 'processed')
 
     def test_process_mdn(self):
