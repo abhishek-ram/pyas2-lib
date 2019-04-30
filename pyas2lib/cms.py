@@ -85,13 +85,10 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
 
     enc_alg_list = enc_alg.split('_')
     cipher, key_length, mode = enc_alg_list[0], enc_alg_list[1], enc_alg_list[2]
-    enc_alg_asn1, key, encrypted_content = None, None, None
+    algorithm_id, iv, encrypted_content = None, None, None
 
     # Generate the symmetric encryption key and encrypt the message
     key = util.rand_bytes(int(key_length) // 8)
-    algorithm_id = None
-    iv, encrypted_content = None, None
-
     if cipher == 'tripledes':
         algorithm_id = '1.2.840.113549.3.7'
         iv, encrypted_content = symmetric.tripledes_cbc_pkcs5_encrypt(
@@ -228,12 +225,12 @@ def sign_message(data_to_sign, digest_alg, sign_key,
 
     :return: A CMS ASN.1 byte string of the signed data.    
     """
-
     if use_signed_attributes:
         digest_func = hashlib.new(digest_alg)
         digest_func.update(data_to_sign)
         message_digest = digest_func.digest()
-
+        print(data_to_sign)
+        print(digest_alg, message_digest)
         class SmimeCapability(core.Sequence):
             _fields = [
                 ('0', core.Any, {'optional': True}),
@@ -358,7 +355,6 @@ def verify_message(data_to_verify, signature, verify_cert):
 
     cms_content = cms.ContentInfo.load(signature)
     digest_alg = None
-
     if cms_content['content_type'].native == 'signed_data':
         for signer in cms_content['content']['signer_infos']:
 
@@ -382,9 +378,10 @@ def verify_message(data_to_verify, signature, verify_cert):
                     message_digest += d
 
                 digest_func = hashlib.new(digest_alg)
+                print(data_to_verify)
                 digest_func.update(data_to_verify)
                 calc_message_digest = digest_func.digest()
-
+                print(digest_alg, calc_message_digest)
                 if message_digest != calc_message_digest:
                     raise IntegrityError('Failed to verify message signature: '
                                          'Message Digest does not match.')

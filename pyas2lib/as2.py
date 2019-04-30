@@ -278,14 +278,13 @@ class Message(object):
             return ''
 
         if self.payload.is_multipart():
-            message_bytes = mime_to_bytes(
-                self.payload, 0).replace(b'\n', b'\r\n')
+            message_bytes = mime_to_bytes(self.payload, 0)
             boundary = b'--' + self.payload.get_boundary().encode('utf-8')
             temp = message_bytes.split(boundary)
             temp.pop(0)
             return boundary + boundary.join(temp)
         else:
-            content = self.payload.get_payload()
+            content = self.payload.get_payload(decode=True)
             if isinstance(content, str):
                 content = content.encode('utf-8')
             return content
@@ -382,15 +381,15 @@ class Message(object):
             compressed_message.set_param('smime-type', 'compressed-data')
             compressed_message.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7z')
-            # compressed_message['Content-Transfer-Encoding'] = 'binary'
+            compressed_message.add_header(
+                'Content-Transfer-Encoding', 'binary')
             compressed_message.set_payload(
-                compress_message(canonicalize(self.payload)))
+                compress_message(mime_to_bytes(self.payload, 0)))
 
-            encoders.encode_base64(compressed_message)
             self.payload = compressed_message
 
-            # logger.debug(b'Compressed message %s payload as:\n%s' % (
-            #     self.message_id, self.payload.as_string()))
+            logger.debug('Compressed message %s payload as:\n%s' % (
+                self.message_id, self.payload.as_string()))
 
         if self.receiver.sign:
             self.signed, self.digest_alg = True, self.receiver.digest_alg
@@ -421,8 +420,8 @@ class Message(object):
             signed_message.attach(signature)
             self.payload = signed_message
 
-            # logger.debug(b'Signed message %s payload as:\n%s' % (
-            #    self.message_id, self.payload.as_string()))
+            logger.debug('Signed message %s payload as:\n%s' % (
+               self.message_id, mime_to_bytes(self.payload, 0)))
 
         if self.receiver.encrypt:
             self.encrypted, self.enc_alg = True, self.receiver.enc_alg
@@ -432,16 +431,14 @@ class Message(object):
             encrypted_message.set_param('smime-type', 'enveloped-data')
             encrypted_message.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7m')
+            encrypted_message.add_header('Content-Transfer-Encoding', 'binary')
             encrypt_cert = self.receiver.load_encrypt_cert()
             encrypted_message.set_payload(encrypt_message(
-                canonicalize(self.payload),
-                self.enc_alg,
-                encrypt_cert
-            ))
-            encoders.encode_base64(encrypted_message)
+                mime_to_bytes(self.payload, 0), self.enc_alg, encrypt_cert))
+
             self.payload = encrypted_message
-            # logger.debug(b'Encrypted message %s payload as:\n%s' % (
-            #     self.message_id, self.payload.as_string()))
+            logger.debug('Encrypted message %s payload as:\n%s' % (
+                self.message_id, self.payload.as_string()))
 
         if self.receiver.mdn_mode:
             as2_headers['disposition-notification-to'] = 'no-reply@pyas2.com'
@@ -468,7 +465,7 @@ class Message(object):
             self.payload.set_boundary(make_mime_boundary())
 
     @staticmethod
-    def decompress_data(payload):
+    def _decompress_data(payload):
         if payload.get_content_type() == 'application/pkcs7-mime' \
                 and payload.get_param('smime-type') == 'compressed-data':
             compressed_data = payload.get_payload(decode=True)
@@ -562,7 +559,7 @@ class Message(object):
                     self.payload.set_type('application/edi-consent')
 
             # Check for compressed data here
-            self.compressed, self.payload = self.decompress_data(self.payload)
+            self.compressed, self.payload = self._decompress_data(self.payload)
 
             if self.sender.sign and \
                     self.payload.get_content_type() != 'multipart/signed':
@@ -575,8 +572,8 @@ class Message(object):
                 #     self.payload.as_string()))
                 self.signed = True
                 signature = None
-                message_boundary = (
-                        '--' + self.payload.get_boundary()).encode('utf-8')
+                message_boundary = ('--' + self.payload.get_boundary()).\
+                    encode('utf-8')
                 for part in self.payload.walk():
                     if part.get_content_type() == "application/pkcs7-signature":
                         signature = part.get_payload(decode=True)
@@ -591,8 +588,8 @@ class Message(object):
                     self.digest_alg = verify_message(
                         mic_content, signature, verify_cert)
                 except IntegrityError:
-                    mic_content = raw_content.split(message_boundary)[
-                        1].replace(b'\n', b'\r\n')
+                    mic_content = raw_content.split(message_boundary)[1].\
+                        replace(b'\n', b'\r\n')
                     self.digest_alg = verify_message(
                         mic_content, signature, verify_cert)
 
@@ -603,15 +600,17 @@ class Message(object):
 
             # Check for compressed data here
             if not self.compressed:
-                self.compressed, self.payload = self.decompress_data(self.payload)
+                self.compressed, self.payload = self._decompress_data(self.payload)
 
         except Exception as e:
             status = getattr(e, 'disposition_type', 'processed/Error')
             detailed_status = getattr(
                 e, 'disposition_modifier', 'unexpected-processing-error')
             exception = (e, traceback.format_exc())
-            logger.error('Failed to parse AS2 message\n: %s' % traceback.format_exc())
+            logger.error('Failed to parse AS2 message\n: %s' %
+                         traceback.format_exc())
         finally:
+
             # Update the payload headers with the original headers
             for k, v in as2_headers.items():
                 if self.payload.get(k) and k.lower() != 'content-disposition':
@@ -627,13 +626,12 @@ class Message(object):
 
                 digest_alg = as2_headers.get('disposition-notification-options')
                 if digest_alg:
-                    digest_alg = digest_alg.split(';')[-1].split(',')[
-                        -1].strip()
+                    digest_alg = digest_alg.split(';')[-1].\
+                        split(',')[-1].strip()
                 mdn = Mdn(
                     mdn_mode=mdn_mode, mdn_url=mdn_url, digest_alg=digest_alg)
-                mdn.build(message=self,
-                          status=status,
-                          detailed_status=detailed_status)
+                mdn.build(
+                    message=self, status=status, detailed_status=detailed_status)
 
             return status, exception, mdn
 
@@ -867,11 +865,12 @@ class Mdn(object):
                 #     orig_message.message_id, part.as_string()))
 
                 mdn = part.get_payload()[-1]
-                mdn_status = mdn['Disposition'].split(
-                    ';').pop().strip().split(':')
+                mdn_status = mdn['Disposition'].split(';').\
+                    pop().strip().split(':')
                 status = mdn_status[0]
                 if status == 'processed':
-                    mdn_mic = mdn.get('Received-Content-MIC', '').split(',')[0]
+                    mdn_mic = mdn.get('Received-Content-MIC', '').\
+                        split(',')[0]
 
                     # TODO: Check MIC for all cases
                     if mdn_mic and orig_message.mic \
@@ -910,6 +909,6 @@ class Mdn(object):
             if part.get_content_type() == 'message/disposition-notification':
                 mdn = part.get_payload()[0]
                 message_id = mdn.get('Original-Message-ID').strip('<>')
-                message_recipient = mdn.get(
-                    'Original-Recipient').split(';')[1].strip()
+                message_recipient = mdn.get('Original-Recipient').\
+                    split(';')[1].strip()
         return message_id, message_recipient

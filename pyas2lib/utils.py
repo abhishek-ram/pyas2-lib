@@ -33,6 +33,19 @@ def quote_as2name(unquoted_name):
         return unquoted_name
 
 
+class BinaryBytesGenerator(BytesGenerator):
+    """ Override the bytes generator to better handle binary data """
+
+    def _handle_application_pkcs7_mime(self, msg):
+        """ Handle writing the binary messages to prevent default behaviour of
+        newline replacements """
+        payload = msg.get_payload(decode=True)
+        if payload is None:
+            return
+        else:
+            self._fp.write(payload)
+
+
 def mime_to_bytes(msg, header_len):
     """
     Function to convert and email Message to flat string format
@@ -41,7 +54,7 @@ def mime_to_bytes(msg, header_len):
     :return: the byte string representation of the email message
     """
     fp = BytesIO()
-    g = BytesGenerator(fp, maxheaderlen=header_len)
+    g = BinaryBytesGenerator(fp, maxheaderlen=header_len)
     g.flatten(msg)
     return fp.getvalue()
 
@@ -54,18 +67,16 @@ def canonicalize(message):
     :return: the standard representation of the email message in bytes
     """
 
-    if message.is_multipart() \
-            or message.get('Content-Transfer-Encoding') != 'binary':
-
-        return mime_to_bytes(message, 0).replace(
-            b'\r\n', b'\n').replace(b'\r', b'\n').replace(b'\n', b'\r\n')
-    else:
+    if message.get('Content-Transfer-Encoding') == 'binary':
         message_header = ''
         message_body = message.get_payload(decode=True)
         for k, v in message.items():
             message_header += '{}: {}\r\n'.format(k, v)
         message_header += '\r\n'
         return message_header.encode('utf-8') + message_body
+    else:
+        return mime_to_bytes(message, 0).replace(
+            b'\r\n', b'\n').replace(b'\r', b'\n').replace(b'\n', b'\r\n')
 
 
 def make_mime_boundary(text=None):

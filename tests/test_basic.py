@@ -29,13 +29,14 @@ class TestBasic(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
-        in_message.parse(
+        status, _, _ = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
             find_partner_cb=self.find_partner
         )
 
         # Compare contents of the input and output messages
+        self.assertEqual(status, 'processed')
         self.assertEqual(self.test_data, in_message.content)
 
     def test_compressed_message(self):
@@ -49,15 +50,16 @@ class TestBasic(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
-        in_message.parse(
+        status, _, _ = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
             find_partner_cb=self.find_partner
         )
 
         # Compare the mic contents of the input and output messages
-        self.assertEqual(
-            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+        self.assertEqual(status, 'processed')
+        self.assertTrue(in_message.compressed)
+        self.assertEqual(self.test_data, in_message.content)
 
     def test_encrypted_message(self):
         """ Test Encrypted Unsigned Uncompressed Message """
@@ -70,15 +72,16 @@ class TestBasic(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
-        in_message.parse(
+        status, _, _ = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
             find_partner_cb=self.find_partner
         )
 
         # Compare the mic contents of the input and output messages
-        self.assertEqual(
-            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+        self.assertEqual(status, 'processed')
+        self.assertTrue(in_message.encrypted)
+        self.assertEqual(self.test_data, in_message.content)
 
     def test_signed_message(self):
         """ Test Unencrypted Signed Uncompressed Message """
@@ -91,15 +94,15 @@ class TestBasic(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
-        in_message.parse(
+        status, _, _ = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
             find_partner_cb=self.find_partner
         )
 
         # Compare the mic contents of the input and output messages
-        self.assertEqual(
-            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+        self.assertEqual(status, 'processed')
+        self.assertEqual(self.test_data, in_message.content)
         self.assertTrue(in_message.signed)
         self.assertEqual(out_message.mic, in_message.mic)
 
@@ -115,15 +118,15 @@ class TestBasic(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         in_message = as2.Message()
-        in_message.parse(
+        status, _, _ = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
             find_partner_cb=self.find_partner
         )
 
         # Compare the mic contents of the input and output messages
-        self.assertEqual(
-            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+        self.assertEqual(status, 'processed')
+        self.assertEqual(self.test_data, in_message.content)
         self.assertTrue(in_message.signed)
         self.assertTrue(in_message.encrypted)
         self.assertEqual(out_message.mic, in_message.mic)
@@ -149,8 +152,7 @@ class TestBasic(Pyas2TestCase):
 
         # Compare the mic contents of the input and output messages
         self.assertEqual(status, 'processed')
-        self.assertEqual(
-            self.test_data.replace(b'\n', b'\r\n'), in_message.content)
+        self.assertEqual(self.test_data, in_message.content)
         self.assertTrue(in_message.signed)
         self.assertTrue(in_message.encrypted)
         self.assertTrue(in_message.compressed)
