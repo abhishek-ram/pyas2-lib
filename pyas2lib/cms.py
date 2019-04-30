@@ -20,6 +20,9 @@ ENCRYPTION_ALGORITHMS = (
     'tripledes_192_cbc',
     'rc2_128_cbc',
     'rc4_128_cbc'
+    'aes_128_cbc',
+    'aes_192_cbc',
+    'aes_256_cbc',
 )
 
 
@@ -86,14 +89,39 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
     enc_alg_asn1, key, encrypted_content = None, None, None
 
     # Generate the symmetric encryption key and encrypt the message
+    key = util.rand_bytes(int(key_length) // 8)
+    algorithm_id = None
+    iv, encrypted_content = None, None
+
     if cipher == 'tripledes':
-        key = util.rand_bytes(int(key_length)//8)
+        algorithm_id = '1.2.840.113549.3.7'
         iv, encrypted_content = symmetric.tripledes_cbc_pkcs5_encrypt(
             key, data_to_encrypt, None)
-        enc_alg_asn1 = algos.EncryptionAlgorithm({
-            'algorithm': algos.EncryptionAlgorithmId('tripledes_3key'),
-            'parameters': cms.OctetString(iv)
-        })
+
+    elif cipher == 'rc2':
+        algorithm_id = '1.2.840.113549.3.2'
+        iv, encrypted_content = symmetric.rc2_cbc_pkcs5_encrypt(
+            key, data_to_encrypt, None)
+
+    elif cipher == 'rc4':
+        algorithm_id = '1.2.840.113549.3.4'
+        encrypted_content = symmetric.rc4_encrypt(key, data_to_encrypt)
+
+    elif cipher == 'aes':
+        if key_length == '128':
+            algorithm_id = '2.16.840.1.101.3.4.1.2'
+        elif key_length == '192':
+            algorithm_id = '2.16.840.1.101.3.4.1.22'
+        elif key_length == '256':
+            algorithm_id = '2.16.840.1.101.3.4.1.42'
+
+        iv, encrypted_content = symmetric.aes_cbc_pkcs7_encrypt(
+            key, data_to_encrypt, None)
+
+    enc_alg_asn1 = algos.EncryptionAlgorithm({
+        'algorithm': algorithm_id,
+        'parameters': cms.OctetString(iv)
+    })
 
     # Encrypt the key and build the ASN.1 message
     encrypted_key = asymmetric.rsa_pkcs1v15_encrypt(encryption_cert, key)
@@ -166,6 +194,15 @@ def decrypt_message(encrypted_data, decryption_key):
                 if alg.encryption_cipher == 'tripledes':
                     cipher = 'tripledes_192_cbc'
                     decrypted_content = symmetric.tripledes_cbc_pkcs5_decrypt(
+                        key, encapsulated_data, alg.encryption_iv)
+                elif alg.encryption_cipher == 'aes':
+                    decrypted_content = symmetric.aes_cbc_pkcs7_decrypt(
+                        key, encapsulated_data, alg.encryption_iv)
+                elif alg.encryption_cipher == 'rc4':
+                    decrypted_content = symmetric.rc2_cbc_pkcs5_decrypt(
+                        key, encapsulated_data, alg.encryption_iv)
+                elif alg.encryption_cipher == 'rc2':
+                    decrypted_content = symmetric.rc2_cbc_pkcs5_encrypt(
                         key, encapsulated_data, alg.encryption_iv)
                 else:
                     raise AS2Exception('Unsupported Encryption Algorithm')
