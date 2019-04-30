@@ -5,6 +5,7 @@
 * Handle cases where compression is done before signing.
 * Add support for additional encryption algorithms.
 * Use binary encoding for encryption and signatures.
+* Look for `application/x-pkcs7-signature` when verifying signatures.
 * Remove support for Python 2.
 
 ## 1.0.3 - 2018-05-01

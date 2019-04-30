@@ -542,11 +542,11 @@ class Message(object):
 
             if self.payload.get_content_type() == 'application/pkcs7-mime' \
                     and self.payload.get_param('smime-type') == 'enveloped-data':
-                encrypted_data = self.payload.get_payload(decode=True)
-                # logger.debug(
-                    # 'Decrypting the payload :\n%s' % self.payload.as_string())
+                logger.debug('Decrypting message %s payload :\n%s' % (
+                    self.message_id, self.payload.as_string()))
 
                 self.encrypted = True
+                encrypted_data = self.payload.get_payload(decode=True)
                 self.enc_alg, decrypted_content = decrypt_message(
                     encrypted_data, self.receiver.decrypt_key)
 
@@ -568,14 +568,16 @@ class Message(object):
                     'but signed message not found.'.format(partner_id))
 
             if self.payload.get_content_type() == 'multipart/signed':
-                # logger.debug(b'Verifying the signed payload:\n{0:s}'.format(
-                #     self.payload.as_string()))
+                logger.debug('Verifying signed message %s payload: \n%s' % (
+                    self.message_id, self.payload.as_string()))
                 self.signed = True
+
+                # Split the message into signature and signed message
                 signature = None
-                message_boundary = ('--' + self.payload.get_boundary()).\
-                    encode('utf-8')
+                signature_types = ['application/pkcs7-signature',
+                                   'application/x-pkcs7-signature']
                 for part in self.payload.walk():
-                    if part.get_content_type() == "application/pkcs7-signature":
+                    if part.get_content_type() in signature_types:
                         signature = part.get_payload(decode=True)
                     else:
                         self.payload = part
@@ -584,14 +586,8 @@ class Message(object):
                 # then convert to canonical form and try again
                 mic_content = canonicalize(self.payload)
                 verify_cert = self.sender.load_verify_cert()
-                try:
-                    self.digest_alg = verify_message(
-                        mic_content, signature, verify_cert)
-                except IntegrityError:
-                    mic_content = raw_content.split(message_boundary)[1].\
-                        replace(b'\n', b'\r\n')
-                    self.digest_alg = verify_message(
-                        mic_content, signature, verify_cert)
+                self.digest_alg = verify_message(
+                    mic_content, signature, verify_cert)
 
                 # Calculate the MIC Hash of the message to be verified
                 digest_func = hashlib.new(self.digest_alg)
@@ -753,8 +749,8 @@ class Mdn(object):
         encoders.encode_7or8bit(mdn_base)
         self.payload.attach(mdn_base)
 
-        # logger.debug('MDN for message %s created:\n%s' % (
-        #     message.message_id, mdn_base.as_string()))
+        logger.debug('MDN for message %s created:\n%s' % (
+            message.message_id, mdn_base.as_string()))
 
         # Sign the MDN if it is requested by the sender
         if message.headers.get('disposition-notification-options') and \
@@ -775,18 +771,20 @@ class Mdn(object):
             signature.add_header(
                 'Content-Disposition', 'attachment', filename='smime.p7s')
             del signature['MIME-Version']
+
             signature.set_payload(sign_message(
                 canonicalize(self.payload),
                 self.digest_alg,
                 message.receiver.sign_key
             ))
             encoders.encode_base64(signature)
-            # logger.debug(
-            #     'Signature for MDN created:\n%s' % signature.as_string())
+
             signed_mdn.set_param('micalg', self.digest_alg)
             signed_mdn.attach(signature)
 
             self.payload = signed_mdn
+            logger.debug('Signature for MDN %s created:\n%s' % (
+                message.message_id, signature.as_string()))
 
         # Update the headers of the final payload and set message boundary
         for k, v in mdn_headers.items():
@@ -838,11 +836,15 @@ class Mdn(object):
             return status, detailed_status
 
         if self.payload.get_content_type() == 'multipart/signed':
+            message_boundary = ('--' + self.payload.get_boundary()).\
+                encode('utf-8')
+
+            # Extract the signature and the signed payload
             signature = None
-            message_boundary = (
-                    '--' + self.payload.get_boundary()).encode('utf-8')
+            signature_types = ['application/pkcs7-signature',
+                               'application/x-pkcs7-signature']
             for part in self.payload.walk():
-                if part.get_content_type() == 'application/pkcs7-signature':
+                if part.get_content_type() in signature_types:
                     signature = part.get_payload(decode=True)
                 elif part.get_content_type() == 'multipart/report':
                     self.payload = part
@@ -861,8 +863,8 @@ class Mdn(object):
 
         for part in self.payload.walk():
             if part.get_content_type() == 'message/disposition-notification':
-                # logger.debug('Found MDN report for message %s:\n%s' % (
-                #     orig_message.message_id, part.as_string()))
+                logger.debug('Found MDN report for message %s:\n%s' % (
+                    orig_message.message_id, part.as_string()))
 
                 mdn = part.get_payload()[-1]
                 mdn_status = mdn['Disposition'].split(';').\
