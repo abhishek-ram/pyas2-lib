@@ -1,6 +1,6 @@
 # Release History
 
-## 1.0.4 - 2019-04-26
+## 1.1.0 - 2019-04-30
 
 * Handle cases where compression is done before signing.
 * Add support for additional encryption algorithms.
