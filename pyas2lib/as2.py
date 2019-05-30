@@ -4,7 +4,7 @@ import binascii
 import traceback
 from email import encoders
 from email import message as email_message
-from email import message_from_bytes as parse_mime
+from email import message_from_file as parse_mime
 from email import utils as email_utils
 from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
