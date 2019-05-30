@@ -4,7 +4,7 @@ import re
 import sys
 from OpenSSL import crypto
 from asn1crypto import pem
-from email.generator import BytesGenerator
+from email.generator import Generator
 from io import BytesIO
 
 from pyas2lib.exceptions import AS2Exception
@@ -33,7 +33,7 @@ def quote_as2name(unquoted_name):
         return unquoted_name
 
 
-class BinaryBytesGenerator(BytesGenerator):
+class BinaryBytesGenerator(Generator):
     """ Override the bytes generator to better handle binary data """
 
     def _handle_application_pkcs7_mime(self, msg):
