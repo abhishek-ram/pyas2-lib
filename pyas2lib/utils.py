@@ -8,6 +8,7 @@ from email.generator import BytesGenerator
 from io import BytesIO
 
 from pyas2lib.exceptions import AS2Exception
+from datetime import datetime
 
 
 def unquote_as2name(quoted_name):
@@ -185,3 +186,50 @@ def verify_certificate_chain(cert_str, trusted_certs, ignore_self_signed=True):
 
     except crypto.X509StoreContextError as e:
         raise AS2Exception('Partner Certificate Invalid: %s' % e.args[-1][-1])
+
+
+def extract_certificate_info(cert):
+    """
+    Extract validity information from the certificate and return a dictionary.
+    Provide either key with certificate (private) or public certificate
+    :param cert: the certificate as byte string in PEM or DER format
+    :return: a dictionary holding certificate information:
+                valid_from (datetime)
+                valid_to (datetime)
+                subject (list of name, value tuples)
+                issuer (list of name, value tuples)
+                serial (int)
+    """
+
+    # initialize the cert_info dictionary
+    cert_info = {
+        'valid_from': None,
+        'valid_to': None,
+        'subject': None,
+        'issuer': None,
+        'serial': None
+    }
+
+    # get certificate to DER list
+    der = pem_to_der(cert)
+
+    # iterate through the list to find the certificate
+    for _item in der:
+        try:
+            # load the certificate. if element is key, exception is triggered and next element is tried
+            certificate = crypto.load_certificate(crypto.FILETYPE_ASN1, _item)
+
+            # on successful load, extract the various fields into the dictionary
+            cert_info['valid_from'] = datetime.strptime(certificate.get_notBefore().decode('utf8'), "%Y%m%d%H%M%SZ")
+            cert_info['valid_to'] = datetime.strptime(certificate.get_notAfter().decode('utf8'), "%Y%m%d%H%M%SZ")
+            cert_info['subject'] = [tuple(item.decode('utf8') for item in sets)
+                                    for sets in certificate.get_subject().get_components()]
+            cert_info['issuer'] = [tuple(item.decode('utf8') for item in sets)
+                                   for sets in certificate.get_issuer().get_components()]
+            cert_info['serial'] = certificate.get_serial_number()
+            break
+        except crypto.Error:
+            continue
+
+    # return the dictionary
+    return cert_info

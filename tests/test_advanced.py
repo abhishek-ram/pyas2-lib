@@ -1,8 +1,8 @@
 from __future__ import unicode_literals, absolute_import, print_function
-from . import Pyas2TestCase, as2
+from . import Pyas2TestCase, as2, utils
 import os
 import base64
-
+import datetime
 
 class TestAdvanced(Pyas2TestCase):
 
@@ -324,6 +324,28 @@ class TestAdvanced(Pyas2TestCase):
                 )
             except as2.AS2Exception as e:
                 self.fail('Failed to load pem private key: %s' % e)
+
+    def test_extract_certificate_info(self):
+        """ Test case that extracts data from private and public certificates in PEM or DER format"""
+
+        cert_info = {'valid_from': datetime.datetime(2019, 6, 3, 11, 32, 57),
+                     'valid_to': datetime.datetime(2029, 5, 31, 11, 32, 57),
+                     'subject': [('C', 'AU'), ('ST', 'Some-State'), ('O', 'pyas2lib'), ('CN', 'test')],
+                     'issuer': [('C', 'AU'), ('ST', 'Some-State'), ('O', 'pyas2lib'), ('CN', 'test')],
+                     'serial': 13747137503594840569}
+        cert_empty = {'valid_from': None,
+                     'valid_to': None,
+                     'subject': None,
+                     'issuer': None,
+                     'serial': None}
+
+        # compare result of function with cert_info dict.
+        self.assertEqual(utils.extract_certificate_info(self.private_pem), cert_info)
+        self.assertEqual(utils.extract_certificate_info(self.private_cer), cert_info)
+        self.assertEqual(utils.extract_certificate_info(self.public_pem), cert_info)
+        self.assertEqual(utils.extract_certificate_info(self.public_cer), cert_info)
+        self.assertEqual(utils.extract_certificate_info(b''), cert_empty)
+
 
     def find_org(self, headers):
         return self.org
