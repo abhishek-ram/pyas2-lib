@@ -92,3 +92,4 @@ ENV/
 .idea
 .pytest_cache/
 .coverage
+.DS_Store

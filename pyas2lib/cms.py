@@ -229,8 +229,7 @@ def sign_message(data_to_sign, digest_alg, sign_key,
         digest_func = hashlib.new(digest_alg)
         digest_func.update(data_to_sign)
         message_digest = digest_func.digest()
-        print(data_to_sign)
-        print(digest_alg, message_digest)
+
         class SmimeCapability(core.Sequence):
             _fields = [
                 ('0', core.Any, {'optional': True}),
@@ -378,10 +377,8 @@ def verify_message(data_to_verify, signature, verify_cert):
                     message_digest += d
 
                 digest_func = hashlib.new(digest_alg)
-                print(data_to_verify)
                 digest_func.update(data_to_verify)
                 calc_message_digest = digest_func.digest()
-                print(digest_alg, calc_message_digest)
                 if message_digest != calc_message_digest:
                     raise IntegrityError('Failed to verify message signature: '
                                          'Message Digest does not match.')
