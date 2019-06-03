@@ -1,5 +1,10 @@
 # Release History
 
+## 1.1.1 - 2019-06-03
+
+* Remove leftover print statement.
+* Add utility for extracting public certificate information.
+
 ## 1.1.0 - 2019-04-30
 
 * Handle cases where compression is done before signing.

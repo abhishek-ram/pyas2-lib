@@ -18,11 +18,10 @@ setup(
     description="Python library for building and parsing AS2 Messages",
     license="GNU GPL v2.0",
     url="https://github.com/abhishek-ram/pyas2-lib",
-    # long_description=long_description,
     long_description="Docs for this project are maintained at "
                      "https://github.com/abhishek-ram/pyas2-lib/blob/"
                      "master/README.md",
-    version='1.1.0',
+    version='1.1.1',
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",
     packages=find_packages(
