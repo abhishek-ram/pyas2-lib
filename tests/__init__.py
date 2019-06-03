@@ -3,7 +3,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-from pyas2lib import as2, exceptions
+from pyas2lib import as2, exceptions, utils
 
 
 class Pyas2TestCase(unittest.TestCase):
@@ -46,3 +46,19 @@ class Pyas2TestCase(unittest.TestCase):
         with open(os.path.join(
                 cls.TEST_DIR, 'cert_sb2bi_public.ca'), 'rb') as fp:
             cls.sb2bi_public_ca = fp.read()
+
+        with open(os.path.join(
+                cls.TEST_DIR, 'cert_extract_private.cer'), 'rb') as fp:
+            cls.private_cer = fp.read()
+
+        with open(os.path.join(
+                cls.TEST_DIR, 'cert_extract_private.pem'), 'rb') as fp:
+            cls.private_pem = fp.read()
+
+        with open(os.path.join(
+                cls.TEST_DIR, 'cert_extract_public.cer'), 'rb') as fp:
+            cls.public_pem = fp.read()
+
+        with open(os.path.join(
+                cls.TEST_DIR, 'cert_extract_public.cer'), 'rb') as fp:
+            cls.public_cer = fp.read()
