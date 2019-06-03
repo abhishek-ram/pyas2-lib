@@ -4,6 +4,7 @@ import os
 import base64
 import datetime
 
+
 class TestAdvanced(Pyas2TestCase):
 
     def setUp(self):
@@ -72,7 +73,7 @@ class TestAdvanced(Pyas2TestCase):
         _, _, mdn = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
-            find_partner_cb=self.find_none,
+            find_partner_cb=lambda x: None,
             find_message_cb=lambda x, y: False
         )
 
@@ -88,7 +89,7 @@ class TestAdvanced(Pyas2TestCase):
         in_message = as2.Message()
         _, _, mdn = in_message.parse(
             raw_out_message,
-            find_org_cb=self.find_none,
+            find_org_cb=lambda x: None,
             find_partner_cb=self.find_partner,
             find_message_cb=lambda x, y: False
         )
@@ -326,35 +327,42 @@ class TestAdvanced(Pyas2TestCase):
                 self.fail('Failed to load pem private key: %s' % e)
 
     def test_extract_certificate_info(self):
-        """ Test case that extracts data from private and public certificates in PEM or DER format"""
+        """ Test case that extracts data from private and public certificates
+         in PEM or DER format"""
 
-        cert_info = {'valid_from': datetime.datetime(2019, 6, 3, 11, 32, 57),
-                     'valid_to': datetime.datetime(2029, 5, 31, 11, 32, 57),
-                     'subject': [('C', 'AU'), ('ST', 'Some-State'), ('O', 'pyas2lib'), ('CN', 'test')],
-                     'issuer': [('C', 'AU'), ('ST', 'Some-State'), ('O', 'pyas2lib'), ('CN', 'test')],
-                     'serial': 13747137503594840569}
-        cert_empty = {'valid_from': None,
-                     'valid_to': None,
-                     'subject': None,
-                     'issuer': None,
-                     'serial': None}
+        cert_info = {
+            'valid_from': datetime.datetime(2019, 6, 3, 11, 32, 57),
+            'valid_to': datetime.datetime(2029, 5, 31, 11, 32, 57),
+            'subject': [('C', 'AU'), ('ST', 'Some-State'),
+                        ('O', 'pyas2lib'), ('CN', 'test')],
+            'issuer': [('C', 'AU'), ('ST', 'Some-State'),
+                       ('O', 'pyas2lib'), ('CN', 'test')],
+            'serial': 13747137503594840569
+        }
+        cert_empty = {
+            'valid_from': None,
+            'valid_to': None,
+            'subject': None,
+            'issuer': None,
+            'serial': None
+        }
 
         # compare result of function with cert_info dict.
-        self.assertEqual(utils.extract_certificate_info(self.private_pem), cert_info)
-        self.assertEqual(utils.extract_certificate_info(self.private_cer), cert_info)
-        self.assertEqual(utils.extract_certificate_info(self.public_pem), cert_info)
-        self.assertEqual(utils.extract_certificate_info(self.public_cer), cert_info)
+        self.assertEqual(
+            utils.extract_certificate_info(self.private_pem), cert_info)
+        self.assertEqual(
+            utils.extract_certificate_info(self.private_cer), cert_info)
+        self.assertEqual(
+            utils.extract_certificate_info(self.public_pem), cert_info)
+        self.assertEqual(
+            utils.extract_certificate_info(self.public_cer), cert_info)
         self.assertEqual(utils.extract_certificate_info(b''), cert_empty)
-
 
     def find_org(self, headers):
         return self.org
 
     def find_partner(self, headers):
         return self.partner
-
-    def find_none(self, as2_id):
-        return None
 
     def find_message(self, message_id, message_recipient):
         return self.out_message
