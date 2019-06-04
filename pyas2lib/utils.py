@@ -224,9 +224,9 @@ def extract_certificate_info(cert):
 
             # on successful load, extract the various fields into the dictionary
             cert_info['valid_from'] = datetime.strptime(
-                certificate.get_notBefore().decode('utf8'), "%Y%m%d%H%M%SZ")
+                certificate.get_notBefore().decode('utf8'), "%Y%m%d%H%M%S%z")
             cert_info['valid_to'] = datetime.strptime(
-                certificate.get_notAfter().decode('utf8'), "%Y%m%d%H%M%SZ")
+                certificate.get_notAfter().decode('utf8'), "%Y%m%d%H%M%S%z")
             cert_info['subject'] = [
                 tuple(item.decode('utf8') for item in sets)
                 for sets in certificate.get_subject().get_components()]
