@@ -13,10 +13,7 @@ class Pyas2TestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with open(os.path.join(cls.TEST_DIR, 'payload.txt'), 'rb') as t_file:
-            cls.test_data = t_file.read().\
-                replace(b'\r\n', b'\n').\
-                replace(b'\r', b'\n').\
-                replace(b'\n', b'\r\n')
+            cls.test_data = t_file.read()
 
         with open(os.path.join(
                 cls.TEST_DIR, 'cert_test.p12'), 'rb') as fp:
@@ -65,3 +62,6 @@ class Pyas2TestCase(unittest.TestCase):
         with open(os.path.join(
                 cls.TEST_DIR, 'cert_extract_public.cer'), 'rb') as fp:
             cls.public_cer = fp.read()
+
+        with open(os.path.join(cls.TEST_DIR, 'payload_dos.txt'), 'rb') as t_file:
+            cls.test_data_dos = t_file.read()
