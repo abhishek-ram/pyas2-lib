@@ -6,6 +6,7 @@ from OpenSSL import crypto
 from asn1crypto import pem
 from email.generator import BytesGenerator
 from io import BytesIO
+from email import policy
 
 from pyas2lib.exceptions import AS2Exception
 from datetime import datetime
@@ -47,15 +48,15 @@ class BinaryBytesGenerator(BytesGenerator):
             self._fp.write(payload)
 
 
-def mime_to_bytes(msg, header_len):
+def mime_to_bytes(msg, email_policy):
     """
     Function to convert and email Message to flat string format
     :param msg: email.Message to be converted to string
-    :param header_len: the msx length of the header per line
+    :param email_policy: email.policy that should be applied to message
     :return: the byte string representation of the email message
     """
     fp = BytesIO()
-    g = BinaryBytesGenerator(fp, maxheaderlen=header_len)
+    g = BinaryBytesGenerator(fp, policy=email_policy)
     g.flatten(msg)
     return fp.getvalue()
 
@@ -76,8 +77,7 @@ def canonicalize(message):
         message_header += '\r\n'
         return message_header.encode('utf-8') + message_body
     else:
-        return mime_to_bytes(message, 0).replace(
-            b'\r\n', b'\n').replace(b'\r', b'\n').replace(b'\n', b'\r\n')
+        return mime_to_bytes(message, email_policy=policy.HTTP)
 
 
 def make_mime_boundary(text=None):

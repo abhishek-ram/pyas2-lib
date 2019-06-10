@@ -6,6 +6,7 @@ from email import encoders
 from email import message as email_message
 from email import message_from_bytes as parse_mime
 from email import utils as email_utils
+from email import policy
 from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
 
@@ -278,7 +279,7 @@ class Message(object):
             return ''
 
         if self.payload.is_multipart():
-            message_bytes = mime_to_bytes(self.payload, 0)
+            message_bytes = mime_to_bytes(self.payload, email_policy=policy.HTTP)
             boundary = b'--' + self.payload.get_boundary().encode('utf-8')
             temp = message_bytes.split(boundary)
             temp.pop(0)
@@ -363,10 +364,11 @@ class Message(object):
 
         # Read the input and convert to bytes if value is unicode/str
         # using utf-8 encoding and finally Canonicalize the payload
-        self.payload = email_message.Message()
+        self.payload = email_message.Message(policy=policy.HTTP)
         self.payload.set_payload(data)
         self.payload.set_type(content_type)
-        encoders.encode_7or8bit(self.payload)
+        # TODO: validate that encoding is really not needed:
+        # encoders.encode_7or8bit(self.payload)
 
         if filename:
             self.payload.add_header(
@@ -384,7 +386,7 @@ class Message(object):
             compressed_message.add_header(
                 'Content-Transfer-Encoding', 'binary')
             compressed_message.set_payload(
-                compress_message(mime_to_bytes(self.payload, 0)))
+                compress_message(mime_to_bytes(self.payload, policy.HTTP)))
 
             self.payload = compressed_message
 
@@ -398,14 +400,14 @@ class Message(object):
             del signed_message['MIME-Version']
             signed_message.attach(self.payload)
 
-            # Calculate the MIC Hash of the message to be verified
-            mic_content = canonicalize(self.payload)
+            # Calculate the MIC Hash of the message to be verifiy
+            mic_content = mime_to_bytes(self.payload, email_policy=policy.HTTP)
             digest_func = hashlib.new(self.digest_alg)
             digest_func.update(mic_content)
             self.mic = binascii.b2a_base64(digest_func.digest()).strip()
 
             # Create the signature mime message
-            signature = email_message.Message()
+            signature = email_message.Message(policy=policy.HTTP)
             signature.set_type('application/pkcs7-signature')
             signature.set_param('name', 'smime.p7s')
             signature.set_param('smime-type', 'signed-data')
@@ -421,11 +423,11 @@ class Message(object):
             self.payload = signed_message
 
             logger.debug('Signed message %s payload as:\n%s' % (
-               self.message_id, mime_to_bytes(self.payload, 0)))
+               self.message_id, mime_to_bytes(self.payload, email_policy=policy.HTTP)))
 
         if self.receiver.encrypt:
             self.encrypted, self.enc_alg = True, self.receiver.enc_alg
-            encrypted_message = email_message.Message()
+            encrypted_message = email_message.Message(policy=policy.HTTP)
             encrypted_message.set_type('application/pkcs7-mime')
             encrypted_message.set_param('name', 'smime.p7m')
             encrypted_message.set_param('smime-type', 'enveloped-data')
@@ -434,7 +436,7 @@ class Message(object):
             encrypted_message.add_header('Content-Transfer-Encoding', 'binary')
             encrypt_cert = self.receiver.load_encrypt_cert()
             encrypted_message.set_payload(encrypt_message(
-                mime_to_bytes(self.payload, 0), self.enc_alg, encrypt_cert))
+                mime_to_bytes(self.payload, email_policy=policy.HTTP), self.enc_alg, encrypt_cert))
 
             self.payload = encrypted_message
             logger.debug('Encrypted message %s payload as:\n%s' % (
@@ -554,7 +556,7 @@ class Message(object):
                 self.payload = parse_mime(decrypted_content)
 
                 if self.payload.get_content_type() == 'text/plain':
-                    self.payload = email_message.Message()
+                    self.payload = email_message.Message(policy=policy.HTTP)
                     self.payload.set_payload(decrypted_content)
                     self.payload.set_type('application/edi-consent')
 
@@ -651,7 +653,7 @@ class Mdn(object):
 
         if self.payload:
             message_bytes = mime_to_bytes(
-                self.payload, 0).replace(b'\n', b'\r\n')
+                self.payload, email_policy=policy.HTTP)
             boundary = b'--' + self.payload.get_boundary().encode('utf-8')
             temp = message_bytes.split(boundary)
             temp.pop(0)
@@ -720,15 +722,16 @@ class Mdn(object):
             'report', report_type='disposition-notification')
 
         # Create and attach the MDN Text Message
-        mdn_text = email_message.Message()
+        mdn_text = email_message.Message(policy=policy.HTTP)
         mdn_text.set_payload('%s\n' % confirmation_text)
         mdn_text.set_type('text/plain')
         del mdn_text['MIME-Version']
-        encoders.encode_7or8bit(mdn_text)
+        # TODO: Validate that encoding is really not be needed:
+        # encoders.encode_7or8bit(mdn_text)
         self.payload.attach(mdn_text)
 
         # Create and attache the MDN Report Message
-        mdn_base = email_message.Message()
+        mdn_base = email_message.Message(policy=policy.HTTP)
         mdn_base.set_type('message/disposition-notification')
         mdn_report = 'Reporting-UA: pyAS2 Open Source AS2 Software\n'
         mdn_report += 'Original-Recipient: rfc822; {}\n'.format(
@@ -746,7 +749,8 @@ class Mdn(object):
                 message.mic.decode(), message.digest_alg)
         mdn_base.set_payload(mdn_report)
         del mdn_base['MIME-Version']
-        encoders.encode_7or8bit(mdn_base)
+        # encoding should not be needed
+        # encoders.encode_7or8bit(mdn_base)
         self.payload.attach(mdn_base)
 
         logger.debug('MDN for message %s created:\n%s' % (
@@ -773,7 +777,7 @@ class Mdn(object):
             del signature['MIME-Version']
 
             signature.set_payload(sign_message(
-                canonicalize(self.payload),
+                mime_to_bytes(self.payload, email_policy=policy.HTTP),
                 self.digest_alg,
                 message.receiver.sign_key
             ))
