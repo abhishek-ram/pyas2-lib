@@ -331,8 +331,8 @@ class TestAdvanced(Pyas2TestCase):
          in PEM or DER format"""
 
         cert_info = {
-            'valid_from': datetime.datetime(2019, 6, 3, 11, 32, 57),
-            'valid_to': datetime.datetime(2029, 5, 31, 11, 32, 57),
+            'valid_from': datetime.datetime(2019, 6, 3, 11, 32, 57, tzinfo=datetime.timezone.utc),
+            'valid_to': datetime.datetime(2029, 5, 31, 11, 32, 57, tzinfo=datetime.timezone.utc),
             'subject': [('C', 'AU'), ('ST', 'Some-State'),
                         ('O', 'pyas2lib'), ('CN', 'test')],
             'issuer': [('C', 'AU'), ('ST', 'Some-State'),
