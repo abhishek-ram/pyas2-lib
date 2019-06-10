@@ -555,7 +555,6 @@ class Message(object):
                 self.enc_alg, decrypted_content = decrypt_message(
                     encrypted_data, self.receiver.decrypt_key)
 
-                raw_content = decrypted_content
                 self.payload = parse_mime(decrypted_content)
 
                 if self.payload.get_content_type() == 'text/plain':
