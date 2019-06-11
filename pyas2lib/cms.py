@@ -89,7 +89,7 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
         })
 
     elif cipher == 'rc4':
-        algorithm_id = '1.2.840.113549.1.12.1.1'
+        algorithm_id = '1.2.840.113549.3.4'
         encrypted_content = symmetric.rc4_encrypt(key, data_to_encrypt)
         enc_alg_asn1 = algos.EncryptionAlgorithm({
             'algorithm': algorithm_id,
@@ -175,15 +175,15 @@ def decrypt_message(encrypted_data, decryption_key):
                 'encrypted_content_info']['encrypted_content'].native
 
             try:
-                if alg.encryption_cipher == 'tripledes':
+                if alg['algorithm'].native == '1.2.840.113549.3.4':  # This is RC4
+                    decrypted_content = symmetric.rc4_decrypt(key, encapsulated_data)
+                elif alg.encryption_cipher == 'tripledes':
                     cipher = 'tripledes_192_cbc'
                     decrypted_content = symmetric.tripledes_cbc_pkcs5_decrypt(
                         key, encapsulated_data, alg.encryption_iv)
                 elif alg.encryption_cipher == 'aes':
                     decrypted_content = symmetric.aes_cbc_pkcs7_decrypt(
                         key, encapsulated_data, alg.encryption_iv)
-                elif alg.encryption_cipher == 'rc4':
-                    decrypted_content = symmetric.rc4_decrypt(key, encapsulated_data)
                 elif alg.encryption_cipher == 'rc2':
                     decrypted_content = symmetric.rc2_cbc_pkcs5_decrypt(
                         key, encapsulated_data, alg['parameters']['iv'].native)

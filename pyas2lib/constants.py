@@ -29,7 +29,7 @@ DIGEST_ALGORITHMS = (
 ENCRYPTION_ALGORITHMS = (
     'tripledes_192_cbc',
     'rc2_128_cbc',
-    'rc4_128_cbc'
+    'rc4_128_cbc',
     'aes_128_cbc',
     'aes_192_cbc',
     'aes_256_cbc',
