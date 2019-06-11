@@ -1,5 +1,7 @@
-from __future__ import unicode_literals, absolute_import, print_function
-from . import as2, Pyas2TestCase
+"""Module for testing the basic features of pyas2."""
+
+from pyas2lib import as2
+from . import Pyas2TestCase
 
 
 class TestBasic(Pyas2TestCase):

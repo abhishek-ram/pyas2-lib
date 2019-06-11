@@ -1,8 +1,10 @@
-from __future__ import unicode_literals, absolute_import, print_function
-from . import Pyas2TestCase, as2, utils
-import os
+"""Module for testing the advanced features of pyas2lib."""
 import base64
 import datetime
+import os
+
+from pyas2lib import as2, utils
+from . import Pyas2TestCase
 
 
 class TestAdvanced(Pyas2TestCase):

@@ -1,7 +1,10 @@
-from __future__ import unicode_literals, absolute_import, print_function
-from . import as2, Pyas2TestCase
-import requests
+"""Module for testing with a live old pyas2 server."""
 import os
+
+import requests
+
+from pyas2lib import as2
+from . import Pyas2TestCase
 
 TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
@@ -12,9 +15,9 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.org = as2.Organization(
             as2_name='pyas2lib',
             sign_key=self.private_key,
-            sign_key_pass='test'.encode('utf-8'),
+            sign_key_pass='test',
             decrypt_key=self.private_key,
-            decrypt_key_pass='test'.encode('utf-8')
+            decrypt_key_pass='test'
         )
 
         self.partner = as2.Partner(
