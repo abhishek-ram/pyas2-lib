@@ -8,9 +8,9 @@ class TestBasic(Pyas2TestCase):
         self.org = as2.Organization(
             as2_name='some_organization',
             sign_key=self.private_key,
-            sign_key_pass='test'.encode('utf-8'),
+            sign_key_pass='test',
             decrypt_key=self.private_key,
-            decrypt_key_pass='test'.encode('utf-8')
+            decrypt_key_pass='test'
         )
         self.partner = as2.Partner(
             as2_name='some_partner',
@@ -126,10 +126,10 @@ class TestBasic(Pyas2TestCase):
 
         # Compare the mic contents of the input and output messages
         self.assertEqual(status, 'processed')
-        self.assertEqual(self.test_data, in_message.content)
         self.assertTrue(in_message.signed)
         self.assertTrue(in_message.encrypted)
         self.assertEqual(out_message.mic, in_message.mic)
+        self.assertEqual(self.test_data, in_message.content)
 
     def test_encrypted_signed_compressed_message(self):
         """ Test Encrypted Signed Compressed Message """

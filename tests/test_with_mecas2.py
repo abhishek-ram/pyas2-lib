@@ -9,9 +9,9 @@ class TestMecAS2(Pyas2TestCase):
         self.org = as2.Organization(
             as2_name='some_organization',
             sign_key=self.private_key,
-            sign_key_pass='test'.encode('utf-8'),
+            sign_key_pass='test',
             decrypt_key=self.private_key,
-            decrypt_key_pass='test'.encode('utf-8')
+            decrypt_key_pass='test'
         )
         self.partner = as2.Partner(
             as2_name='mecas2',

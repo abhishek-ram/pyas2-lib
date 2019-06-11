@@ -1,3 +1,4 @@
+import sys
 from setuptools import setup, find_packages
 
 install_requires = [
@@ -5,6 +6,11 @@ install_requires = [
     'oscrypto==0.19.1',
     'pyOpenSSL==17.5.0',
 ]
+
+if sys.version_info.minor == 6:
+    install_requires += [
+        'dataclasses==0.6'
+    ]
 
 tests_require = [
     'pytest==3.4.0',
@@ -34,7 +40,6 @@ setup(
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Topic :: Security :: Cryptography",

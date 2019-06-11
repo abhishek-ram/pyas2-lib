@@ -2,6 +2,7 @@ import logging
 import hashlib
 import binascii
 import traceback
+from dataclasses import dataclass
 from email import encoders
 from email import message as email_message
 from email import message_from_bytes as parse_mime
@@ -51,42 +52,49 @@ MDN_FAILED_TEXT = 'The AS2 message could not be processed. The ' \
                   'disposition-notification report has additional details.'
 
 
+@dataclass
 class Organization(object):
-    """Class represents an AS2 organization and defines the certificates and
-    settings to be used when sending and receiving messages. """
+    """
+    Class represents an AS2 organization and defines the certificates and
+    settings to be used when sending and receiving messages.
 
-    def __init__(self, as2_name, sign_key=None, sign_key_pass=None,
-                 decrypt_key=None, decrypt_key_pass=None, mdn_url=None,
-                 mdn_confirm_text=MDN_CONFIRM_TEXT):
-        """
-        :param as2_name: The unique AS2 name for this organization
+    :param as2_name: The unique AS2 name for this organization
 
-        :param sign_key: A byte string of the pkcs12 encoded key pair
-            used for signing outbound messages and MDNs.
+    :param sign_key: A byte string of the pkcs12 encoded key pair
+        used for signing outbound messages and MDNs.
 
-        :param sign_key_pass: The password for decrypting the `sign_key`
+    :param sign_key_pass: The password for decrypting the `sign_key`
 
-        :param decrypt_key:  A byte string of the pkcs12 encoded key pair
-            used for decrypting inbound messages.
+    :param decrypt_key:  A byte string of the pkcs12 encoded key pair
+        used for decrypting inbound messages.
 
-        :param decrypt_key_pass: The password for decrypting the `decrypt_key`
+    :param decrypt_key_pass: The password for decrypting the `decrypt_key`
 
-        :param mdn_url: The URL where the receiver is expected to post
-            asynchronous MDNs.
-        """
-        self.sign_key = self.load_key(
-            sign_key, sign_key_pass) if sign_key else None
+    :param mdn_url: The URL where the receiver is expected to post
+        asynchronous MDNs.
+    """
 
-        self.decrypt_key = self.load_key(
-            decrypt_key, decrypt_key_pass) if decrypt_key else None
+    as2_name: str
+    sign_key: bytes = None
+    sign_key_pass: str = None
+    decrypt_key: bytes = None
+    decrypt_key_pass: str = None
+    mdn_url: str = None
+    mdn_confirm_text: str = MDN_CONFIRM_TEXT
 
-        self.as2_name = as2_name
-        self.mdn_url = mdn_url
-        self.mdn_confirm_text = mdn_confirm_text
+    def __post_init__(self):
+        """Run the post initialisation checks for this class."""
+        # Load the signature and decryption keys
+        if self.sign_key:
+            self.sign_key = self.load_key(self.sign_key, self.sign_key_pass)
+
+        if self.decrypt_key:
+            self.decrypt_key = self.load_key(
+                self.decrypt_key, self.decrypt_key_pass)
 
     @staticmethod
-    def load_key(key_str, key_pass):
-        """ Function to load password protected key file in p12 or pem format"""
+    def load_key(key_str: bytes, key_pass: str):
+        """Function to load password protected key file in p12 or pem format."""
 
         try:
             # First try to parse as a p12 file
@@ -115,99 +123,99 @@ class Organization(object):
         return key, cert
 
 
+@dataclass
 class Partner(object):
-    """Class represents an AS2 partner and defines the certificates and
-    settings to be used when sending and receiving messages."""
+    """
+    Class represents an AS2 partner and defines the certificates and
+    settings to be used when sending and receiving messages.
 
-    def __init__(self, as2_name, verify_cert=None, verify_cert_ca=None,
-                 encrypt_cert=None, encrypt_cert_ca=None, validate_certs=True,
-                 compress=False, sign=False, digest_alg='sha256', encrypt=False,
-                 enc_alg='tripledes_192_cbc', mdn_mode=None,
-                 mdn_digest_alg=None, mdn_confirm_text=MDN_CONFIRM_TEXT):
-        """
-        :param as2_name: The unique AS2 name for this partner.
+    :param as2_name: The unique AS2 name for this partner.
 
-        :param verify_cert: A byte string of the certificate to be used for
-            verifying signatures of inbound messages and MDNs.
+    :param verify_cert: A byte string of the certificate to be used for
+        verifying signatures of inbound messages and MDNs.
 
-        :param verify_cert_ca: A byte string of the ca certificate if any of
-            the verification cert
+    :param verify_cert_ca: A byte string of the ca certificate if any of
+        the verification cert
 
-        :param encrypt_cert: A byte string of the certificate to be used for
-            encrypting outbound message.
+    :param encrypt_cert: A byte string of the certificate to be used for
+        encrypting outbound message.
 
-        :param encrypt_cert_ca: A byte string of the ca certificate if any of
-            the encryption cert
+    :param encrypt_cert_ca: A byte string of the ca certificate if any of
+        the encryption cert
 
-        :param validate_certs: Set this flag to `False` to disable validations of
-            the encryption and verification certificates. (default `True`)
+    :param validate_certs: Set this flag to `False` to disable validations of
+        the encryption and verification certificates. (default `True`)
 
-        :param compress: Set this flag to `True` to compress outgoing
-            messages. (default `False`)
+    :param compress: Set this flag to `True` to compress outgoing
+        messages. (default `False`)
 
-        :param sign: Set this flag to `True` to sign outgoing
-            messages. (default `False`)
+    :param sign: Set this flag to `True` to sign outgoing
+        messages. (default `False`)
 
-        :param digest_alg: The digest algorithm to be used for generating the
-            signature. (default "sha256")
+    :param digest_alg: The digest algorithm to be used for generating the
+        signature. (default "sha256")
 
-        :param encrypt: Set this flag to `True` to encrypt outgoing
-            messages. (default `False`)
+    :param encrypt: Set this flag to `True` to encrypt outgoing
+        messages. (default `False`)
 
-        :param enc_alg:
-            The encryption algorithm to be used. (default `"tripledes_192_cbc"`)
+    :param enc_alg:
+        The encryption algorithm to be used. (default `"tripledes_192_cbc"`)
 
-        :param mdn_mode: The mode to be used for receiving the MDN.
-            Set to `None` for no MDN, `'SYNC'` for synchronous and `'ASYNC'`
-            for asynchronous. (default `None`)
+    :param cms_encoding:
+        The encoding to be used for the encrypted, signed or compressed data.
+        It can be `'binary'` or `'base64'`. (default `'binary'`)
 
-        :param mdn_digest_alg: The digest algorithm to be used by the receiver
-            for signing the MDN. Use `None` for unsigned MDN. (default `None`)
+    :param mdn_mode: The mode to be used for receiving the MDN.
+        Set to `None` for no MDN, `'SYNC'` for synchronous and `'ASYNC'`
+        for asynchronous. (default `None`)
 
-        :param mdn_confirm_text: The text to be used in the MDN for successfully
-            processed messages received from this partner.
+    :param mdn_digest_alg: The digest algorithm to be used by the receiver
+        for signing the MDN. Use `None` for unsigned MDN. (default `None`)
 
-       """
+    :param mdn_confirm_text: The text to be used in the MDN for successfully
+        processed messages received from this partner.
+
+    """
+
+    as2_name: str
+    verify_cert: bytes = None
+    verify_cert_ca: bytes = None
+    encrypt_cert: bytes = None
+    encrypt_cert_ca: bytes = None
+    validate_certs: bool = True
+    compress: bool = False
+    encrypt: bool = False
+    enc_alg: str = 'tripledes_192_cbc'
+    sign: bool = False
+    digest_alg: str = 'sha256'
+    cms_encoding: str = 'binary'
+    mdn_mode: str = None
+    mdn_digest_alg: str = None
+    mdn_confirm_text: str = MDN_CONFIRM_TEXT
+
+    def __post_init__(self):
+        """Run the post initialisation checks for this class."""
 
         # Validations
-        if digest_alg and digest_alg not in DIGEST_ALGORITHMS:
+        if self.digest_alg and self.digest_alg not in DIGEST_ALGORITHMS:
             raise ImproperlyConfigured(
-                'Unsupported Digest Algorithm {}, must be '
-                'one of {}'.format(digest_alg, DIGEST_ALGORITHMS))
+                f'Unsupported Digest Algorithm {self.digest_alg}, must be '
+                f'one of {DIGEST_ALGORITHMS}')
 
-        if enc_alg and enc_alg not in ENCRYPTION_ALGORITHMS:
+        if self.enc_alg and self.enc_alg not in ENCRYPTION_ALGORITHMS:
             raise ImproperlyConfigured(
-                'Unsupported Encryption Algorithm {}, must be '
-                'one of {}'.format(enc_alg, ENCRYPTION_ALGORITHMS))
+                f'Unsupported Encryption Algorithm {self.enc_alg}, must be '
+                f'one of {ENCRYPTION_ALGORITHMS}')
 
-        if mdn_mode and mdn_mode not in MDN_MODES:
+        if self.mdn_mode and self.mdn_mode not in MDN_MODES:
             raise ImproperlyConfigured(
-                'Unsupported MDN Mode {}, must be '
-                'one of {}'.format(digest_alg, MDN_MODES))
+                f'Unsupported MDN Mode {self.mdn_mode}, must be '
+                f'one of {MDN_MODES}')
 
-        # if mdn_mode == 'ASYNC' and not mdn_url:
-        #     raise ImproperlyConfigured(
-        #         'mdn_url is mandatory when mdn_mode is set to ASYNC ')
-
-        if mdn_digest_alg and mdn_digest_alg not in DIGEST_ALGORITHMS:
+        if self.mdn_digest_alg and self.mdn_digest_alg not in DIGEST_ALGORITHMS:
             raise ImproperlyConfigured(
-                'Unsupported MDN Digest Algorithm {}, must be '
-                'one of {}'.format(mdn_digest_alg, DIGEST_ALGORITHMS))
-
-        self.as2_name = as2_name
-        self.compress = compress
-        self.sign = sign
-        self.digest_alg = digest_alg
-        self.encrypt = encrypt
-        self.enc_alg = enc_alg
-        self.mdn_mode = mdn_mode
-        self.mdn_digest_alg = mdn_digest_alg
-        self.mdn_confirm_text = mdn_confirm_text
-        self.verify_cert = verify_cert
-        self.verify_cert_ca = verify_cert_ca
-        self.encrypt_cert = encrypt_cert
-        self.encrypt_cert_ca = encrypt_cert_ca
-        self.validate_certs = validate_certs
+                f'Unsupported MDN Digest Algorithm {self.mdn_digest_alg}, '
+                f'must be one of {DIGEST_ALGORITHMS}')
 
     def load_verify_cert(self):
         if self.validate_certs:

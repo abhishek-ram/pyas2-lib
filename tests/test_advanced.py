@@ -11,9 +11,9 @@ class TestAdvanced(Pyas2TestCase):
         self.org = as2.Organization(
             as2_name='some_organization',
             sign_key=self.private_key,
-            sign_key_pass='test'.encode('utf-8'),
+            sign_key_pass='test',
             decrypt_key=self.private_key,
-            decrypt_key_pass='test'.encode('utf-8')
+            decrypt_key_pass='test'
         )
         self.partner = as2.Partner(
             as2_name='some_partner',
@@ -82,6 +82,7 @@ class TestAdvanced(Pyas2TestCase):
             mdn.headers_str + b'\r\n' + mdn.content,
             find_message_cb=self.find_message
         )
+
         self.assertEqual(status, 'processed/Error')
         self.assertEqual(detailed_status, 'unknown-trading-partner')
 
@@ -309,7 +310,7 @@ class TestAdvanced(Pyas2TestCase):
                 as2.Organization(
                     as2_name='some_org',
                     sign_key=cert_file.read(),
-                    sign_key_pass=b'test'
+                    sign_key_pass='test'
                 )
             except as2.AS2Exception as e:
                 self.fail('Failed to load p12 private key: %s' % e)
@@ -321,7 +322,7 @@ class TestAdvanced(Pyas2TestCase):
                 as2.Organization(
                     as2_name='some_org',
                     sign_key=cert_file.read(),
-                    sign_key_pass=b'test'
+                    sign_key_pass='test'
                 )
             except as2.AS2Exception as e:
                 self.fail('Failed to load pem private key: %s' % e)
@@ -374,9 +375,9 @@ class SterlingIntegratorTest(Pyas2TestCase):
         self.org = as2.Organization(
             as2_name='AS2 Server',
             sign_key=self.oldpyas2_private_key,
-            sign_key_pass='password'.encode('utf-8'),
+            sign_key_pass='password',
             decrypt_key=self.oldpyas2_private_key,
-            decrypt_key_pass='password'.encode('utf-8')
+            decrypt_key_pass='password'
         )
         self.partner = as2.Partner(
             as2_name='Sterling B2B Integrator',
