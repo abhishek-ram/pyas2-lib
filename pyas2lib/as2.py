@@ -723,7 +723,7 @@ class Mdn(object):
 
         # Create and attach the MDN Text Message
         mdn_text = email_message.Message(policy=policy.HTTP)
-        mdn_text.set_payload('%s\n' % confirmation_text)
+        mdn_text.set_payload('%s\r\n' % confirmation_text)
         mdn_text.set_type('text/plain')
         del mdn_text['MIME-Version']
         # TODO: Validate that encoding is really not be needed:
@@ -733,19 +733,19 @@ class Mdn(object):
         # Create and attache the MDN Report Message
         mdn_base = email_message.Message(policy=policy.HTTP)
         mdn_base.set_type('message/disposition-notification')
-        mdn_report = 'Reporting-UA: pyAS2 Open Source AS2 Software\n'
-        mdn_report += 'Original-Recipient: rfc822; {}\n'.format(
+        mdn_report = 'Reporting-UA: pyAS2 Open Source AS2 Software\r\n'
+        mdn_report += 'Original-Recipient: rfc822; {}\r\n'.format(
             message.headers.get('as2-to'))
-        mdn_report += 'Final-Recipient: rfc822; {}\n'.format(
+        mdn_report += 'Final-Recipient: rfc822; {}\r\n'.format(
             message.headers.get('as2-to'))
-        mdn_report += 'Original-Message-ID: <{}>\n'.format(message.message_id)
+        mdn_report += 'Original-Message-ID: <{}>\r\n'.format(message.message_id)
         mdn_report += 'Disposition: automatic-action/' \
                       'MDN-sent-automatically; {}'.format(status)
         if detailed_status:
             mdn_report += ': {}'.format(detailed_status)
-        mdn_report += '\n'
+        mdn_report += '\r\n'
         if message.mic:
-            mdn_report += 'Received-content-MIC: {}, {}\n'.format(
+            mdn_report += 'Received-content-MIC: {}, {}\r\n'.format(
                 message.mic.decode(), message.digest_alg)
         mdn_base.set_payload(mdn_report)
         del mdn_base['MIME-Version']
@@ -753,7 +753,7 @@ class Mdn(object):
         # encoders.encode_7or8bit(mdn_base)
         self.payload.attach(mdn_base)
 
-        logger.debug('MDN for message %s created:\n%s' % (
+        logger.debug('MDN for message %s created:\r\n%s' % (
             message.message_id, mdn_base.as_string()))
 
         # Sign the MDN if it is requested by the sender
@@ -768,7 +768,7 @@ class Mdn(object):
             signed_mdn.attach(self.payload)
 
             # Create the signature mime message
-            signature = email_message.Message()
+            signature = email_message.Message(policy=policy.HTTP)
             signature.set_type('application/pkcs7-signature')
             signature.set_param('name', 'smime.p7s')
             signature.set_param('smime-type', 'signed-data')
