@@ -7,7 +7,7 @@ install:
   - python setup.py install
   - pip install pytest-cov
 script:
-  - pytest --cov=pyas2lib
+  - pytest --cov=pyas2lib --cov-config .coveragerc
 after_success:
   - pip install codecov
   - codecov
