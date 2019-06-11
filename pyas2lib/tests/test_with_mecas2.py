@@ -2,7 +2,7 @@
 import os
 
 from pyas2lib import as2
-from . import Pyas2TestCase
+from pyas2lib.tests import Pyas2TestCase, TEST_DIR
 
 
 class TestMecAS2(Pyas2TestCase):
@@ -26,7 +26,7 @@ class TestMecAS2(Pyas2TestCase):
         """ Test Compressed Message received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
-        received_file = os.path.join(self.TEST_DIR, 'mecas2_compressed.as2')
+        received_file = os.path.join(TEST_DIR, 'mecas2_compressed.as2')
         with open(received_file, 'rb') as fp:
             in_message = as2.Message()
             in_message.parse(
@@ -43,7 +43,7 @@ class TestMecAS2(Pyas2TestCase):
         """ Test Encrypted Message received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
-        received_file = os.path.join(self.TEST_DIR, 'mecas2_encrypted.as2')
+        received_file = os.path.join(TEST_DIR, 'mecas2_encrypted.as2')
         with open(received_file, 'rb') as fp:
             in_message = as2.Message()
             in_message.parse(
@@ -60,7 +60,7 @@ class TestMecAS2(Pyas2TestCase):
     def test_signed_message(self):
         """ Test Unencrypted Signed Uncompressed Message from Mendelson AS2"""
         # Parse the generated AS2 message as the partner
-        received_file = os.path.join(self.TEST_DIR, 'mecas2_signed.as2')
+        received_file = os.path.join(TEST_DIR, 'mecas2_signed.as2')
         with open(received_file, 'rb') as fp:
             in_message = as2.Message()
             in_message.parse(
@@ -79,7 +79,7 @@ class TestMecAS2(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(
-            self.TEST_DIR, 'mecas2_signed_encrypted.as2')
+            TEST_DIR, 'mecas2_signed_encrypted.as2')
         with open(received_file, 'rb') as fp:
             in_message = as2.Message()
             in_message.parse(
@@ -100,7 +100,7 @@ class TestMecAS2(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(
-            self.TEST_DIR, 'mecas2_compressed_signed_encrypted.as2')
+            TEST_DIR, 'mecas2_compressed_signed_encrypted.as2')
         with open(received_file, 'rb') as fp:
             in_message = as2.Message()
             in_message.parse(
@@ -120,7 +120,7 @@ class TestMecAS2(Pyas2TestCase):
         """ Test Unsigned MDN received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
-        received_file = os.path.join(self.TEST_DIR, 'mecas2_unsigned.mdn')
+        received_file = os.path.join(TEST_DIR, 'mecas2_unsigned.mdn')
         with open(received_file, 'rb') as fp:
             in_message = as2.Mdn()
             status, detailed_status = in_message.parse(
@@ -133,7 +133,7 @@ class TestMecAS2(Pyas2TestCase):
         """ Test Signed MDN received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
-        received_file = os.path.join(self.TEST_DIR, 'mecas2_signed.mdn')
+        received_file = os.path.join(TEST_DIR, 'mecas2_signed.mdn')
         with open(received_file, 'rb') as fp:
             in_message = as2.Mdn()
             in_message.parse(fp.read(), find_message_cb=self.find_message)

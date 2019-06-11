@@ -1,60 +1,29 @@
 import unittest
 import os
 
+TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
+
 
 class Pyas2TestCase(unittest.TestCase):
-    TEST_DIR = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 'fixtures')
-
+    
     @classmethod
     def setUpClass(cls):
-        with open(os.path.join(cls.TEST_DIR, 'payload.txt'), 'rb') as t_file:
-            cls.test_data = t_file.read()
+        """Perform the setup actions for the test case."""
+        file_list = {
+            'test_data': 'payload.txt',
+            'private_key': 'cert_test.p12',
+            'public_key': 'cert_test_public.pem',
+            'mecas2_public_key': 'cert_mecas2_public.pem',
+            'oldpyas2_public_key': 'cert_oldpyas2_public.pem',
+            'oldpyas2_private_key': 'cert_oldpyas2_private.pem',
+            'sb2bi_public_key': 'cert_sb2bi_public.pem',
+            'sb2bi_public_ca': 'cert_sb2bi_public.ca',
+            'private_cer': 'cert_extract_private.cer',
+            'private_pem': 'cert_extract_private.pem',
 
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_test.p12'), 'rb') as fp:
-            cls.private_key = fp.read()
+        }
 
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_test_public.pem'), 'rb') as fp:
-            cls.public_key = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_mecas2_public.pem'), 'rb') as fp:
-            cls.mecas2_public_key = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_oldpyas2_public.pem'), 'rb') as fp:
-            cls.oldpyas2_public_key = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_oldpyas2_public.pem'), 'rb') as fp:
-            cls.oldpyas2_public_key = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_oldpyas2_private.pem'), 'rb') as fp:
-            cls.oldpyas2_private_key = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_sb2bi_public.pem'), 'rb') as fp:
-            cls.sb2bi_public_key = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_sb2bi_public.ca'), 'rb') as fp:
-            cls.sb2bi_public_ca = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_extract_private.cer'), 'rb') as fp:
-            cls.private_cer = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_extract_private.pem'), 'rb') as fp:
-            cls.private_pem = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_extract_public.cer'), 'rb') as fp:
-            cls.public_pem = fp.read()
-
-        with open(os.path.join(
-                cls.TEST_DIR, 'cert_extract_public.cer'), 'rb') as fp:
-            cls.public_cer = fp.read()
+        # Load the files to the attrs
+        for attr, filename in file_list.items():
+            with open(os.path.join(TEST_DIR, filename), 'rb') as fp:
+                setattr(cls, attr, fp.read())

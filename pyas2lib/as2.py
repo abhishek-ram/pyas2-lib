@@ -10,46 +10,29 @@ from email import utils as email_utils
 from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
 
-from pyas2lib.cms import DIGEST_ALGORITHMS
-from pyas2lib.cms import ENCRYPTION_ALGORITHMS
-from pyas2lib.cms import compress_message
-from pyas2lib.cms import decompress_message
-from pyas2lib.cms import decrypt_message
-from pyas2lib.cms import encrypt_message
-from pyas2lib.cms import sign_message
-from pyas2lib.cms import verify_message
+from pyas2lib.cms import (
+    compress_message,
+    decompress_message,
+    decrypt_message,
+    encrypt_message,
+    sign_message,
+    verify_message
+)
+from pyas2lib.constants import *
 from pyas2lib.exceptions import *
-from pyas2lib.utils import canonicalize
-from pyas2lib.utils import extract_first_part
-from pyas2lib.utils import make_mime_boundary
-from pyas2lib.utils import mime_to_bytes
-from pyas2lib.utils import pem_to_der
-from pyas2lib.utils import quote_as2name
-from pyas2lib.utils import split_pem
-from pyas2lib.utils import unquote_as2name
-from pyas2lib.utils import verify_certificate_chain
-
-logger = logging.getLogger('pyas2lib')
-
-AS2_VERSION = '1.2'
-
-EDIINT_FEATURES = 'CMS'
-
-IGNORE_SELF_SIGNED_CERTS = True
-
-SYNCHRONOUS_MDN = 'SYNC'
-ASYNCHRONOUS_MDN = 'ASYNC'
-
-MDN_MODES = (
-    SYNCHRONOUS_MDN,
-    ASYNCHRONOUS_MDN
+from pyas2lib.utils import (
+    canonicalize,
+    extract_first_part,
+    make_mime_boundary,
+    mime_to_bytes,
+    pem_to_der,
+    quote_as2name,
+    split_pem,
+    unquote_as2name,
+    verify_certificate_chain
 )
 
-MDN_CONFIRM_TEXT = 'The AS2 message has been successfully processed. ' \
-                   'Thank you for exchanging AS2 messages with pyAS2.'
-
-MDN_FAILED_TEXT = 'The AS2 message could not be processed. The ' \
-                  'disposition-notification report has additional details.'
+logger = logging.getLogger('pyas2lib')
 
 
 @dataclass
@@ -89,8 +72,7 @@ class Organization(object):
             self.sign_key = self.load_key(self.sign_key, self.sign_key_pass)
 
         if self.decrypt_key:
-            self.decrypt_key = self.load_key(
-                self.decrypt_key, self.decrypt_key_pass)
+            self.decrypt_key = self.load_key(self.decrypt_key, self.decrypt_key_pass)
 
     @staticmethod
     def load_key(key_str: bytes, key_pass: str):
@@ -192,6 +174,7 @@ class Partner(object):
     mdn_mode: str = None
     mdn_digest_alg: str = None
     mdn_confirm_text: str = MDN_CONFIRM_TEXT
+    ignore_self_signed: bool = True
 
     def __post_init__(self):
         """Run the post initialisation checks for this class."""
@@ -230,7 +213,7 @@ class Partner(object):
 
             # Verify the certificate against the trusted roots
             verify_certificate_chain(
-                cert, trust_roots, ignore_self_signed=IGNORE_SELF_SIGNED_CERTS)
+                cert, trust_roots, ignore_self_signed=self.ignore_self_signed)
 
         return asymmetric.load_certificate(self.verify_cert)
 
@@ -247,7 +230,7 @@ class Partner(object):
 
             # Verify the certificate against the trusted roots
             verify_certificate_chain(
-                cert, trust_roots, ignore_self_signed=IGNORE_SELF_SIGNED_CERTS)
+                cert, trust_roots, ignore_self_signed=self.ignore_self_signed)
 
         return asymmetric.load_certificate(self.encrypt_cert)
 
@@ -281,8 +264,7 @@ class Message(object):
     @property
     def content(self):
         """Function returns the body of the as2 payload as a bytes object"""
-
-        if not self.payload:
+        if self.payload is None:
             return ''
 
         if self.payload.is_multipart():
@@ -293,8 +275,6 @@ class Message(object):
             return boundary + boundary.join(temp)
         else:
             content = self.payload.get_payload(decode=True)
-            if isinstance(content, str):
-                content = content.encode('utf-8')
             return content
 
     @property
@@ -337,8 +317,7 @@ class Message(object):
         """
 
         # Validations
-        assert type(data) is bytes, \
-            'Parameter data must be of bytes type.'
+        assert type(data) is bytes, 'Parameter data must be of bytes type.'
 
         additional_headers = additional_headers if additional_headers else {}
         assert type(additional_headers) is dict
@@ -558,7 +537,6 @@ class Message(object):
                 self.enc_alg, decrypted_content = decrypt_message(
                     encrypted_data, self.receiver.decrypt_key)
 
-                raw_content = decrypted_content
                 self.payload = parse_mime(decrypted_content)
 
                 if self.payload.get_content_type() == 'text/plain':
@@ -657,7 +635,7 @@ class Mdn(object):
     def content(self):
         """Function returns the body of the mdn message as a byte string"""
 
-        if self.payload:
+        if self.payload is not None:
             message_bytes = mime_to_bytes(
                 self.payload, 0).replace(b'\n', b'\r\n')
             boundary = b'--' + self.payload.get_boundary().encode('utf-8')
@@ -682,17 +660,20 @@ class Mdn(object):
                 message_header += '{}: {}\r\n'.format(k, v)
         return message_header.encode('utf-8')
 
-    def build(self, message, status, detailed_status=None):
+    def build(self, message, status, detailed_status=None, confirmation_text=MDN_CONFIRM_TEXT,
+              failed_text=MDN_FAILED_TEXT):
         """Function builds and signs an AS2 MDN message.
 
         :param message: The received AS2 message for which this is an MDN.
 
         :param status: The status of processing of the received AS2 message.
 
-        :param detailed_status:
-            The optional detailed status of processing of the received AS2
-            message. Used to give additional error info (default "None")
+        :param detailed_status: The optional detailed status of processing of the received AS2
+        message. Used to give additional error info (default "None")
 
+        :param confirmation_text: The confirmation message sent in the first part of the MDN.
+
+        :param failed_text: The failure message sent in the first part of the failed MDN.
         """
 
         # Generate message id using UUID 1 as it uses both hostname and time
@@ -711,8 +692,6 @@ class Mdn(object):
         }
 
         # Set the confirmation text message here
-        confirmation_text = MDN_CONFIRM_TEXT
-
         # overwrite with organization specific message
         if message.receiver and message.receiver.mdn_confirm_text:
             confirmation_text = message.receiver.mdn_confirm_text
@@ -722,7 +701,7 @@ class Mdn(object):
             confirmation_text = message.sender.mdn_confirm_text
 
         if status != 'processed':
-            confirmation_text = MDN_FAILED_TEXT
+            confirmation_text = failed_text
 
         self.payload = MIMEMultipart(
             'report', report_type='disposition-notification')
@@ -800,8 +779,7 @@ class Mdn(object):
                 self.payload.replace_header(k, v)
             else:
                 self.payload.add_header(k, v)
-        if self.payload.is_multipart():
-            self.payload.set_boundary(make_mime_boundary())
+        self.payload.set_boundary(make_mime_boundary())
 
     def parse(self, raw_content, find_message_cb):
         """Function parses the RAW AS2 MDN, verifies it and extracts the
