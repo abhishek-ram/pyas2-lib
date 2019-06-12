@@ -11,6 +11,7 @@ class Pyas2TestCase(unittest.TestCase):
         """Perform the setup actions for the test case."""
         file_list = {
             'test_data': 'payload.txt',
+            'test_data_dos': 'payload_dos.txt',
             'private_key': 'cert_test.p12',
             'public_key': 'cert_test_public.pem',
             'mecas2_public_key': 'cert_mecas2_public.pem',

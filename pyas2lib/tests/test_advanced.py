@@ -410,7 +410,7 @@ class TestAdvanced(Pyas2TestCase):
             # Compare the mic contents of the input and output messages
             self.assertEqual(status, 'processed')
             self.assertTrue(in_message.encrypted)
-            self.assertEqual(self.test_data, in_message.content)
+            self.assertEqual(self.test_data.splitlines(), in_message.content.splitlines())
 
     def find_org(self, headers):
         return self.org
@@ -444,8 +444,7 @@ class SterlingIntegratorTest(Pyas2TestCase):
 
     def xtest_process_message(self):
         """ Test processing message received from Sterling Integrator"""
-        with open(os.path.join(
-                TEST_DIR, 'sb2bi_signed_cmp.msg'), 'rb') as msg:
+        with open(os.path.join( TEST_DIR, 'sb2bi_signed_cmp.msg'), 'rb') as msg:
             as2message = as2.Message()
             status, exception, as2mdn = as2message.parse(
                 msg.read(),
@@ -457,14 +456,12 @@ class SterlingIntegratorTest(Pyas2TestCase):
 
     def test_process_mdn(self):
         """ Test processing mdn received from Sterling Integrator"""
-        message = as2.Message(sender=self.org, receiver=self.partner)
-        message.message_id = '151694007918.24690.7052273208458909245@' \
+        msg = as2.Message(sender=self.org, receiver=self.partner)
+        msg.message_id = '151694007918.24690.7052273208458909245@' \
                              'ip-172-31-14-209.ec2.internal'
 
         as2mdn = as2.Mdn()
         # Parse the mdn and get the message status
-        with open(os.path.join(
-                TEST_DIR, 'sb2bi_signed.mdn'), 'rb') as mdn:
-            status, detailed_status = as2mdn.parse(
-                mdn.read(), lambda x, y: message)
+        with open(os.path.join(TEST_DIR, 'sb2bi_signed.mdn'), 'rb') as mdn:
+            status, detailed_status = as2mdn.parse(mdn.read(), lambda x, y: msg)
         self.assertEqual(status, 'processed')

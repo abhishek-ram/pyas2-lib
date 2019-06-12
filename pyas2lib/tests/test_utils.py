@@ -19,8 +19,8 @@ def test_bytes_generator():
     """Test the email bytes generator class."""
     message = Message()
     message.set_type('application/pkcs7-mime')
-    assert utils.mime_to_bytes(message, 0) == b'MIME-Version: 1.0\n' \
-                                              b'Content-Type: application/pkcs7-mime\n\n'
+    assert utils.mime_to_bytes(message) == b'MIME-Version: 1.0\r\n' \
+                                           b'Content-Type: application/pkcs7-mime\r\n\r\n'
 
 
 def test_make_boundary():

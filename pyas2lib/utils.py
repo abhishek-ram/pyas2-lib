@@ -4,6 +4,8 @@ import re
 import sys
 from OpenSSL import crypto
 from asn1crypto import pem
+from email import policy
+from email import message
 from email.generator import BytesGenerator
 from io import BytesIO
 
@@ -50,38 +52,37 @@ class BinaryBytesGenerator(BytesGenerator):
             self._fp.write(payload)
 
 
-def mime_to_bytes(msg: email.message.Message, header_len):
+def mime_to_bytes(msg: message.Message, email_policy: policy.Policy = policy.HTTP):
     """
     Function to convert and email Message to flat string format.
 
     :param msg: email.Message to be converted to string
-    :param header_len: the msx length of the header per line
+    :param email_policy: the policy to be used for flattening the message.
     :return: the byte string representation of the email message
     """
     fp = BytesIO()
-    g = BinaryBytesGenerator(fp, maxheaderlen=header_len)
+    g = BinaryBytesGenerator(fp, policy=email_policy)
     g.flatten(msg)
     return fp.getvalue()
 
 
-def canonicalize(message: email.message.Message):
+def canonicalize(email_message: message.Message):
     """
     Function to convert an email Message to standard format string/
 
-    :param message: email.Message to be converted to standard string
+    :param email_message: email.message.Message to be converted to standard string
     :return: the standard representation of the email message in bytes
     """
 
-    if message.get('Content-Transfer-Encoding') == 'binary':
+    if email_message.get('Content-Transfer-Encoding') == 'binary':
         message_header = ''
-        message_body = message.get_payload(decode=True)
-        for k, v in message.items():
+        message_body = email_message.get_payload(decode=True)
+        for k, v in email_message.items():
             message_header += '{}: {}\r\n'.format(k, v)
         message_header += '\r\n'
         return message_header.encode('utf-8') + message_body
     else:
-        return mime_to_bytes(message, 0).replace(
-            b'\r\n', b'\n').replace(b'\r', b'\n').replace(b'\n', b'\r\n')
+        return mime_to_bytes(email_message)
 
 
 def make_mime_boundary(text: str = None):
