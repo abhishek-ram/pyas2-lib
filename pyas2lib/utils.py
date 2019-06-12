@@ -4,6 +4,8 @@ import re
 import sys
 from OpenSSL import crypto
 from asn1crypto import pem
+from email import policy
+from email import message
 from email.generator import BytesGenerator
 from io import BytesIO
 
@@ -11,9 +13,9 @@ from pyas2lib.exceptions import AS2Exception
 from datetime import datetime, timezone
 
 
-def unquote_as2name(quoted_name):
+def unquote_as2name(quoted_name: str):
     """
-    Function converts as2 name from quoted to unquoted format
+    Function converts as2 name from quoted to unquoted format.
 
     :param quoted_name: the as2 name in quoted format
     :return: the as2 name in unquoted format
@@ -21,9 +23,10 @@ def unquote_as2name(quoted_name):
     return email.utils.unquote(quoted_name)
 
 
-def quote_as2name(unquoted_name):
+def quote_as2name(unquoted_name: str):
     """
-    Function converts as2 name from unquoted to quoted format
+    Function converts as2 name from unquoted to quoted format.
+
     :param unquoted_name: the as2 name in unquoted format
     :return: the as2 name in unquoted format
     """
@@ -35,11 +38,13 @@ def quote_as2name(unquoted_name):
 
 
 class BinaryBytesGenerator(BytesGenerator):
-    """ Override the bytes generator to better handle binary data """
+    """Override the bytes generator to better handle binary data."""
 
-    def _handle_application_pkcs7_mime(self, msg):
-        """ Handle writing the binary messages to prevent default behaviour of
-        newline replacements """
+    def _handle_application_pkcs7_mime(self, msg: email.message.Message):
+        """
+        Handle writing the binary messages to prevent default behaviour of
+        newline replacements.
+        """
         payload = msg.get_payload(decode=True)
         if payload is None:
             return
@@ -47,42 +52,44 @@ class BinaryBytesGenerator(BytesGenerator):
             self._fp.write(payload)
 
 
-def mime_to_bytes(msg, header_len):
+def mime_to_bytes(msg: message.Message, email_policy: policy.Policy = policy.HTTP):
     """
-    Function to convert and email Message to flat string format
+    Function to convert and email Message to flat string format.
+
     :param msg: email.Message to be converted to string
-    :param header_len: the msx length of the header per line
+    :param email_policy: the policy to be used for flattening the message.
     :return: the byte string representation of the email message
     """
     fp = BytesIO()
-    g = BinaryBytesGenerator(fp, maxheaderlen=header_len)
+    g = BinaryBytesGenerator(fp, policy=email_policy)
     g.flatten(msg)
     return fp.getvalue()
 
 
-def canonicalize(message):
+def canonicalize(email_message: message.Message):
     """
-    Function to convert an email Message to standard format string
+    Function to convert an email Message to standard format string/
 
-    :param message: email.Message to be converted to standard string
+    :param email_message: email.message.Message to be converted to standard string
     :return: the standard representation of the email message in bytes
     """
 
-    if message.get('Content-Transfer-Encoding') == 'binary':
+    if email_message.get('Content-Transfer-Encoding') == 'binary':
         message_header = ''
-        message_body = message.get_payload(decode=True)
-        for k, v in message.items():
+        message_body = email_message.get_payload(decode=True)
+        for k, v in email_message.items():
             message_header += '{}: {}\r\n'.format(k, v)
         message_header += '\r\n'
         return message_header.encode('utf-8') + message_body
     else:
-        return mime_to_bytes(message, 0).replace(
-            b'\r\n', b'\n').replace(b'\r', b'\n').replace(b'\n', b'\r\n')
+        return mime_to_bytes(email_message)
 
 
-def make_mime_boundary(text=None):
-    # Craft a random boundary.  If text is given, ensure that the chosen
-    # boundary doesn't appear in the text.
+def make_mime_boundary(text: str = None):
+    """
+    Craft a random boundary.  If text is given, ensure that the chosen
+    boundary doesn't appear in the text.
+    """
 
     width = len(repr(sys.maxsize - 1))
     fmt = '%%0%dd' % width
@@ -102,8 +109,8 @@ def make_mime_boundary(text=None):
     return b
 
 
-def extract_first_part(message, boundary):
-    """ Function to extract the first part of a multipart message"""
+def extract_first_part(message: bytes, boundary: bytes):
+    """Function to extract the first part of a multipart message."""
     first_message = message.split(boundary)[1].lstrip()
     if first_message.endswith(b'\r\n'):
         first_message = first_message[:-2]
@@ -112,8 +119,8 @@ def extract_first_part(message, boundary):
     return first_message
 
 
-def pem_to_der(cert, return_multiple=True):
-    """ Converts a given certificate or list to PEM format"""
+def pem_to_der(cert: bytes, return_multiple: bool = True):
+    """Converts a given certificate or list to PEM format."""
 
     # initialize the certificate array
     cert_list = []
@@ -132,9 +139,10 @@ def pem_to_der(cert, return_multiple=True):
         return cert_list.pop()
 
 
-def split_pem(pem_bytes):
+def split_pem(pem_bytes: bytes):
     """
-        Split a give PEM file with multiple certificates
+    Split a give PEM file with multiple certificates.
+
     :param pem_bytes: The pem data in bytes with multiple certs
     :return: yields a list of certificates contained in the pem file
     """
@@ -158,11 +166,11 @@ def split_pem(pem_bytes):
             pem_data = pem_data + line + b'\r\n'
 
 
-def verify_certificate_chain(cert_str, trusted_certs, ignore_self_signed=True):
-    """ Verify a given certificate against a trust store"""
+def verify_certificate_chain(cert_bytes, trusted_certs, ignore_self_signed=True):
+    """Verify a given certificate against a trust store."""
 
     # Load the certificate
-    certificate = crypto.load_certificate(crypto.FILETYPE_ASN1, cert_str)
+    certificate = crypto.load_certificate(crypto.FILETYPE_ASN1, cert_bytes)
 
     # Create a certificate store and add your trusted certs
     try:
@@ -185,10 +193,11 @@ def verify_certificate_chain(cert_str, trusted_certs, ignore_self_signed=True):
         return True
 
     except crypto.X509StoreContextError as e:
-        raise AS2Exception('Partner Certificate Invalid: %s' % e.args[-1][-1])
+        raise AS2Exception(
+            'Partner Certificate Invalid: %s' % e.args[-1][-1], 'invalid-certificate')
 
 
-def extract_certificate_info(cert):
+def extract_certificate_info(cert: bytes):
     """
     Extract validity information from the certificate and return a dictionary.
 

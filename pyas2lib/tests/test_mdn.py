@@ -1,5 +1,6 @@
-from __future__ import unicode_literals, absolute_import, print_function
-from . import as2, Pyas2TestCase
+"""Module for testing the MDN related features of pyas2lib"""
+from pyas2lib import as2
+from . import Pyas2TestCase
 
 
 class TestMDN(Pyas2TestCase):
@@ -9,9 +10,9 @@ class TestMDN(Pyas2TestCase):
         self.org = as2.Organization(
             as2_name='some_organization',
             sign_key=self.private_key,
-            sign_key_pass='test'.encode('utf-8'),
+            sign_key_pass='test',
             decrypt_key=self.private_key,
-            decrypt_key_pass='test'.encode('utf-8')
+            decrypt_key_pass='test'
         )
         self.partner = as2.Partner(
             as2_name='some_partner',

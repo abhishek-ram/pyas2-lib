@@ -2,6 +2,7 @@ import logging
 import hashlib
 import binascii
 import traceback
+from dataclasses import dataclass
 from email import encoders
 from email import message as email_message
 from email import message_from_bytes as parse_mime
@@ -9,84 +10,73 @@ from email import utils as email_utils
 from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
 
-from pyas2lib.cms import DIGEST_ALGORITHMS
-from pyas2lib.cms import ENCRYPTION_ALGORITHMS
-from pyas2lib.cms import compress_message
-from pyas2lib.cms import decompress_message
-from pyas2lib.cms import decrypt_message
-from pyas2lib.cms import encrypt_message
-from pyas2lib.cms import sign_message
-from pyas2lib.cms import verify_message
+from pyas2lib.cms import (
+    compress_message,
+    decompress_message,
+    decrypt_message,
+    encrypt_message,
+    sign_message,
+    verify_message
+)
+from pyas2lib.constants import *
 from pyas2lib.exceptions import *
-from pyas2lib.utils import canonicalize
-from pyas2lib.utils import extract_first_part
-from pyas2lib.utils import make_mime_boundary
-from pyas2lib.utils import mime_to_bytes
-from pyas2lib.utils import pem_to_der
-from pyas2lib.utils import quote_as2name
-from pyas2lib.utils import split_pem
-from pyas2lib.utils import unquote_as2name
-from pyas2lib.utils import verify_certificate_chain
+from pyas2lib.utils import (
+    canonicalize,
+    extract_first_part,
+    make_mime_boundary,
+    mime_to_bytes,
+    pem_to_der,
+    quote_as2name,
+    split_pem,
+    unquote_as2name,
+    verify_certificate_chain
+)
 
 logger = logging.getLogger('pyas2lib')
 
-AS2_VERSION = '1.2'
 
-EDIINT_FEATURES = 'CMS'
-
-IGNORE_SELF_SIGNED_CERTS = True
-
-SYNCHRONOUS_MDN = 'SYNC'
-ASYNCHRONOUS_MDN = 'ASYNC'
-
-MDN_MODES = (
-    SYNCHRONOUS_MDN,
-    ASYNCHRONOUS_MDN
-)
-
-MDN_CONFIRM_TEXT = 'The AS2 message has been successfully processed. ' \
-                   'Thank you for exchanging AS2 messages with pyAS2.'
-
-MDN_FAILED_TEXT = 'The AS2 message could not be processed. The ' \
-                  'disposition-notification report has additional details.'
-
-
+@dataclass
 class Organization(object):
-    """Class represents an AS2 organization and defines the certificates and
-    settings to be used when sending and receiving messages. """
+    """
+    Class represents an AS2 organization and defines the certificates and
+    settings to be used when sending and receiving messages.
 
-    def __init__(self, as2_name, sign_key=None, sign_key_pass=None,
-                 decrypt_key=None, decrypt_key_pass=None, mdn_url=None,
-                 mdn_confirm_text=MDN_CONFIRM_TEXT):
-        """
-        :param as2_name: The unique AS2 name for this organization
+    :param as2_name: The unique AS2 name for this organization
 
-        :param sign_key: A byte string of the pkcs12 encoded key pair
-            used for signing outbound messages and MDNs.
+    :param sign_key: A byte string of the pkcs12 encoded key pair
+        used for signing outbound messages and MDNs.
 
-        :param sign_key_pass: The password for decrypting the `sign_key`
+    :param sign_key_pass: The password for decrypting the `sign_key`
 
-        :param decrypt_key:  A byte string of the pkcs12 encoded key pair
-            used for decrypting inbound messages.
+    :param decrypt_key:  A byte string of the pkcs12 encoded key pair
+        used for decrypting inbound messages.
 
-        :param decrypt_key_pass: The password for decrypting the `decrypt_key`
+    :param decrypt_key_pass: The password for decrypting the `decrypt_key`
 
-        :param mdn_url: The URL where the receiver is expected to post
-            asynchronous MDNs.
-        """
-        self.sign_key = self.load_key(
-            sign_key, sign_key_pass) if sign_key else None
+    :param mdn_url: The URL where the receiver is expected to post
+        asynchronous MDNs.
+    """
 
-        self.decrypt_key = self.load_key(
-            decrypt_key, decrypt_key_pass) if decrypt_key else None
+    as2_name: str
+    sign_key: bytes = None
+    sign_key_pass: str = None
+    decrypt_key: bytes = None
+    decrypt_key_pass: str = None
+    mdn_url: str = None
+    mdn_confirm_text: str = MDN_CONFIRM_TEXT
 
-        self.as2_name = as2_name
-        self.mdn_url = mdn_url
-        self.mdn_confirm_text = mdn_confirm_text
+    def __post_init__(self):
+        """Run the post initialisation checks for this class."""
+        # Load the signature and decryption keys
+        if self.sign_key:
+            self.sign_key = self.load_key(self.sign_key, self.sign_key_pass)
+
+        if self.decrypt_key:
+            self.decrypt_key = self.load_key(self.decrypt_key, self.decrypt_key_pass)
 
     @staticmethod
-    def load_key(key_str, key_pass):
-        """ Function to load password protected key file in p12 or pem format"""
+    def load_key(key_str: bytes, key_pass: str):
+        """Function to load password protected key file in p12 or pem format."""
 
         try:
             # First try to parse as a p12 file
@@ -115,99 +105,95 @@ class Organization(object):
         return key, cert
 
 
+@dataclass
 class Partner(object):
-    """Class represents an AS2 partner and defines the certificates and
-    settings to be used when sending and receiving messages."""
+    """
+    Class represents an AS2 partner and defines the certificates and
+    settings to be used when sending and receiving messages.
 
-    def __init__(self, as2_name, verify_cert=None, verify_cert_ca=None,
-                 encrypt_cert=None, encrypt_cert_ca=None, validate_certs=True,
-                 compress=False, sign=False, digest_alg='sha256', encrypt=False,
-                 enc_alg='tripledes_192_cbc', mdn_mode=None,
-                 mdn_digest_alg=None, mdn_confirm_text=MDN_CONFIRM_TEXT):
-        """
-        :param as2_name: The unique AS2 name for this partner.
+    :param as2_name: The unique AS2 name for this partner.
 
-        :param verify_cert: A byte string of the certificate to be used for
-            verifying signatures of inbound messages and MDNs.
+    :param verify_cert: A byte string of the certificate to be used for
+        verifying signatures of inbound messages and MDNs.
 
-        :param verify_cert_ca: A byte string of the ca certificate if any of
-            the verification cert
+    :param verify_cert_ca: A byte string of the ca certificate if any of
+        the verification cert
 
-        :param encrypt_cert: A byte string of the certificate to be used for
-            encrypting outbound message.
+    :param encrypt_cert: A byte string of the certificate to be used for
+        encrypting outbound message.
 
-        :param encrypt_cert_ca: A byte string of the ca certificate if any of
-            the encryption cert
+    :param encrypt_cert_ca: A byte string of the ca certificate if any of
+        the encryption cert
 
-        :param validate_certs: Set this flag to `False` to disable validations of
-            the encryption and verification certificates. (default `True`)
+    :param validate_certs: Set this flag to `False` to disable validations of
+        the encryption and verification certificates. (default `True`)
 
-        :param compress: Set this flag to `True` to compress outgoing
-            messages. (default `False`)
+    :param compress: Set this flag to `True` to compress outgoing
+        messages. (default `False`)
 
-        :param sign: Set this flag to `True` to sign outgoing
-            messages. (default `False`)
+    :param sign: Set this flag to `True` to sign outgoing
+        messages. (default `False`)
 
-        :param digest_alg: The digest algorithm to be used for generating the
-            signature. (default "sha256")
+    :param digest_alg: The digest algorithm to be used for generating the
+        signature. (default "sha256")
 
-        :param encrypt: Set this flag to `True` to encrypt outgoing
-            messages. (default `False`)
+    :param encrypt: Set this flag to `True` to encrypt outgoing
+        messages. (default `False`)
 
-        :param enc_alg:
-            The encryption algorithm to be used. (default `"tripledes_192_cbc"`)
+    :param enc_alg:
+        The encryption algorithm to be used. (default `"tripledes_192_cbc"`)
 
-        :param mdn_mode: The mode to be used for receiving the MDN.
-            Set to `None` for no MDN, `'SYNC'` for synchronous and `'ASYNC'`
-            for asynchronous. (default `None`)
+    :param mdn_mode: The mode to be used for receiving the MDN.
+        Set to `None` for no MDN, `'SYNC'` for synchronous and `'ASYNC'`
+        for asynchronous. (default `None`)
 
-        :param mdn_digest_alg: The digest algorithm to be used by the receiver
-            for signing the MDN. Use `None` for unsigned MDN. (default `None`)
+    :param mdn_digest_alg: The digest algorithm to be used by the receiver
+        for signing the MDN. Use `None` for unsigned MDN. (default `None`)
 
-        :param mdn_confirm_text: The text to be used in the MDN for successfully
-            processed messages received from this partner.
+    :param mdn_confirm_text: The text to be used in the MDN for successfully
+        processed messages received from this partner.
 
-       """
+    """
+
+    as2_name: str
+    verify_cert: bytes = None
+    verify_cert_ca: bytes = None
+    encrypt_cert: bytes = None
+    encrypt_cert_ca: bytes = None
+    validate_certs: bool = True
+    compress: bool = False
+    encrypt: bool = False
+    enc_alg: str = 'tripledes_192_cbc'
+    sign: bool = False
+    digest_alg: str = 'sha256'
+    mdn_mode: str = None
+    mdn_digest_alg: str = None
+    mdn_confirm_text: str = MDN_CONFIRM_TEXT
+    ignore_self_signed: bool = True
+
+    def __post_init__(self):
+        """Run the post initialisation checks for this class."""
 
         # Validations
-        if digest_alg and digest_alg not in DIGEST_ALGORITHMS:
+        if self.digest_alg and self.digest_alg not in DIGEST_ALGORITHMS:
             raise ImproperlyConfigured(
-                'Unsupported Digest Algorithm {}, must be '
-                'one of {}'.format(digest_alg, DIGEST_ALGORITHMS))
+                f'Unsupported Digest Algorithm {self.digest_alg}, must be '
+                f'one of {DIGEST_ALGORITHMS}')
 
-        if enc_alg and enc_alg not in ENCRYPTION_ALGORITHMS:
+        if self.enc_alg and self.enc_alg not in ENCRYPTION_ALGORITHMS:
             raise ImproperlyConfigured(
-                'Unsupported Encryption Algorithm {}, must be '
-                'one of {}'.format(enc_alg, ENCRYPTION_ALGORITHMS))
+                f'Unsupported Encryption Algorithm {self.enc_alg}, must be '
+                f'one of {ENCRYPTION_ALGORITHMS}')
 
-        if mdn_mode and mdn_mode not in MDN_MODES:
+        if self.mdn_mode and self.mdn_mode not in MDN_MODES:
             raise ImproperlyConfigured(
-                'Unsupported MDN Mode {}, must be '
-                'one of {}'.format(digest_alg, MDN_MODES))
+                f'Unsupported MDN Mode {self.mdn_mode}, must be '
+                f'one of {MDN_MODES}')
 
-        # if mdn_mode == 'ASYNC' and not mdn_url:
-        #     raise ImproperlyConfigured(
-        #         'mdn_url is mandatory when mdn_mode is set to ASYNC ')
-
-        if mdn_digest_alg and mdn_digest_alg not in DIGEST_ALGORITHMS:
+        if self.mdn_digest_alg and self.mdn_digest_alg not in DIGEST_ALGORITHMS:
             raise ImproperlyConfigured(
-                'Unsupported MDN Digest Algorithm {}, must be '
-                'one of {}'.format(mdn_digest_alg, DIGEST_ALGORITHMS))
-
-        self.as2_name = as2_name
-        self.compress = compress
-        self.sign = sign
-        self.digest_alg = digest_alg
-        self.encrypt = encrypt
-        self.enc_alg = enc_alg
-        self.mdn_mode = mdn_mode
-        self.mdn_digest_alg = mdn_digest_alg
-        self.mdn_confirm_text = mdn_confirm_text
-        self.verify_cert = verify_cert
-        self.verify_cert_ca = verify_cert_ca
-        self.encrypt_cert = encrypt_cert
-        self.encrypt_cert_ca = encrypt_cert_ca
-        self.validate_certs = validate_certs
+                f'Unsupported MDN Digest Algorithm {self.mdn_digest_alg}, '
+                f'must be one of {DIGEST_ALGORITHMS}')
 
     def load_verify_cert(self):
         if self.validate_certs:
@@ -222,7 +208,7 @@ class Partner(object):
 
             # Verify the certificate against the trusted roots
             verify_certificate_chain(
-                cert, trust_roots, ignore_self_signed=IGNORE_SELF_SIGNED_CERTS)
+                cert, trust_roots, ignore_self_signed=self.ignore_self_signed)
 
         return asymmetric.load_certificate(self.verify_cert)
 
@@ -239,7 +225,7 @@ class Partner(object):
 
             # Verify the certificate against the trusted roots
             verify_certificate_chain(
-                cert, trust_roots, ignore_self_signed=IGNORE_SELF_SIGNED_CERTS)
+                cert, trust_roots, ignore_self_signed=self.ignore_self_signed)
 
         return asymmetric.load_certificate(self.encrypt_cert)
 
@@ -273,20 +259,17 @@ class Message(object):
     @property
     def content(self):
         """Function returns the body of the as2 payload as a bytes object"""
-
-        if not self.payload:
+        if self.payload is None:
             return ''
 
         if self.payload.is_multipart():
-            message_bytes = mime_to_bytes(self.payload, 0)
+            message_bytes = mime_to_bytes(self.payload)
             boundary = b'--' + self.payload.get_boundary().encode('utf-8')
             temp = message_bytes.split(boundary)
             temp.pop(0)
             return boundary + boundary.join(temp)
         else:
             content = self.payload.get_payload(decode=True)
-            if isinstance(content, str):
-                content = content.encode('utf-8')
             return content
 
     @property
@@ -301,7 +284,7 @@ class Message(object):
         message_header = ''
         if self.payload:
             for k, v in self.headers.items():
-                message_header += '{}: {}\r\n'.format(k, v)
+                message_header += f'{k}: {v}\r\n'
         return message_header.encode('utf-8')
 
     def build(self, data, filename=None, subject='AS2 Message',
@@ -334,21 +317,18 @@ class Message(object):
         """
 
         # Validations
-        assert type(data) is bytes, \
-            'Parameter data must be of bytes type.'
+        assert type(data) is bytes, 'Parameter data must be of bytes type.'
 
         additional_headers = additional_headers if additional_headers else {}
         assert type(additional_headers) is dict
 
         if self.receiver.sign and not self.sender.sign_key:
             raise ImproperlyConfigured(
-                'Signing of messages is enabled but sign key is not set '
-                'for the sender.')
+                'Signing of messages is enabled but sign key is not set for the sender.')
 
         if self.receiver.encrypt and not self.receiver.encrypt_cert:
             raise ImproperlyConfigured(
-                'Encryption of messages is enabled but encrypt key is not set '
-                'for the receiver.')
+                'Encryption of messages is enabled but encrypt key is not set for the receiver.')
 
         # Generate message id using UUID 1 as it uses both hostname and time
         self.message_id = email_utils.make_msgid().lstrip('<').rstrip('>')
@@ -357,12 +337,11 @@ class Message(object):
         as2_headers = {
             'AS2-Version': AS2_VERSION,
             'ediint-features': EDIINT_FEATURES,
-            'Message-ID': '<{}>'.format(self.message_id),
+            'Message-ID': f'<{self.message_id}>',
             'AS2-From': quote_as2name(self.sender.as2_name),
             'AS2-To': quote_as2name(self.receiver.as2_name),
             'Subject': subject,
-            'Date': email_utils.formatdate(localtime=True),
-            # 'recipient-address': message.partner.target_url,
+            'Date': email_utils.formatdate(localtime=True)
         }
         as2_headers.update(additional_headers)
 
@@ -374,8 +353,7 @@ class Message(object):
         encoders.encode_7or8bit(self.payload)
 
         if filename:
-            self.payload.add_header(
-                'Content-Disposition', 'attachment', filename=filename)
+            self.payload.add_header('Content-Disposition', 'attachment', filename=filename)
         del self.payload['MIME-Version']
 
         if self.receiver.compress:
@@ -384,22 +362,17 @@ class Message(object):
             compressed_message.set_type('application/pkcs7-mime')
             compressed_message.set_param('name', 'smime.p7z')
             compressed_message.set_param('smime-type', 'compressed-data')
-            compressed_message.add_header(
-                'Content-Disposition', 'attachment', filename='smime.p7z')
-            compressed_message.add_header(
-                'Content-Transfer-Encoding', 'binary')
-            compressed_message.set_payload(
-                compress_message(mime_to_bytes(self.payload, 0)))
-
+            compressed_message.add_header('Content-Disposition', 'attachment', filename='smime.p7z')
+            compressed_message.add_header('Content-Transfer-Encoding', 'binary')
+            compressed_message.set_payload(compress_message(mime_to_bytes(self.payload)))
             self.payload = compressed_message
 
-            logger.debug('Compressed message %s payload as:\n%s' % (
-                self.message_id, self.payload.as_string()))
+            logger.debug(
+                f'Compressed message {self.message_id} payload as:\n{self.payload.as_string()}')
 
         if self.receiver.sign:
             self.signed, self.digest_alg = True, self.receiver.digest_alg
-            signed_message = MIMEMultipart(
-                'signed', protocol="application/pkcs7-signature")
+            signed_message = MIMEMultipart('signed', protocol="application/pkcs7-signature")
             del signed_message['MIME-Version']
             signed_message.attach(self.payload)
 
@@ -414,19 +387,18 @@ class Message(object):
             signature.set_type('application/pkcs7-signature')
             signature.set_param('name', 'smime.p7s')
             signature.set_param('smime-type', 'signed-data')
-            signature.add_header(
-                'Content-Disposition', 'attachment', filename='smime.p7s')
+            signature.add_header('Content-Disposition', 'attachment', filename='smime.p7s')
             del signature['MIME-Version']
-            signature.set_payload(sign_message(
-                mic_content, self.digest_alg, self.sender.sign_key))
+            signature_data = sign_message(mic_content, self.digest_alg, self.sender.sign_key)
+            signature.set_payload(signature_data)
             encoders.encode_base64(signature)
 
             signed_message.set_param('micalg', self.digest_alg)
             signed_message.attach(signature)
             self.payload = signed_message
 
-            logger.debug('Signed message %s payload as:\n%s' % (
-               self.message_id, mime_to_bytes(self.payload, 0)))
+            logger.debug(
+                f'Signed message {self.message_id} payload as:\n{mime_to_bytes(self.payload)}')
 
         if self.receiver.encrypt:
             self.encrypted, self.enc_alg = True, self.receiver.enc_alg
@@ -434,29 +406,27 @@ class Message(object):
             encrypted_message.set_type('application/pkcs7-mime')
             encrypted_message.set_param('name', 'smime.p7m')
             encrypted_message.set_param('smime-type', 'enveloped-data')
-            encrypted_message.add_header(
-                'Content-Disposition', 'attachment', filename='smime.p7m')
+            encrypted_message.add_header('Content-Disposition', 'attachment', filename='smime.p7m')
             encrypted_message.add_header('Content-Transfer-Encoding', 'binary')
             encrypt_cert = self.receiver.load_encrypt_cert()
-            encrypted_message.set_payload(encrypt_message(
-                mime_to_bytes(self.payload, 0), self.enc_alg, encrypt_cert))
+            encrypted_data = encrypt_message(
+                mime_to_bytes(self.payload), self.enc_alg, encrypt_cert)
+            encrypted_message.set_payload(encrypted_data)
 
             self.payload = encrypted_message
-            logger.debug('Encrypted message %s payload as:\n%s' % (
-                self.message_id, self.payload.as_string()))
+            logger.debug(
+                f'Encrypted message {self.message_id} payload as:\n{self.payload.as_string()}')
 
         if self.receiver.mdn_mode:
             as2_headers['disposition-notification-to'] = disposition_notification_to
             if self.receiver.mdn_digest_alg:
                 as2_headers['disposition-notification-options'] = \
-                    'signed-receipt-protocol=required, pkcs7-signature; ' \
-                    'signed-receipt-micalg=optional, {}'.format(
-                        self.receiver.mdn_digest_alg)
+                    f'signed-receipt-protocol=required, pkcs7-signature; ' \
+                    f'signed-receipt-micalg=optional, {self.receiver.mdn_digest_alg}'
             if self.receiver.mdn_mode == 'ASYNC':
                 if not self.sender.mdn_url:
                     raise ImproperlyConfigured(
-                        'MDN URL must be set in the organization when MDN mode '
-                        'is set to ASYNC')
+                        'MDN URL must be set in the organization when MDN mode is set to ASYNC')
                 as2_headers['receipt-delivery-option'] = self.sender.mdn_url
 
         # Update the headers of the final payload and set its boundary
@@ -524,31 +494,27 @@ class Message(object):
             org_id = unquote_as2name(as2_headers['as2-to'])
             self.receiver = find_org_cb(org_id)
             if not self.receiver:
-                raise PartnerNotFound(
-                    'Unknown AS2 organization with id {}'.format(org_id))
+                raise PartnerNotFound(f'Unknown AS2 organization with id {org_id}')
 
             partner_id = unquote_as2name(as2_headers['as2-from'])
             self.sender = find_partner_cb(partner_id)
             if not self.sender:
-                raise PartnerNotFound(
-                    'Unknown AS2 partner with id {}'.format(partner_id))
+                raise PartnerNotFound(f'Unknown AS2 partner with id {partner_id}')
 
-            if find_message_cb and \
-                    find_message_cb(self.message_id, partner_id):
+            if find_message_cb and find_message_cb(self.message_id, partner_id):
                 raise DuplicateDocument(
-                    'Duplicate message received, message with this ID '
-                    'already processed.')
+                    'Duplicate message received, message with this ID already processed.')
 
             if self.sender.encrypt and \
                     self.payload.get_content_type() != 'application/pkcs7-mime':
                 raise InsufficientSecurityError(
-                    'Incoming messages from partner {} are must be encrypted'
-                    ' but encrypted message not found.'.format(partner_id))
+                    f'Incoming messages from partner {partner_id} are must be encrypted '
+                    f'but encrypted message not found.')
 
             if self.payload.get_content_type() == 'application/pkcs7-mime' \
                     and self.payload.get_param('smime-type') == 'enveloped-data':
-                logger.debug('Decrypting message %s payload :\n%s' % (
-                    self.message_id, self.payload.as_string()))
+                logger.debug(
+                    f'Decrypting message {self.message_id} payload :\n{self.payload.as_string()}')
 
                 self.encrypted = True
                 encrypted_data = self.payload.get_payload(decode=True)
@@ -565,21 +531,20 @@ class Message(object):
             # Check for compressed data here
             self.compressed, self.payload = self._decompress_data(self.payload)
 
-            if self.sender.sign and \
-                    self.payload.get_content_type() != 'multipart/signed':
+            if self.sender.sign and self.payload.get_content_type() != 'multipart/signed':
                 raise InsufficientSecurityError(
-                    'Incoming messages from partner {} are must be signed '
-                    'but signed message not found.'.format(partner_id))
+                    f'Incoming messages from partner {partner_id} are must be signed '
+                    f'but signed message not found.')
 
             if self.payload.get_content_type() == 'multipart/signed':
-                logger.debug('Verifying signed message %s payload: \n%s' % (
-                    self.message_id, self.payload.as_string()))
+                logger.debug(
+                    f'Verifying signed message {self.message_id} '
+                    f'payload: \n{self.payload.as_string()}')
                 self.signed = True
 
                 # Split the message into signature and signed message
                 signature = None
-                signature_types = ['application/pkcs7-signature',
-                                   'application/x-pkcs7-signature']
+                signature_types = ['application/pkcs7-signature', 'application/x-pkcs7-signature']
                 for part in self.payload.walk():
                     if part.get_content_type() in signature_types:
                         signature = part.get_payload(decode=True)
@@ -604,11 +569,9 @@ class Message(object):
 
         except Exception as e:
             status = getattr(e, 'disposition_type', 'processed/Error')
-            detailed_status = getattr(
-                e, 'disposition_modifier', 'unexpected-processing-error')
+            detailed_status = getattr(e, 'disposition_modifier', 'unexpected-processing-error')
             exception = (e, traceback.format_exc())
-            logger.error('Failed to parse AS2 message\n: %s' %
-                         traceback.format_exc())
+            logger.error(f'Failed to parse AS2 message\n: {traceback.format_exc()}')
         finally:
 
             # Update the payload headers with the original headers
@@ -626,12 +589,9 @@ class Message(object):
 
                 digest_alg = as2_headers.get('disposition-notification-options')
                 if digest_alg:
-                    digest_alg = digest_alg.split(';')[-1].\
-                        split(',')[-1].strip()
-                mdn = Mdn(
-                    mdn_mode=mdn_mode, mdn_url=mdn_url, digest_alg=digest_alg)
-                mdn.build(
-                    message=self, status=status, detailed_status=detailed_status)
+                    digest_alg = digest_alg.split(';')[-1].split(',')[-1].strip()
+                mdn = Mdn(mdn_mode=mdn_mode, mdn_url=mdn_url, digest_alg=digest_alg)
+                mdn.build(message=self, status=status, detailed_status=detailed_status)
 
             return status, exception, mdn
 
@@ -653,9 +613,8 @@ class Mdn(object):
     def content(self):
         """Function returns the body of the mdn message as a byte string"""
 
-        if self.payload:
-            message_bytes = mime_to_bytes(
-                self.payload, 0).replace(b'\n', b'\r\n')
+        if self.payload is not None:
+            message_bytes = mime_to_bytes(self.payload)
             boundary = b'--' + self.payload.get_boundary().encode('utf-8')
             temp = message_bytes.split(boundary)
             temp.pop(0)
@@ -675,20 +634,23 @@ class Mdn(object):
         message_header = ''
         if self.payload:
             for k, v in self.headers.items():
-                message_header += '{}: {}\r\n'.format(k, v)
+                message_header += f'{k}: {v}\r\n'
         return message_header.encode('utf-8')
 
-    def build(self, message, status, detailed_status=None):
+    def build(self, message, status, detailed_status=None, confirmation_text=MDN_CONFIRM_TEXT,
+              failed_text=MDN_FAILED_TEXT):
         """Function builds and signs an AS2 MDN message.
 
         :param message: The received AS2 message for which this is an MDN.
 
         :param status: The status of processing of the received AS2 message.
 
-        :param detailed_status:
-            The optional detailed status of processing of the received AS2
-            message. Used to give additional error info (default "None")
+        :param detailed_status: The optional detailed status of processing of the received AS2
+        message. Used to give additional error info (default "None")
 
+        :param confirmation_text: The confirmation message sent in the first part of the MDN.
+
+        :param failed_text: The failure message sent in the first part of the failed MDN.
         """
 
         # Generate message id using UUID 1 as it uses both hostname and time
@@ -699,7 +661,7 @@ class Mdn(object):
         mdn_headers = {
             'AS2-Version': AS2_VERSION,
             'ediint-features': EDIINT_FEATURES,
-            'Message-ID': '<{}>'.format(self.message_id),
+            'Message-ID': f'<{self.message_id}>',
             'AS2-From': quote_as2name(message.headers.get('as2-to')),
             'AS2-To': quote_as2name(message.headers.get('as2-from')),
             'Date': email_utils.formatdate(localtime=True),
@@ -707,8 +669,6 @@ class Mdn(object):
         }
 
         # Set the confirmation text message here
-        confirmation_text = MDN_CONFIRM_TEXT
-
         # overwrite with organization specific message
         if message.receiver and message.receiver.mdn_confirm_text:
             confirmation_text = message.receiver.mdn_confirm_text
@@ -718,14 +678,13 @@ class Mdn(object):
             confirmation_text = message.sender.mdn_confirm_text
 
         if status != 'processed':
-            confirmation_text = MDN_FAILED_TEXT
+            confirmation_text = failed_text
 
-        self.payload = MIMEMultipart(
-            'report', report_type='disposition-notification')
+        self.payload = MIMEMultipart('report', report_type='disposition-notification')
 
         # Create and attach the MDN Text Message
         mdn_text = email_message.Message()
-        mdn_text.set_payload('%s\n' % confirmation_text)
+        mdn_text.set_payload(f'{confirmation_text}\r\n')
         mdn_text.set_type('text/plain')
         del mdn_text['MIME-Version']
         encoders.encode_7or8bit(mdn_text)
@@ -734,36 +693,31 @@ class Mdn(object):
         # Create and attache the MDN Report Message
         mdn_base = email_message.Message()
         mdn_base.set_type('message/disposition-notification')
-        mdn_report = 'Reporting-UA: pyAS2 Open Source AS2 Software\n'
-        mdn_report += 'Original-Recipient: rfc822; {}\n'.format(
-            message.headers.get('as2-to'))
-        mdn_report += 'Final-Recipient: rfc822; {}\n'.format(
-            message.headers.get('as2-to'))
-        mdn_report += 'Original-Message-ID: <{}>\n'.format(message.message_id)
-        mdn_report += 'Disposition: automatic-action/' \
-                      'MDN-sent-automatically; {}'.format(status)
+        mdn_report = 'Reporting-UA: pyAS2 Open Source AS2 Software\r\n'
+        mdn_report += f'Original-Recipient: rfc822; {message.headers.get("as2-to")}\r\n'
+        mdn_report += f'Final-Recipient: rfc822; {message.headers.get("as2-to")}\r\n'
+        mdn_report += f'Original-Message-ID: <{message.message_id}>\r\n'
+        mdn_report += f'Disposition: automatic-action/MDN-sent-automatically; {status}'
         if detailed_status:
-            mdn_report += ': {}'.format(detailed_status)
-        mdn_report += '\n'
+            mdn_report += f': {detailed_status}'
+        mdn_report += '\r\n'
         if message.mic:
-            mdn_report += 'Received-content-MIC: {}, {}\n'.format(
-                message.mic.decode(), message.digest_alg)
+            mdn_report += f'Received-content-MIC: {message.mic.decode()}, {message.digest_alg}\r\n'
         mdn_base.set_payload(mdn_report)
         del mdn_base['MIME-Version']
         encoders.encode_7or8bit(mdn_base)
         self.payload.attach(mdn_base)
 
-        logger.debug('MDN for message %s created:\n%s' % (
-            message.message_id, mdn_base.as_string()))
+        logger.debug(
+            f'MDN for message {message.message_id} created:\n{mdn_base.as_string()}')
 
         # Sign the MDN if it is requested by the sender
         if message.headers.get('disposition-notification-options') and \
                 message.receiver and message.receiver.sign_key:
             self.digest_alg = \
-                message.headers['disposition-notification-options'].split(
-                    ';')[-1].split(',')[-1].strip().replace('-', '')
-            signed_mdn = MIMEMultipart(
-                'signed', protocol="application/pkcs7-signature")
+                message.headers['disposition-notification-options'].\
+                    split(';')[-1].split(',')[-1].strip().replace('-', '')
+            signed_mdn = MIMEMultipart('signed', protocol="application/pkcs7-signature")
             del signed_mdn['MIME-Version']
             signed_mdn.attach(self.payload)
 
@@ -772,23 +726,21 @@ class Mdn(object):
             signature.set_type('application/pkcs7-signature')
             signature.set_param('name', 'smime.p7s')
             signature.set_param('smime-type', 'signed-data')
-            signature.add_header(
-                'Content-Disposition', 'attachment', filename='smime.p7s')
+            signature.add_header('Content-Disposition', 'attachment', filename='smime.p7s')
             del signature['MIME-Version']
 
-            signature.set_payload(sign_message(
-                canonicalize(self.payload),
-                self.digest_alg,
-                message.receiver.sign_key
-            ))
+            signed_data = sign_message(
+                canonicalize(self.payload), self.digest_alg, message.receiver.sign_key
+            )
+            signature.set_payload(signed_data)
             encoders.encode_base64(signature)
 
             signed_mdn.set_param('micalg', self.digest_alg)
             signed_mdn.attach(signature)
 
             self.payload = signed_mdn
-            logger.debug('Signature for MDN %s created:\n%s' % (
-                message.message_id, signature.as_string()))
+            logger.debug(
+                f'Signature for MDN {message.message_id} created:\n{signature.as_string()}')
 
         # Update the headers of the final payload and set message boundary
         for k, v in mdn_headers.items():
@@ -796,8 +748,7 @@ class Mdn(object):
                 self.payload.replace_header(k, v)
             else:
                 self.payload.add_header(k, v)
-        if self.payload.is_multipart():
-            self.payload.set_boundary(make_mime_boundary())
+        self.payload.set_boundary(make_mime_boundary())
 
     def parse(self, raw_content, find_message_cb):
         """Function parses the RAW AS2 MDN, verifies it and extracts the
@@ -840,8 +791,7 @@ class Mdn(object):
             return status, detailed_status
 
         if self.payload.get_content_type() == 'multipart/signed':
-            message_boundary = ('--' + self.payload.get_boundary()).\
-                encode('utf-8')
+            message_boundary = ('--' + self.payload.get_boundary()).encode('utf-8')
 
             # Extract the signature and the signed payload
             signature = None
@@ -858,29 +808,24 @@ class Mdn(object):
             mic_content = extract_first_part(raw_content, message_boundary)
             verify_cert = orig_message.receiver.load_verify_cert()
             try:
-                self.digest_alg = verify_message(
-                    mic_content, signature, verify_cert)
+                self.digest_alg = verify_message(mic_content, signature, verify_cert)
             except IntegrityError:
                 mic_content = canonicalize(self.payload)
-                self.digest_alg = verify_message(
-                    mic_content, signature, verify_cert)
+                self.digest_alg = verify_message(mic_content, signature, verify_cert)
 
         for part in self.payload.walk():
             if part.get_content_type() == 'message/disposition-notification':
-                logger.debug('Found MDN report for message %s:\n%s' % (
-                    orig_message.message_id, part.as_string()))
+                logger.debug(
+                    f'Found MDN report for message {orig_message.message_id}:\n{part.as_string()}')
 
                 mdn = part.get_payload()[-1]
-                mdn_status = mdn['Disposition'].split(';').\
-                    pop().strip().split(':')
+                mdn_status = mdn['Disposition'].split(';').pop().strip().split(':')
                 status = mdn_status[0]
                 if status == 'processed':
-                    mdn_mic = mdn.get('Received-Content-MIC', '').\
-                        split(',')[0]
+                    mdn_mic = mdn.get('Received-Content-MIC', '').split(',')[0]
 
                     # TODO: Check MIC for all cases
-                    if mdn_mic and orig_message.mic \
-                            and mdn_mic != orig_message.mic.decode():
+                    if mdn_mic and orig_message.mic and mdn_mic != orig_message.mic.decode():
                         status = 'processed/warning'
                         detailed_status = 'Message Integrity check failed.'
                 else:

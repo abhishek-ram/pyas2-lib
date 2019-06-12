@@ -6,23 +6,7 @@ from datetime import datetime
 from oscrypto import asymmetric, symmetric, util
 
 from pyas2lib.exceptions import *
-
-DIGEST_ALGORITHMS = (
-    'md5',
-    'sha1',
-    'sha224',
-    'sha256',
-    'sha384',
-    'sha512'
-)
-ENCRYPTION_ALGORITHMS = (
-    'tripledes_192_cbc',
-    'rc2_128_cbc',
-    'rc4_128_cbc'
-    'aes_128_cbc',
-    'aes_192_cbc',
-    'aes_256_cbc',
-)
+from pyas2lib.constants import DIGEST_ALGORITHMS
 
 
 def compress_message(data_to_compress):
@@ -67,8 +51,7 @@ def decompress_message(compressed_data):
             raise DecompressionError('Compressed data not found in ASN.1 ')
 
     except Exception as e:
-        raise DecompressionError(
-            'Decompression failed with cause: {}'.format(e))
+        raise DecompressionError('Decompression failed with cause: {}'.format(e))
 
 
 def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
@@ -85,39 +68,46 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
 
     enc_alg_list = enc_alg.split('_')
     cipher, key_length, mode = enc_alg_list[0], enc_alg_list[1], enc_alg_list[2]
-    algorithm_id, iv, encrypted_content = None, None, None
+    enc_alg_asn1, encrypted_content = None, None
 
     # Generate the symmetric encryption key and encrypt the message
     key = util.rand_bytes(int(key_length) // 8)
     if cipher == 'tripledes':
         algorithm_id = '1.2.840.113549.3.7'
-        iv, encrypted_content = symmetric.tripledes_cbc_pkcs5_encrypt(
-            key, data_to_encrypt, None)
+        iv, encrypted_content = symmetric.tripledes_cbc_pkcs5_encrypt(key, data_to_encrypt, None)
+        enc_alg_asn1 = algos.EncryptionAlgorithm({
+            'algorithm': algorithm_id,
+            'parameters': cms.OctetString(iv)
+        })
 
     elif cipher == 'rc2':
         algorithm_id = '1.2.840.113549.3.2'
-        iv, encrypted_content = symmetric.rc2_cbc_pkcs5_encrypt(
-            key, data_to_encrypt, None)
+        iv, encrypted_content = symmetric.rc2_cbc_pkcs5_encrypt(key, data_to_encrypt, None)
+        enc_alg_asn1 = algos.EncryptionAlgorithm({
+            'algorithm': algorithm_id,
+            'parameters': algos.Rc2Params({'iv': cms.OctetString(iv)})
+        })
 
     elif cipher == 'rc4':
         algorithm_id = '1.2.840.113549.3.4'
         encrypted_content = symmetric.rc4_encrypt(key, data_to_encrypt)
+        enc_alg_asn1 = algos.EncryptionAlgorithm({
+            'algorithm': algorithm_id,
+        })
 
     elif cipher == 'aes':
         if key_length == '128':
             algorithm_id = '2.16.840.1.101.3.4.1.2'
         elif key_length == '192':
             algorithm_id = '2.16.840.1.101.3.4.1.22'
-        elif key_length == '256':
+        else:
             algorithm_id = '2.16.840.1.101.3.4.1.42'
 
-        iv, encrypted_content = symmetric.aes_cbc_pkcs7_encrypt(
-            key, data_to_encrypt, None)
-
-    enc_alg_asn1 = algos.EncryptionAlgorithm({
-        'algorithm': algorithm_id,
-        'parameters': cms.OctetString(iv)
-    })
+        iv, encrypted_content = symmetric.aes_cbc_pkcs7_encrypt(key, data_to_encrypt, None)
+        enc_alg_asn1 = algos.EncryptionAlgorithm({
+            'algorithm': algorithm_id,
+            'parameters': cms.OctetString(iv)
+        })
 
     # Encrypt the key and build the ASN.1 message
     encrypted_key = asymmetric.rsa_pkcs1v15_encrypt(encryption_cert, key)
@@ -175,36 +165,36 @@ def decrypt_message(encrypted_data, decryption_key):
 
         if key_enc_alg == 'rsa':
             try:
-                key = asymmetric.rsa_pkcs1v15_decrypt(
-                    decryption_key[0], encrypted_key)
-            except Exception as e:
-                raise DecryptionError('Failed to decrypt the payload: '
-                                      'Could not extract decryption key.')
-            alg = cms_content['content']['encrypted_content_info'][
-                'content_encryption_algorithm']
+                key = asymmetric.rsa_pkcs1v15_decrypt(decryption_key[0], encrypted_key)
+            except Exception:
+                raise DecryptionError(
+                    'Failed to decrypt the payload: Could not extract decryption key.')
 
+            alg = cms_content['content']['encrypted_content_info']['content_encryption_algorithm']
             encapsulated_data = cms_content['content'][
                 'encrypted_content_info']['encrypted_content'].native
 
             try:
-                if alg.encryption_cipher == 'tripledes':
+                if alg['algorithm'].native == '1.2.840.113549.3.4':  # This is RC4
+                    decrypted_content = symmetric.rc4_decrypt(key, encapsulated_data)
+                elif alg.encryption_cipher == 'tripledes':
                     cipher = 'tripledes_192_cbc'
                     decrypted_content = symmetric.tripledes_cbc_pkcs5_decrypt(
                         key, encapsulated_data, alg.encryption_iv)
                 elif alg.encryption_cipher == 'aes':
                     decrypted_content = symmetric.aes_cbc_pkcs7_decrypt(
                         key, encapsulated_data, alg.encryption_iv)
-                elif alg.encryption_cipher == 'rc4':
-                    decrypted_content = symmetric.rc2_cbc_pkcs5_decrypt(
-                        key, encapsulated_data, alg.encryption_iv)
                 elif alg.encryption_cipher == 'rc2':
-                    decrypted_content = symmetric.rc2_cbc_pkcs5_encrypt(
-                        key, encapsulated_data, alg.encryption_iv)
+                    decrypted_content = symmetric.rc2_cbc_pkcs5_decrypt(
+                        key, encapsulated_data, alg['parameters']['iv'].native)
                 else:
                     raise AS2Exception('Unsupported Encryption Algorithm')
             except Exception as e:
-                raise DecryptionError(
-                    'Failed to decrypt the payload: {}'.format(e))
+                raise DecryptionError('Failed to decrypt the payload: {}'.format(e))
+        else:
+            raise AS2Exception('Unsupported Encryption Algorithm')
+    else:
+        raise DecryptionError('Encrypted data not found in ASN.1 ')
 
     return cipher, decrypted_content
 
@@ -288,12 +278,10 @@ def sign_message(data_to_sign, digest_alg, sign_key,
                 ])
             }),
         ])
-        signature = asymmetric.rsa_pkcs1v15_sign(
-            sign_key[0], signed_attributes.dump(), digest_alg)
+        signature = asymmetric.rsa_pkcs1v15_sign(sign_key[0], signed_attributes.dump(), digest_alg)
     else:
         signed_attributes = None
-        signature = asymmetric.rsa_pkcs1v15_sign(
-            sign_key[0], data_to_sign, digest_alg)
+        signature = asymmetric.rsa_pkcs1v15_sign(sign_key[0], data_to_sign, digest_alg)
 
     return cms.ContentInfo({
         'content_type': cms.ContentType('signed_data'),
@@ -380,22 +368,22 @@ def verify_message(data_to_verify, signature, verify_cert):
                 digest_func.update(data_to_verify)
                 calc_message_digest = digest_func.digest()
                 if message_digest != calc_message_digest:
-                    raise IntegrityError('Failed to verify message signature: '
-                                         'Message Digest does not match.')
+                    raise IntegrityError(
+                        'Failed to verify message signature: Message Digest does not match.')
 
                 signed_data = signed_attributes.untag().dump()
 
             try:
                 if sig_alg == 'rsassa_pkcs1v15':
-                    asymmetric.rsa_pkcs1v15_verify(
-                        verify_cert, sig, signed_data, digest_alg)
+                    asymmetric.rsa_pkcs1v15_verify(verify_cert, sig, signed_data, digest_alg)
                 elif sig_alg == 'rsassa_pss':
-                    asymmetric.rsa_pss_verify(
-                        verify_cert, sig, signed_data, digest_alg)
+                    asymmetric.rsa_pss_verify(verify_cert, sig, signed_data, digest_alg)
                 else:
                     raise AS2Exception('Unsupported Signature Algorithm')
             except Exception as e:
                 raise IntegrityError(
                     'Failed to verify message signature: {}'.format(e))
+    else:
+        raise IntegrityError('Signed data not found in ASN.1 ')
 
     return digest_alg

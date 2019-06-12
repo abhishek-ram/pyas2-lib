@@ -91,5 +91,4 @@ ENV/
 # IDEA
 .idea
 .pytest_cache/
-.coverage
 .DS_Store

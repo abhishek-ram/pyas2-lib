@@ -1,14 +1,13 @@
 dist: xenial
 language: python
 python:
-  - '3.5'
   - '3.6'
   - '3.7'
 install:
   - python setup.py install
   - pip install pytest-cov
 script:
-  - pytest --cov=pyas2lib
+  - pytest --cov=pyas2lib --cov-config .coveragerc
 after_success:
   - pip install codecov
   - codecov
