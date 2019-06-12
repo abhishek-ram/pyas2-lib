@@ -457,8 +457,7 @@ class SterlingIntegratorTest(Pyas2TestCase):
     def test_process_mdn(self):
         """ Test processing mdn received from Sterling Integrator"""
         msg = as2.Message(sender=self.org, receiver=self.partner)
-        msg.message_id = '151694007918.24690.7052273208458909245@' \
-                             'ip-172-31-14-209.ec2.internal'
+        msg.message_id = '151694007918.24690.7052273208458909245@ip-172-31-14-209.ec2.internal'
 
         as2mdn = as2.Mdn()
         # Parse the mdn and get the message status

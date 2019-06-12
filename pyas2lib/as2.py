@@ -288,7 +288,8 @@ class Message(object):
         return message_header.encode('utf-8')
 
     def build(self, data, filename=None, subject='AS2 Message',
-              content_type='application/edi-consent', additional_headers=None):
+              content_type='application/edi-consent', additional_headers=None,
+              disposition_notification_to='no-reply@pyas2.com'):
 
         """Function builds the AS2 message. Compresses, signs and encrypts
         the payload if applicable.
@@ -308,6 +309,10 @@ class Message(object):
 
         :param additional_headers:
             Any additional headers to be included as part of the AS2 message.
+
+        :param disposition_notification_to:
+            Email address for disposition-notification-to header entry.
+            (default "no-reply@pyas2.com")
 
         """
 
@@ -413,7 +418,7 @@ class Message(object):
                 f'Encrypted message {self.message_id} payload as:\n{self.payload.as_string()}')
 
         if self.receiver.mdn_mode:
-            as2_headers['disposition-notification-to'] = 'no-reply@pyas2.com'
+            as2_headers['disposition-notification-to'] = disposition_notification_to
             if self.receiver.mdn_digest_alg:
                 as2_headers['disposition-notification-options'] = \
                     f'signed-receipt-protocol=required, pkcs7-signature; ' \

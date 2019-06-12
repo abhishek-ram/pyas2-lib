@@ -10,7 +10,7 @@ from email.generator import BytesGenerator
 from io import BytesIO
 
 from pyas2lib.exceptions import AS2Exception
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def unquote_as2name(quoted_name: str):
@@ -205,8 +205,8 @@ def extract_certificate_info(cert: bytes):
 
     :param cert: the certificate as byte string in PEM or DER format
     :return: a dictionary holding certificate information:
-                valid_from (datetime)
-                valid_to (datetime)
+                valid_from (datetime) - UTC
+                valid_to (datetime) - UTC
                 subject (list of name, value tuples)
                 issuer (list of name, value tuples)
                 serial (int)
@@ -233,9 +233,11 @@ def extract_certificate_info(cert: bytes):
 
             # on successful load, extract the various fields into the dictionary
             cert_info['valid_from'] = datetime.strptime(
-                certificate.get_notBefore().decode('utf8'), "%Y%m%d%H%M%SZ")
+                certificate.get_notBefore().decode('utf8'), "%Y%m%d%H%M%SZ").\
+                replace(tzinfo=timezone.utc)
             cert_info['valid_to'] = datetime.strptime(
-                certificate.get_notAfter().decode('utf8'), "%Y%m%d%H%M%SZ")
+                certificate.get_notAfter().decode('utf8'), "%Y%m%d%H%M%SZ").\
+                replace(tzinfo=timezone.utc)
             cert_info['subject'] = [
                 tuple(item.decode('utf8') for item in sets)
                 for sets in certificate.get_subject().get_components()]

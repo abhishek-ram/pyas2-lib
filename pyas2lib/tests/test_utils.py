@@ -52,12 +52,10 @@ def test_extract_certificate_info():
      in PEM or DER format"""
 
     cert_info = {
-        'valid_from': datetime.datetime(2019, 6, 3, 11, 32, 57),
-        'valid_to': datetime.datetime(2029, 5, 31, 11, 32, 57),
-        'subject': [('C', 'AU'), ('ST', 'Some-State'),
-                    ('O', 'pyas2lib'), ('CN', 'test')],
-        'issuer': [('C', 'AU'), ('ST', 'Some-State'),
-                   ('O', 'pyas2lib'), ('CN', 'test')],
+        'valid_from': datetime.datetime(2019, 6, 3, 11, 32, 57, tzinfo=datetime.timezone.utc),
+        'valid_to': datetime.datetime(2029, 5, 31, 11, 32, 57, tzinfo=datetime.timezone.utc),
+        'subject': [('C', 'AU'), ('ST', 'Some-State'), ('O', 'pyas2lib'), ('CN', 'test')],
+        'issuer': [('C', 'AU'), ('ST', 'Some-State'), ('O', 'pyas2lib'), ('CN', 'test')],
         'serial': 13747137503594840569
     }
     cert_empty = {
