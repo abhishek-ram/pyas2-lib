@@ -143,10 +143,6 @@ class Partner(object):
     :param enc_alg:
         The encryption algorithm to be used. (default `"tripledes_192_cbc"`)
 
-    :param cms_encoding:
-        The encoding to be used for the encrypted, signed or compressed data.
-        It can be `'binary'` or `'base64'`. (default `'binary'`)
-
     :param mdn_mode: The mode to be used for receiving the MDN.
         Set to `None` for no MDN, `'SYNC'` for synchronous and `'ASYNC'`
         for asynchronous. (default `None`)
@@ -170,7 +166,6 @@ class Partner(object):
     enc_alg: str = 'tripledes_192_cbc'
     sign: bool = False
     digest_alg: str = 'sha256'
-    cms_encoding: str = 'binary'
     mdn_mode: str = None
     mdn_digest_alg: str = None
     mdn_confirm_text: str = MDN_CONFIRM_TEXT
