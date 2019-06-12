@@ -16,7 +16,6 @@ tests_require = [
     'pytest==3.4.0',
     'pytest-cov==2.5.1',
     'coverage==4.3.4',
-    'nose',
 ]
 
 setup(
@@ -27,7 +26,7 @@ setup(
     long_description="Docs for this project are maintained at "
                      "https://github.com/abhishek-ram/pyas2-lib/blob/"
                      "master/README.md",
-    version='1.1.1',
+    version='1.2.0',
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",
     packages=find_packages(

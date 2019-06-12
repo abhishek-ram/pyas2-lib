@@ -1,5 +1,15 @@
 # Release History
 
+## 1.2.0 - 2019-06-12
+
+* Use f-strings for string formatting.
+* Use HTTP email policy for flattening email messages.
+* Add proper support for other encryption algos.
+* Use dataclasses for organization and partner. 
+* Remove support for python 3.5.
+* Add utility function for extracting info from certificates.
+
+
 ## 1.1.1 - 2019-06-03
 
 * Remove leftover print statement.
