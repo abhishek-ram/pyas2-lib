@@ -1,5 +1,10 @@
 # Release History
 
+## 1.2.1 - 2019-06-25
+* Handle exceptions raised when parsing signed attributes in a signature https://github.com/abhishek-ram/django-pyas2/issues/13
+* Add more debug logs during build and parse
+* Catch errors in MDN parsing and handle accordingly
+
 ## 1.2.0 - 2019-06-12
 
 * Use f-strings for string formatting.
@@ -8,7 +13,6 @@
 * Use dataclasses for organization and partner. 
 * Remove support for python 3.5.
 * Add utility function for extracting info from certificates.
-
 
 ## 1.1.1 - 2019-06-03
 
