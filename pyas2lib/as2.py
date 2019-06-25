@@ -368,7 +368,7 @@ class Message(object):
             self.payload = compressed_message
 
             logger.debug(
-                f'Compressed message {self.message_id} payload as:\n{self.payload.as_string()}')
+                f'Compressed message {self.message_id} payload as:\n{mime_to_bytes(self.payload)}')
 
         if self.receiver.sign:
             self.signed, self.digest_alg = True, self.receiver.digest_alg
@@ -415,7 +415,7 @@ class Message(object):
 
             self.payload = encrypted_message
             logger.debug(
-                f'Encrypted message {self.message_id} payload as:\n{self.payload.as_string()}')
+                f'Encrypted message {self.message_id} payload as:\n{mime_to_bytes(self.payload)}')
 
         if self.receiver.mdn_mode:
             as2_headers['disposition-notification-to'] = disposition_notification_to
@@ -439,10 +439,11 @@ class Message(object):
         if self.payload.is_multipart():
             self.payload.set_boundary(make_mime_boundary())
 
-    @staticmethod
-    def _decompress_data(payload):
+    def _decompress_data(self, payload):
         if payload.get_content_type() == 'application/pkcs7-mime' \
                 and payload.get_param('smime-type') == 'compressed-data':
+            logger.debug(f'Decompressing message {self.message_id} payload :\n'
+                         f'{mime_to_bytes(self.payload)}')
             compressed_data = payload.get_payload(decode=True)
             decompressed_data = decompress_message(compressed_data)
             return True, parse_mime(decompressed_data)
@@ -513,8 +514,8 @@ class Message(object):
 
             if self.payload.get_content_type() == 'application/pkcs7-mime' \
                     and self.payload.get_param('smime-type') == 'enveloped-data':
-                logger.debug(
-                    f'Decrypting message {self.message_id} payload :\n{self.payload.as_string()}')
+                logger.debug(f'Decrypting message {self.message_id} payload :\n'
+                             f'{mime_to_bytes(self.payload)}')
 
                 self.encrypted = True
                 encrypted_data = self.payload.get_payload(decode=True)
@@ -537,9 +538,8 @@ class Message(object):
                     f'but signed message not found.')
 
             if self.payload.get_content_type() == 'multipart/signed':
-                logger.debug(
-                    f'Verifying signed message {self.message_id} '
-                    f'payload: \n{self.payload.as_string()}')
+                logger.debug(f'Verifying signed message {self.message_id} payload: \n'
+                             f'{mime_to_bytes(self.payload)}')
                 self.signed = True
 
                 # Split the message into signature and signed message
@@ -555,8 +555,7 @@ class Message(object):
                 # then convert to canonical form and try again
                 mic_content = canonicalize(self.payload)
                 verify_cert = self.sender.load_verify_cert()
-                self.digest_alg = verify_message(
-                    mic_content, signature, verify_cert)
+                self.digest_alg = verify_message(mic_content, signature, verify_cert)
 
                 # Calculate the MIC Hash of the message to be verified
                 digest_func = hashlib.new(self.digest_alg)
@@ -590,6 +589,9 @@ class Message(object):
                 digest_alg = as2_headers.get('disposition-notification-options')
                 if digest_alg:
                     digest_alg = digest_alg.split(';')[-1].split(',')[-1].strip()
+
+                logger.debug(f'Building the MDN for message {self.message_id} with status {status} '
+                             f'and detailed-status {detailed_status}.')
                 mdn = Mdn(mdn_mode=mdn_mode, mdn_url=mdn_url, digest_alg=digest_alg)
                 mdn.build(message=self, status=status, detailed_status=detailed_status)
 
@@ -709,14 +711,13 @@ class Mdn(object):
         self.payload.attach(mdn_base)
 
         logger.debug(
-            f'MDN for message {message.message_id} created:\n{mdn_base.as_string()}')
+            f'MDN report for message {message.message_id} created:\n{mime_to_bytes(mdn_base)}')
 
         # Sign the MDN if it is requested by the sender
         if message.headers.get('disposition-notification-options') and \
                 message.receiver and message.receiver.sign_key:
-            self.digest_alg = \
-                message.headers['disposition-notification-options'].\
-                    split(';')[-1].split(',')[-1].strip().replace('-', '')
+            self.digest_alg = message.headers['disposition-notification-options'].\
+                split(';')[-1].split(',')[-1].strip().replace('-', '')
             signed_mdn = MIMEMultipart('signed', protocol="application/pkcs7-signature")
             del signed_mdn['MIME-Version']
             signed_mdn.attach(self.payload)
@@ -739,8 +740,7 @@ class Mdn(object):
             signed_mdn.attach(signature)
 
             self.payload = signed_mdn
-            logger.debug(
-                f'Signature for MDN {message.message_id} created:\n{signature.as_string()}')
+            logger.debug(f'Signing the MDN for message {message.message_id}')
 
         # Update the headers of the final payload and set message boundary
         for k, v in mdn_headers.items():
@@ -749,6 +749,8 @@ class Mdn(object):
             else:
                 self.payload.add_header(k, v)
         self.payload.set_boundary(make_mime_boundary())
+        logger.debug(f'MDN generated for message {message.message_id} with '
+                     f'content:\n {mime_to_bytes(self.payload)}')
 
     def parse(self, raw_content, find_message_cb):
         """Function parses the RAW AS2 MDN, verifies it and extracts the
@@ -770,68 +772,74 @@ class Mdn(object):
         """
 
         status, detailed_status = None, None
-        self.payload = parse_mime(raw_content)
-        self.orig_message_id, orig_recipient = self.detect_mdn()
+        try:
+            self.payload = parse_mime(raw_content)
+            self.orig_message_id, orig_recipient = self.detect_mdn()
 
-        # Call the find message callback which should return a Message instance
-        orig_message = find_message_cb(self.orig_message_id, orig_recipient)
+            # Call the find message callback which should return a Message instance
+            orig_message = find_message_cb(self.orig_message_id, orig_recipient)
 
-        # Extract the headers and save it
-        mdn_headers = {}
-        for k, v in self.payload.items():
-            k = k.lower()
-            if k == 'message-id':
-                self.message_id = v.lstrip('<').rstrip('>')
-            mdn_headers[k] = v
+            # Extract the headers and save it
+            mdn_headers = {}
+            for k, v in self.payload.items():
+                k = k.lower()
+                if k == 'message-id':
+                    self.message_id = v.lstrip('<').rstrip('>')
+                mdn_headers[k] = v
 
-        if orig_message.receiver.mdn_digest_alg \
-                and self.payload.get_content_type() != 'multipart/signed':
-            status = 'failed/Failure'
-            detailed_status = 'Expected signed MDN but unsigned MDN returned'
-            return status, detailed_status
+            if orig_message.receiver.mdn_digest_alg \
+                    and self.payload.get_content_type() != 'multipart/signed':
+                status = 'failed/Failure'
+                detailed_status = 'Expected signed MDN but unsigned MDN returned'
+                return status, detailed_status
 
-        if self.payload.get_content_type() == 'multipart/signed':
-            message_boundary = ('--' + self.payload.get_boundary()).encode('utf-8')
+            if self.payload.get_content_type() == 'multipart/signed':
+                logger.debug(f'Verifying signed MDN: \n{mime_to_bytes(self.payload)}')
+                message_boundary = ('--' + self.payload.get_boundary()).encode('utf-8')
 
-            # Extract the signature and the signed payload
-            signature = None
-            signature_types = ['application/pkcs7-signature',
-                               'application/x-pkcs7-signature']
+                # Extract the signature and the signed payload
+                signature = None
+                signature_types = ['application/pkcs7-signature', 'application/x-pkcs7-signature']
+                for part in self.payload.walk():
+                    if part.get_content_type() in signature_types:
+                        signature = part.get_payload(decode=True)
+                    elif part.get_content_type() == 'multipart/report':
+                        self.payload = part
+
+                # Verify the message, first using raw message and if it fails
+                # then convert to canonical form and try again
+                mic_content = extract_first_part(raw_content, message_boundary)
+                verify_cert = orig_message.receiver.load_verify_cert()
+                try:
+                    self.digest_alg = verify_message(mic_content, signature, verify_cert)
+                except IntegrityError:
+                    mic_content = canonicalize(self.payload)
+                    self.digest_alg = verify_message(mic_content, signature, verify_cert)
+
             for part in self.payload.walk():
-                if part.get_content_type() in signature_types:
-                    signature = part.get_payload(decode=True)
-                elif part.get_content_type() == 'multipart/report':
-                    self.payload = part
+                if part.get_content_type() == 'message/disposition-notification':
+                    logger.debug(
+                        f'MDN report for message {orig_message.message_id}:\n{part.as_string()}')
 
-            # Verify the message, first using raw message and if it fails
-            # then convert to canonical form and try again
-            mic_content = extract_first_part(raw_content, message_boundary)
-            verify_cert = orig_message.receiver.load_verify_cert()
-            try:
-                self.digest_alg = verify_message(mic_content, signature, verify_cert)
-            except IntegrityError:
-                mic_content = canonicalize(self.payload)
-                self.digest_alg = verify_message(mic_content, signature, verify_cert)
+                    mdn = part.get_payload()[-1]
+                    mdn_status = mdn['Disposition'].split(';').pop().strip().split(':')
+                    status = mdn_status[0]
+                    if status == 'processed':
+                        mdn_mic = mdn.get('Received-Content-MIC', '').split(',')[0]
 
-        for part in self.payload.walk():
-            if part.get_content_type() == 'message/disposition-notification':
-                logger.debug(
-                    f'Found MDN report for message {orig_message.message_id}:\n{part.as_string()}')
+                        # TODO: Check MIC for all cases
+                        if mdn_mic and orig_message.mic and mdn_mic != orig_message.mic.decode():
+                            status = 'processed/warning'
+                            detailed_status = 'Message Integrity check failed.'
+                    else:
+                        detailed_status = ' '.join(mdn_status[1:]).strip()
+        except Exception as e:
+            status = 'failed/Failure'
+            detailed_status = f'Failed to parse received MDN. {e}'
+            logger.error(f'Failed to parse AS2 MDN\n: {traceback.format_exc()}')
 
-                mdn = part.get_payload()[-1]
-                mdn_status = mdn['Disposition'].split(';').pop().strip().split(':')
-                status = mdn_status[0]
-                if status == 'processed':
-                    mdn_mic = mdn.get('Received-Content-MIC', '').split(',')[0]
-
-                    # TODO: Check MIC for all cases
-                    if mdn_mic and orig_message.mic and mdn_mic != orig_message.mic.decode():
-                        status = 'processed/warning'
-                        detailed_status = 'Message Integrity check failed.'
-                else:
-                    detailed_status = ' '.join(mdn_status[1:]).strip()
-
-        return status, detailed_status
+        finally:
+            return status, detailed_status
 
     def detect_mdn(self):
         """ Function checks if the received raw message is an AS2 MDN or not.

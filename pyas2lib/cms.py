@@ -343,11 +343,10 @@ def verify_message(data_to_verify, signature, verify_cert):
     cms_content = cms.ContentInfo.load(signature)
     digest_alg = None
     if cms_content['content_type'].native == 'signed_data':
+
         for signer in cms_content['content']['signer_infos']:
 
-            signed_attributes = signer['signed_attrs'].copy()
             digest_alg = signer['digest_algorithm']['algorithm'].native
-
             if digest_alg not in DIGEST_ALGORITHMS:
                 raise Exception('Unsupported Digest Algorithm')
 
@@ -355,10 +354,13 @@ def verify_message(data_to_verify, signature, verify_cert):
             sig = signer['signature'].native
             signed_data = data_to_verify
 
-            if signed_attributes:
+            if signer['signed_attrs']:
                 attr_dict = {}
-                for attr in signed_attributes.native:
-                    attr_dict[attr['type']] = attr['values']
+                for attr in signer['signed_attrs']:
+                    try:
+                        attr_dict[attr.native['type']] = attr.native['values']
+                    except (ValueError, KeyError):
+                        continue
 
                 message_digest = bytes()
                 for d in attr_dict['message_digest']:
@@ -371,7 +373,7 @@ def verify_message(data_to_verify, signature, verify_cert):
                     raise IntegrityError(
                         'Failed to verify message signature: Message Digest does not match.')
 
-                signed_data = signed_attributes.untag().dump()
+                signed_data = signer['signed_attrs'].untag().dump()
 
             try:
                 if sig_alg == 'rsassa_pkcs1v15':

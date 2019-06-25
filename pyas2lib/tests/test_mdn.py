@@ -77,6 +77,38 @@ class TestMDN(Pyas2TestCase):
         )
         self.assertEqual(status, 'processed')
 
+    def test_failed_mdn_parse(self):
+        """Test mdn parsing failures are captured."""
+        # Build an As2 message to be transmitted to partner
+        self.partner.sign = True
+        self.partner.encrypt = True
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.partner.mdn_digest_alg = 'sha256'
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = \
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner
+        )
+
+        out_mdn = as2.Mdn()
+        self.partner.verify_cert = self.mecas2_public_key
+        self.partner.validate_certs = False
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+        self.assertEqual(status, 'failed/Failure')
+        self.assertEqual(
+            detailed_status, 'Failed to parse received MDN. Failed to verify message signature: '
+                             'Message Digest does not match.')
+
     def find_org(self, as2_id):
         return self.org
 

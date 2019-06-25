@@ -40,16 +40,22 @@ def quote_as2name(unquoted_name: str):
 class BinaryBytesGenerator(BytesGenerator):
     """Override the bytes generator to better handle binary data."""
 
-    def _handle_application_pkcs7_mime(self, msg: email.message.Message):
+    def _handle_text(self, msg):
         """
         Handle writing the binary messages to prevent default behaviour of
         newline replacements.
         """
-        payload = msg.get_payload(decode=True)
-        if payload is None:
-            return
+        if msg.get('Content-Transfer-Encoding') == 'binary' and \
+                msg.get_content_subtype() in ['pkcs7-mime', 'pkcs7-signature']:
+            payload = msg.get_payload(decode=True)
+            if payload is None:
+                return
+            else:
+                self._fp.write(payload)
         else:
-            self._fp.write(payload)
+            super()._handle_text(msg)
+
+    _writeBody = _handle_text
 
 
 def mime_to_bytes(msg: message.Message, email_policy: policy.Policy = policy.HTTP):
