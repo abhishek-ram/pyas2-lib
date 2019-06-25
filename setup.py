@@ -26,7 +26,7 @@ setup(
     long_description="Docs for this project are maintained at "
                      "https://github.com/abhishek-ram/pyas2-lib/blob/"
                      "master/README.md",
-    version='1.2.1',
+    version='1.2.2s',
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",
     packages=find_packages(

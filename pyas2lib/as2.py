@@ -825,14 +825,16 @@ class Mdn(object):
                     mdn_status = mdn['Disposition'].split(';').pop().strip().split(':')
                     status = mdn_status[0]
                     if status == 'processed':
+                        # Compare the original mic with the received mic
                         mdn_mic = mdn.get('Received-Content-MIC', '').split(',')[0]
-
-                        # TODO: Check MIC for all cases
                         if mdn_mic and orig_message.mic and mdn_mic != orig_message.mic.decode():
                             status = 'processed/warning'
                             detailed_status = 'Message Integrity check failed.'
                     else:
                         detailed_status = ' '.join(mdn_status[1:]).strip()
+        except MDNNotFound:
+            status = 'failed/Failure'
+            detailed_status = 'mdn-not-found'
         except Exception as e:
             status = 'failed/Failure'
             detailed_status = f'Failed to parse received MDN. {e}'

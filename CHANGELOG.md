@@ -1,5 +1,8 @@
 # Release History
 
+## 1.2.2 - 2019-06-26
+* Handle MDNNotfound correctly when parsing an mdn
+
 ## 1.2.1 - 2019-06-25
 * Handle exceptions raised when parsing signed attributes in a signature https://github.com/abhishek-ram/django-pyas2/issues/13
 * Add more debug logs during build and parse

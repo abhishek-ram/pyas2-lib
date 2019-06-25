@@ -9,7 +9,7 @@ from pyas2lib.as2 import Message
 from pyas2lib.as2 import Organization
 from pyas2lib.as2 import Partner
 
-__version__ = '1.2.1'
+__version__ = '1.2.2'
 
 
 __all__ = [
