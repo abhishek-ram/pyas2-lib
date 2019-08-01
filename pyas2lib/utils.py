@@ -53,7 +53,10 @@ class BinaryBytesGenerator(BytesGenerator):
             else:
                 self._fp.write(payload)
         else:
-            super()._handle_text(msg)
+            if isinstance(msg._payload, list):
+                super()._handle_multipart_signed(msg)
+            else:
+                super()._handle_text(msg)
 
     _writeBody = _handle_text
 

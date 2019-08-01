@@ -545,7 +545,7 @@ class Message(object):
                 # Split the message into signature and signed message
                 signature = None
                 signature_types = ['application/pkcs7-signature', 'application/x-pkcs7-signature']
-                for part in self.payload.walk():
+                for part in self.payload.get_payload():
                     if part.get_content_type() in signature_types:
                         signature = part.get_payload(decode=True)
                     else:
