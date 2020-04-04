@@ -41,12 +41,12 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Security :: Cryptography",
         "Topic :: Communications",
 
     ],
+    setup_requires=['pytest-runner'],
     install_requires=install_requires,
-
-    test_suite='nose.collector',
     tests_require=tests_require,
 )
