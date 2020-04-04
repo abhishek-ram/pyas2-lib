@@ -6,16 +6,21 @@ from datetime import datetime, timezone
 from asn1crypto import cms, core, algos
 from oscrypto import asymmetric, symmetric, util
 
-from pyas2lib.exceptions import *
+from pyas2lib.exceptions import (
+    AS2Exception,
+    DecompressionError,
+    DecryptionError,
+    IntegrityError,
+)
 from pyas2lib.constants import DIGEST_ALGORITHMS
 
 
 def compress_message(data_to_compress):
     """Function compresses data and returns the generated ASN.1
-    
+
     :param data_to_compress: A byte string of the data to be compressed
-    
-    :return: A CMS ASN.1 byte string of the compressed data.    
+
+    :return: A CMS ASN.1 byte string of the compressed data.
     """
     compressed_content = cms.ParsableOctetString(zlib.compress(data_to_compress))
     return cms.ContentInfo(
@@ -40,13 +45,13 @@ def compress_message(data_to_compress):
 
 
 def decompress_message(compressed_data):
-    """Function parses an ASN.1 compressed message and extracts/decompresses 
+    """Function parses an ASN.1 compressed message and extracts/decompresses
     the original message.
-     
-    :param compressed_data: A CMS ASN.1 byte string containing the compressed 
+
+    :param compressed_data: A CMS ASN.1 byte string containing the compressed
     data.
 
-    :return: A byte string containing the decompressed original message.    
+    :return: A byte string containing the decompressed original message.
     """
     try:
         cms_content = cms.ContentInfo.load(compressed_data)
@@ -63,16 +68,14 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
     """Function encrypts data and returns the generated ASN.1
 
     :param data_to_encrypt: A byte string of the data to be encrypted
-    
     :param enc_alg: The algorithm to be used for encrypting the data
-    
     :param encryption_cert: The certificate to be used for encrypting the data
 
-    :return: A CMS ASN.1 byte string of the encrypted data.    
+    :return: A CMS ASN.1 byte string of the encrypted data.
     """
 
     enc_alg_list = enc_alg.split("_")
-    cipher, key_length, mode = enc_alg_list[0], enc_alg_list[1], enc_alg_list[2]
+    cipher, key_length, _ = enc_alg_list[0], enc_alg_list[1], enc_alg_list[2]
 
     # Generate the symmetric encryption key and encrypt the message
     key = util.rand_bytes(int(key_length) // 8)
@@ -175,15 +178,12 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
 
 
 def decrypt_message(encrypted_data, decryption_key):
-    """Function parses an ASN.1 encrypted message and extracts/decrypts 
-        the original message.
+    """Function parses an ASN.1 encrypted message and extracts/decrypts the original message.
 
-    :param encrypted_data: A CMS ASN.1 byte string containing the encrypted 
-    data.
-    
+    :param encrypted_data: A CMS ASN.1 byte string containing the encrypted data.
     :param decryption_key: The key to be used for decrypting the data.
 
-    :return: A byte string containing the decrypted original message.    
+    :return: A byte string containing the decrypted original message.
     """
 
     cms_content = cms.ContentInfo.load(encrypted_data)
@@ -250,17 +250,16 @@ def sign_message(
 
     :param data_to_sign: A byte string of the data to be signed.
 
-    :param digest_alg: 
-        The digest algorithm to be used for generating the signature.
+    :param digest_alg: The digest algorithm to be used for generating the signature.
 
     :param sign_key: The key to be used for generating the signature.
 
     :param sign_alg: The algorithm to be used for signing the message.
 
-    :param use_signed_attributes: Optional attribute to indicate weather the 
+    :param use_signed_attributes: Optional attribute to indicate weather the
     CMS signature attributes should be included in the signature or not.
 
-    :return: A CMS ASN.1 byte string of the signed data.    
+    :return: A CMS ASN.1 byte string of the signed data.
     """
     if use_signed_attributes:
         digest_func = hashlib.new(digest_alg)
@@ -446,17 +445,13 @@ def sign_message(
 
 
 def verify_message(data_to_verify, signature, verify_cert):
-    """Function parses an ASN.1 encrypted message and extracts/decrypts 
-            the original message.
+    """Function parses an ASN.1 encrypted message and extracts/decrypts the original message.
 
-    :param data_to_verify: 
-        A byte string of the data to be verified against the signature. 
-
+    :param data_to_verify: A byte string of the data to be verified against the signature.
     :param signature: A CMS ASN.1 byte string containing the signature.
-    
     :param verify_cert: The certificate to be used for verifying the signature.
 
-    :return: The digest algorithm that was used in the signature.    
+    :return: The digest algorithm that was used in the signature.
     """
 
     cms_content = cms.ContentInfo.load(signature)
