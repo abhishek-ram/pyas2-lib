@@ -4,18 +4,17 @@ from . import Pyas2TestCase
 
 
 class TestMDN(Pyas2TestCase):
-
     def setUp(self):
 
         self.org = as2.Organization(
-            as2_name='some_organization',
+            as2_name="some_organization",
             sign_key=self.private_key,
-            sign_key_pass='test',
+            sign_key_pass="test",
             decrypt_key=self.private_key,
-            decrypt_key_pass='test'
+            decrypt_key_pass="test",
         )
         self.partner = as2.Partner(
-            as2_name='some_partner',
+            as2_name="some_partner",
             verify_cert=self.public_key,
             encrypt_cert=self.public_key,
         )
@@ -32,22 +31,22 @@ class TestMDN(Pyas2TestCase):
         self.out_message.build(self.test_data)
 
         # Parse the generated AS2 message as the partner
-        raw_out_message = \
-            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        raw_out_message = (
+            self.out_message.headers_str + b"\r\n" + self.out_message.content
+        )
         in_message = as2.Message()
         _, _, mdn = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
-            find_partner_cb=self.find_partner
+            find_partner_cb=self.find_partner,
         )
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
-            mdn.headers_str + b'\r\n' + mdn.content,
-            find_message_cb=self.find_message
+            mdn.headers_str + b"\r\n" + mdn.content, find_message_cb=self.find_message
         )
 
-        self.assertEqual(status, 'processed')
+        self.assertEqual(status, "processed")
 
     def test_signed_mdn(self):
         """ Test signed MDN generation and parsing """
@@ -56,26 +55,26 @@ class TestMDN(Pyas2TestCase):
         self.partner.sign = True
         self.partner.encrypt = True
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
-        self.partner.mdn_digest_alg = 'sha256'
+        self.partner.mdn_digest_alg = "sha256"
         self.out_message = as2.Message(self.org, self.partner)
         self.out_message.build(self.test_data)
 
         # Parse the generated AS2 message as the partner
-        raw_out_message = \
-            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        raw_out_message = (
+            self.out_message.headers_str + b"\r\n" + self.out_message.content
+        )
         in_message = as2.Message()
         _, _, mdn = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
-            find_partner_cb=self.find_partner
+            find_partner_cb=self.find_partner,
         )
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
-            mdn.headers_str + b'\r\n' + mdn.content,
-            find_message_cb=self.find_message
+            mdn.headers_str + b"\r\n" + mdn.content, find_message_cb=self.find_message
         )
-        self.assertEqual(status, 'processed')
+        self.assertEqual(status, "processed")
 
     def test_failed_mdn_parse(self):
         """Test mdn parsing failures are captured."""
@@ -83,31 +82,33 @@ class TestMDN(Pyas2TestCase):
         self.partner.sign = True
         self.partner.encrypt = True
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
-        self.partner.mdn_digest_alg = 'sha256'
+        self.partner.mdn_digest_alg = "sha256"
         self.out_message = as2.Message(self.org, self.partner)
         self.out_message.build(self.test_data)
 
         # Parse the generated AS2 message as the partner
-        raw_out_message = \
-            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        raw_out_message = (
+            self.out_message.headers_str + b"\r\n" + self.out_message.content
+        )
         in_message = as2.Message()
         _, _, mdn = in_message.parse(
             raw_out_message,
             find_org_cb=self.find_org,
-            find_partner_cb=self.find_partner
+            find_partner_cb=self.find_partner,
         )
 
         out_mdn = as2.Mdn()
         self.partner.verify_cert = self.mecas2_public_key
         self.partner.validate_certs = False
         status, detailed_status = out_mdn.parse(
-            mdn.headers_str + b'\r\n' + mdn.content,
-            find_message_cb=self.find_message
+            mdn.headers_str + b"\r\n" + mdn.content, find_message_cb=self.find_message
         )
-        self.assertEqual(status, 'failed/Failure')
+        self.assertEqual(status, "failed/Failure")
         self.assertEqual(
-            detailed_status, 'Failed to parse received MDN. Failed to verify message signature: '
-                             'Message Digest does not match.')
+            detailed_status,
+            "Failed to parse received MDN. Failed to verify message signature: "
+            "Message Digest does not match.",
+        )
 
     def find_org(self, as2_id):
         return self.org
