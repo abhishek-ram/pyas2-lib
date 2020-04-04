@@ -3,6 +3,7 @@ import base64
 import os
 from email import message
 
+import pytest
 from pyas2lib import as2
 from pyas2lib.exceptions import ImproperlyConfigured
 from pyas2lib.tests import Pyas2TestCase, TEST_DIR
@@ -387,30 +388,80 @@ class TestAdvanced(Pyas2TestCase):
         assert mdn.headers == {}
         assert mdn.headers_str == b''
 
-    def test_all_encryption_algos(self):
-        """Test all the available encryption algorithms."""
-        algos = ['rc2_128_cbc',  'rc4_128_cbc', 'aes_128_cbc', 'aes_192_cbc', 'aes_256_cbc']
+    def test_mdn_not_found(self):
+        """Test that the MDN parser raises MDN not found when a non MDN message is passed."""
+        self.partner.encrypt = True
+        self.partner.validate_certs = False
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
 
-        for algo in algos:
-            # Build an As2 message to be transmitted to partner
-            self.partner.encrypt = True
-            self.partner.enc_alg = algo
-            out_message = as2.Message(self.org, self.partner)
-            out_message.build(self.test_data)
-            raw_out_message = out_message.headers_str + b'\r\n' + out_message.content
+        # Parse the AS2 message as an MDN
+        mdn = as2.Mdn()
+        raw_out_message = self.out_message.headers_str + b'\r\n' + self.out_message.content
+        status, detailed_status = mdn.parse(
+            raw_out_message,
+            find_message_cb=self.find_message
+        )
+        self.assertEqual(status, "failed/Failure")
+        self.assertEqual(detailed_status, "mdn-not-found")
 
-            # Parse the generated AS2 message as the partner
-            in_message = as2.Message()
-            status, _, _ = in_message.parse(
-                raw_out_message,
-                find_org_cb=self.find_org,
-                find_partner_cb=self.find_partner
-            )
+    def test_unsigned_mdn_sent_error(self):
+        """Test the case where a signed mdn was expected but unsigned mdn was returned."""
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
 
-            # Compare the mic contents of the input and output messages
-            self.assertEqual(status, 'processed')
-            self.assertTrue(in_message.encrypted)
-            self.assertEqual(self.test_data.splitlines(), in_message.content.splitlines())
+        # Parse the generated AS2 message as the partner
+        raw_out_message = \
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False
+        )
+
+        # Set the mdn sig alg and parse it
+        self.partner.mdn_digest_alg = "sha256"
+        out_mdn = as2.Mdn()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+
+        self.assertEqual(status, 'failed/Failure')
+        self.assertEqual(detailed_status, 'Expected signed MDN but unsigned MDN returned')
+
+    def test_non_matching_mic(self):
+        """Test the case where a the mic in the mdn does not match the mic in the message."""
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.partner.sign = True
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = \
+            self.out_message.headers_str + b'\r\n' + self.out_message.content
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False
+        )
+
+        # Set the mdn sig alg and parse it
+        self.out_message.mic = b"dummy value"
+        out_mdn = as2.Mdn()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b'\r\n' + mdn.content,
+            find_message_cb=self.find_message
+        )
+
+        self.assertEqual(status, 'processed/warning')
+        self.assertEqual(detailed_status, 'Message Integrity check failed.')
 
     def find_org(self, headers):
         return self.org
@@ -442,7 +493,8 @@ class SterlingIntegratorTest(Pyas2TestCase):
         self.partner.load_verify_cert()
         self.partner.load_encrypt_cert()
 
-    def xtest_process_message(self):
+    @pytest.mark.skip(reason="no way of currently testing this")
+    def test_process_message(self):
         """ Test processing message received from Sterling Integrator"""
         with open(os.path.join(TEST_DIR, 'sb2bi_signed_cmp.msg'), 'rb') as msg:
             as2message = as2.Message()

@@ -1,8 +1,9 @@
 import hashlib
 import zlib
-from asn1crypto import cms, core, algos
 from collections import OrderedDict
 from datetime import datetime, timezone
+
+from asn1crypto import cms, core, algos
 from oscrypto import asymmetric, symmetric, util
 
 from pyas2lib.exceptions import *
@@ -68,7 +69,6 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
 
     enc_alg_list = enc_alg.split('_')
     cipher, key_length, mode = enc_alg_list[0], enc_alg_list[1], enc_alg_list[2]
-    enc_alg_asn1, encrypted_content = None, None
 
     # Generate the symmetric encryption key and encrypt the message
     key = util.rand_bytes(int(key_length) // 8)
@@ -108,6 +108,15 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
             'algorithm': algorithm_id,
             'parameters': cms.OctetString(iv)
         })
+    elif cipher == 'des':
+        algorithm_id = '1.3.14.3.2.7'
+        iv, encrypted_content = symmetric.des_cbc_pkcs5_encrypt(key, data_to_encrypt, None)
+        enc_alg_asn1 = algos.EncryptionAlgorithm({
+            'algorithm': algorithm_id,
+            'parameters': cms.OctetString(iv)
+        })
+    else:
+        raise AS2Exception('Unsupported Encryption Algorithm')
 
     # Encrypt the key and build the ASN.1 message
     encrypted_key = asymmetric.rsa_pkcs1v15_encrypt(encryption_cert, key)
@@ -200,7 +209,7 @@ def decrypt_message(encrypted_data, decryption_key):
 
 
 def sign_message(data_to_sign, digest_alg, sign_key,
-                 use_signed_attributes=True):
+                 sign_alg="rsassa_pkcs1v15", use_signed_attributes=True):
     """Function signs the data and returns the generated ASN.1
 
     :param data_to_sign: A byte string of the data to be signed.
@@ -209,7 +218,9 @@ def sign_message(data_to_sign, digest_alg, sign_key,
         The digest algorithm to be used for generating the signature.
 
     :param sign_key: The key to be used for generating the signature.
-    
+
+    :param sign_alg: The algorithm to be used for signing the message.
+
     :param use_signed_attributes: Optional attribute to indicate weather the 
     CMS signature attributes should be included in the signature or not.
 
@@ -282,10 +293,17 @@ def sign_message(data_to_sign, digest_alg, sign_key,
                 ])
             }),
         ])
-        signature = asymmetric.rsa_pkcs1v15_sign(sign_key[0], signed_attributes.dump(), digest_alg)
     else:
         signed_attributes = None
+
+    # Generate the signature
+    data_to_sign = signed_attributes.dump() if signed_attributes else data_to_sign
+    if sign_alg == "rsassa_pkcs1v15":
         signature = asymmetric.rsa_pkcs1v15_sign(sign_key[0], data_to_sign, digest_alg)
+    elif sign_alg == "rsassa_pss":
+        signature = asymmetric.rsa_pss_sign(sign_key[0], data_to_sign, digest_alg)
+    else:
+        raise AS2Exception('Unsupported Signature Algorithm')
 
     return cms.ContentInfo({
         'content_type': cms.ContentType('signed_data'),
@@ -321,7 +339,7 @@ def sign_message(data_to_sign, digest_alg, sign_key,
                     'signed_attrs': signed_attributes,
                     'signature_algorithm': algos.SignedDigestAlgorithm({
                         'algorithm':
-                            algos.SignedDigestAlgorithmId('rsassa_pkcs1v15')
+                            algos.SignedDigestAlgorithmId(sign_alg)
                     }),
                     'signature': core.OctetString(signature)
                 })
@@ -387,6 +405,8 @@ def verify_message(data_to_verify, signature, verify_cert):
                 else:
                     raise AS2Exception('Unsupported Signature Algorithm')
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 raise IntegrityError(
                     'Failed to verify message signature: {}'.format(e))
     else:
