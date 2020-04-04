@@ -5,7 +5,7 @@ python:
   - '3.7'
   - '3.8'
 install:
-  - pip install -e ".[testing]"
+  - pip install -e ".[tests]"
 script:
   - pytest --cov=pyas2lib --cov-config .coveragerc  --black --pylama
 after_success:
