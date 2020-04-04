@@ -241,11 +241,15 @@ def sign_message(data_to_sign, digest_alg, sign_key,
 
         smime_cap = OrderedDict([
             ('0', OrderedDict([
-                ('0', core.ObjectIdentifier('1.2.840.113549.3.7'))])),
+                ('0', core.ObjectIdentifier('2.16.840.1.101.3.4.1.42'))])),
             ('1', OrderedDict([
+                ('0', core.ObjectIdentifier('2.16.840.1.101.3.4.1.2'))])),
+            ('2', OrderedDict([
+                ('0', core.ObjectIdentifier('1.2.840.113549.3.7'))])),
+            ('3', OrderedDict([
                 ('0', core.ObjectIdentifier('1.2.840.113549.3.2')),
                 ('1', core.Integer(128))])),
-            ('2', OrderedDict([
+            ('4', OrderedDict([
                 ('0', core.ObjectIdentifier('1.2.840.113549.3.4')),
                 ('1', core.Integer(128))])),
         ])

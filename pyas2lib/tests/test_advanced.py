@@ -444,7 +444,7 @@ class SterlingIntegratorTest(Pyas2TestCase):
 
     def xtest_process_message(self):
         """ Test processing message received from Sterling Integrator"""
-        with open(os.path.join( TEST_DIR, 'sb2bi_signed_cmp.msg'), 'rb') as msg:
+        with open(os.path.join(TEST_DIR, 'sb2bi_signed_cmp.msg'), 'rb') as msg:
             as2message = as2.Message()
             status, exception, as2mdn = as2message.parse(
                 msg.read(),
