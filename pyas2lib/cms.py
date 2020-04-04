@@ -2,7 +2,7 @@ import hashlib
 import zlib
 from asn1crypto import cms, core, algos
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timezone
 from oscrypto import asymmetric, symmetric, util
 
 from pyas2lib.exceptions import *
@@ -163,7 +163,7 @@ def decrypt_message(encrypted_data, decryption_key):
             'key_encryption_algorithm']['algorithm'].native
         encrypted_key = recipient_info['encrypted_key'].native
 
-        if key_enc_alg == 'rsa':
+        if cms.KeyEncryptionAlgorithmId(key_enc_alg) == cms.KeyEncryptionAlgorithmId('rsa'):
             try:
                 key = asymmetric.rsa_pkcs1v15_decrypt(decryption_key[0], encrypted_key)
             except Exception:
@@ -175,7 +175,7 @@ def decrypt_message(encrypted_data, decryption_key):
                 'encrypted_content_info']['encrypted_content'].native
 
             try:
-                if alg['algorithm'].native == '1.2.840.113549.3.4':  # This is RC4
+                if alg['algorithm'].native == 'rc4':
                     decrypted_content = symmetric.rc4_decrypt(key, encapsulated_data)
                 elif alg.encryption_cipher == 'tripledes':
                     cipher = 'tripledes_192_cbc'
@@ -261,7 +261,7 @@ def sign_message(data_to_sign, digest_alg, sign_key,
                 'type': cms.CMSAttributeType('signing_time'),
                 'values': cms.SetOfTime([
                     cms.Time({
-                        'utc_time': core.UTCTime(datetime.now())
+                        'utc_time': core.UTCTime(datetime.utcnow().replace(tzinfo=timezone.utc))
                     })
                 ])
             }),
