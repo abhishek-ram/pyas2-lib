@@ -1,5 +1,11 @@
 # Release History
 
+## 1.3.0 - 2020-04-05
+* Fix and update the SMIME capabilities in the Signed attributes of a signature
+* Update the versions of crypto dependencies and related changes
+* Use black and pylama as code formatter and linter
+* Increase test coverage and add support for python 3.8
+
 ## 1.2.2 - 2019-06-26
 * Handle MDNNotfound correctly when parsing an mdn
 
