@@ -6,26 +6,25 @@ import requests
 from pyas2lib import as2
 from . import Pyas2TestCase
 
-TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testdata')
+TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "testdata")
 
 
 class LiveTestMecAS2(Pyas2TestCase):
-
     def setUp(self):
         self.org = as2.Organization(
-            as2_name='pyas2lib',
+            as2_name="pyas2lib",
             sign_key=self.private_key,
-            sign_key_pass='test',
+            sign_key_pass="test",
             decrypt_key=self.private_key,
-            decrypt_key_pass='test'
+            decrypt_key_pass="test",
         )
 
         self.partner = as2.Partner(
-            as2_name='mecas2',
+            as2_name="mecas2",
             verify_cert=self.mecas2_public_key,
             encrypt_cert=self.mecas2_public_key,
             mdn_mode=as2.SYNCHRONOUS_MDN,
-            mdn_digest_alg='sha256'
+            mdn_digest_alg="sha256",
         )
         self.out_message = None
 
@@ -37,20 +36,21 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            "http://localhost:8080/as2/HttpReceiver",
             headers=self.out_message.headers,
-            data=self.out_message.content
+            data=self.out_message.content,
         )
-        raw_mdn = ''
+        raw_mdn = ""
         for k, v in response.headers.items():
-            raw_mdn += '{}: {}\n'.format(k, v)
+            raw_mdn += "{}: {}\n".format(k, v)
 
-        raw_mdn = raw_mdn + '\n' + response.text
+        raw_mdn = raw_mdn + "\n" + response.text
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
-            raw_mdn, find_message_cb=self.find_message)
-        self.assertEqual(status, 'processed')
+            raw_mdn, find_message_cb=self.find_message
+        )
+        self.assertEqual(status, "processed")
 
     def test_encrypted_message(self):
         """ Send Encrypted Unsigned Uncompressed Message to Mendelson AS2"""
@@ -60,20 +60,21 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            "http://localhost:8080/as2/HttpReceiver",
             headers=self.out_message.headers,
-            data=self.out_message.content
+            data=self.out_message.content,
         )
-        raw_mdn = ''
+        raw_mdn = ""
         for k, v in response.headers.items():
-            raw_mdn += '{}: {}\n'.format(k, v)
+            raw_mdn += "{}: {}\n".format(k, v)
 
-        raw_mdn = raw_mdn + '\n' + response.text
+        raw_mdn = raw_mdn + "\n" + response.text
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
-            raw_mdn, find_message_cb=self.find_message)
-        self.assertEqual(status, 'processed')
+            raw_mdn, find_message_cb=self.find_message
+        )
+        self.assertEqual(status, "processed")
 
     def test_signed_message(self):
         """ Send Unencrypted Signed Uncompressed Message to Mendelson AS2"""
@@ -83,20 +84,21 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            "http://localhost:8080/as2/HttpReceiver",
             data=self.out_message.content,
             headers=self.out_message.headers,
         )
 
-        raw_mdn = ''
+        raw_mdn = ""
         for k, v in response.headers.items():
-            raw_mdn += '{}: {}\n'.format(k, v)
-        raw_mdn = raw_mdn + '\n' + response.text
+            raw_mdn += "{}: {}\n".format(k, v)
+        raw_mdn = raw_mdn + "\n" + response.text
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
-            raw_mdn, find_message_cb=self.find_message)
-        self.assertEqual(status, 'processed')
+            raw_mdn, find_message_cb=self.find_message
+        )
+        self.assertEqual(status, "processed")
 
     def test_encrypted_signed_message(self):
         """ Send Encrypted Signed Uncompressed Message to Mendelson AS2"""
@@ -107,20 +109,21 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            "http://localhost:8080/as2/HttpReceiver",
             data=self.out_message.content,
             headers=self.out_message.headers,
         )
 
-        raw_mdn = ''
+        raw_mdn = ""
         for k, v in response.headers.items():
-            raw_mdn += '{}: {}\n'.format(k, v)
-        raw_mdn = raw_mdn + '\n' + response.text
+            raw_mdn += "{}: {}\n".format(k, v)
+        raw_mdn = raw_mdn + "\n" + response.text
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
-            raw_mdn, find_message_cb=self.find_message)
-        self.assertEqual(status, 'processed')
+            raw_mdn, find_message_cb=self.find_message
+        )
+        self.assertEqual(status, "processed")
 
     def test_encrypted_signed_compressed_message(self):
         """ Send Encrypted Signed Compressed Message to Mendelson AS2"""
@@ -132,20 +135,21 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.out_message.build(self.test_data)
 
         response = requests.post(
-            'http://localhost:8080/as2/HttpReceiver',
+            "http://localhost:8080/as2/HttpReceiver",
             data=self.out_message.content,
             headers=self.out_message.headers,
         )
 
-        raw_mdn = ''
+        raw_mdn = ""
         for k, v in response.headers.items():
-            raw_mdn += '{}: {}\n'.format(k, v)
-        raw_mdn = raw_mdn + '\n' + response.text
+            raw_mdn += "{}: {}\n".format(k, v)
+        raw_mdn = raw_mdn + "\n" + response.text
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
-            raw_mdn, find_message_cb=self.find_message)
-        self.assertEqual(status, 'processed')
+            raw_mdn, find_message_cb=self.find_message
+        )
+        self.assertEqual(status, "processed")
 
     def find_org(self, headers):
         return self.org

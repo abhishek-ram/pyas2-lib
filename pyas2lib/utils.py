@@ -45,8 +45,12 @@ class BinaryBytesGenerator(BytesGenerator):
         Handle writing the binary messages to prevent default behaviour of
         newline replacements.
         """
-        if msg.get('Content-Transfer-Encoding') == 'binary' and \
-                msg.get_content_subtype() in ['pkcs7-mime', 'pkcs7-signature']:
+        if msg.get(
+            "Content-Transfer-Encoding"
+        ) == "binary" and msg.get_content_subtype() in [
+            "pkcs7-mime",
+            "pkcs7-signature",
+        ]:
             payload = msg.get_payload(decode=True)
             if payload is None:
                 return
@@ -80,13 +84,13 @@ def canonicalize(email_message: message.Message):
     :return: the standard representation of the email message in bytes
     """
 
-    if email_message.get('Content-Transfer-Encoding') == 'binary':
-        message_header = ''
+    if email_message.get("Content-Transfer-Encoding") == "binary":
+        message_header = ""
         message_body = email_message.get_payload(decode=True)
         for k, v in email_message.items():
-            message_header += '{}: {}\r\n'.format(k, v)
-        message_header += '\r\n'
-        return message_header.encode('utf-8') + message_body
+            message_header += "{}: {}\r\n".format(k, v)
+        message_header += "\r\n"
+        return message_header.encode("utf-8") + message_body
     else:
         return mime_to_bytes(email_message)
 
@@ -98,19 +102,19 @@ def make_mime_boundary(text: str = None):
     """
 
     width = len(repr(sys.maxsize - 1))
-    fmt = '%%0%dd' % width
+    fmt = "%%0%dd" % width
 
     token = random.randrange(sys.maxsize)
-    boundary = ('=' * 15) + (fmt % token) + '=='
+    boundary = ("=" * 15) + (fmt % token) + "=="
     if text is None:
         return boundary
     b = boundary
     counter = 0
     while True:
-        cre = re.compile('^--' + re.escape(b) + '(--)?$', re.MULTILINE)
+        cre = re.compile("^--" + re.escape(b) + "(--)?$", re.MULTILINE)
         if not cre.search(text):
             break
-        b = boundary + '.' + str(counter)
+        b = boundary + "." + str(counter)
         counter += 1
     return b
 
@@ -118,7 +122,7 @@ def make_mime_boundary(text: str = None):
 def extract_first_part(message: bytes, boundary: bytes):
     """Function to extract the first part of a multipart message."""
     first_message = message.split(boundary)[1].lstrip()
-    if first_message.endswith(b'\r\n'):
+    if first_message.endswith(b"\r\n"):
         first_message = first_message[:-2]
     else:
         first_message = first_message[:-1]
@@ -152,24 +156,24 @@ def split_pem(pem_bytes: bytes):
     :param pem_bytes: The pem data in bytes with multiple certs
     :return: yields a list of certificates contained in the pem file
     """
-    started, pem_data = False, b''
+    started, pem_data = False, b""
     for line in pem_bytes.splitlines(False):
 
-        if line == b'' and not started:
+        if line == b"" and not started:
             continue
 
-        if line[0:5] in (b'-----', b'---- '):
+        if line[0:5] in (b"-----", b"---- "):
             if not started:
                 started = True
             else:
-                pem_data = pem_data + line + b'\r\n'
+                pem_data = pem_data + line + b"\r\n"
                 yield pem_data
 
                 started = False
-                pem_data = b''
+                pem_data = b""
 
         if started:
-            pem_data = pem_data + line + b'\r\n'
+            pem_data = pem_data + line + b"\r\n"
 
 
 def verify_certificate_chain(cert_bytes, trusted_certs, ignore_self_signed=True):
@@ -187,8 +191,7 @@ def verify_certificate_chain(cert_bytes, trusted_certs, ignore_self_signed=True)
 
         # Assuming the certificates are in PEM format in a trusted_certs list
         for _cert in trusted_certs:
-            store.add_cert(
-                crypto.load_certificate(crypto.FILETYPE_ASN1, _cert))
+            store.add_cert(crypto.load_certificate(crypto.FILETYPE_ASN1, _cert))
 
         # Create a certificate context using the store and the certificate
         store_ctx = crypto.X509StoreContext(store, certificate)
@@ -200,7 +203,8 @@ def verify_certificate_chain(cert_bytes, trusted_certs, ignore_self_signed=True)
 
     except crypto.X509StoreContextError as e:
         raise AS2Exception(
-            'Partner Certificate Invalid: %s' % e.args[-1][-1], 'invalid-certificate')
+            "Partner Certificate Invalid: %s" % e.args[-1][-1], "invalid-certificate"
+        )
 
 
 def extract_certificate_info(cert: bytes):
@@ -220,11 +224,11 @@ def extract_certificate_info(cert: bytes):
 
     # initialize the cert_info dictionary
     cert_info = {
-        'valid_from': None,
-        'valid_to': None,
-        'subject': None,
-        'issuer': None,
-        'serial': None
+        "valid_from": None,
+        "valid_to": None,
+        "subject": None,
+        "issuer": None,
+        "serial": None,
     }
 
     # get certificate to DER list
@@ -238,19 +242,21 @@ def extract_certificate_info(cert: bytes):
             certificate = crypto.load_certificate(crypto.FILETYPE_ASN1, _item)
 
             # on successful load, extract the various fields into the dictionary
-            cert_info['valid_from'] = datetime.strptime(
-                certificate.get_notBefore().decode('utf8'), "%Y%m%d%H%M%SZ").\
-                replace(tzinfo=timezone.utc)
-            cert_info['valid_to'] = datetime.strptime(
-                certificate.get_notAfter().decode('utf8'), "%Y%m%d%H%M%SZ").\
-                replace(tzinfo=timezone.utc)
-            cert_info['subject'] = [
-                tuple(item.decode('utf8') for item in sets)
-                for sets in certificate.get_subject().get_components()]
-            cert_info['issuer'] = [
-                tuple(item.decode('utf8') for item in sets)
-                for sets in certificate.get_issuer().get_components()]
-            cert_info['serial'] = certificate.get_serial_number()
+            cert_info["valid_from"] = datetime.strptime(
+                certificate.get_notBefore().decode("utf8"), "%Y%m%d%H%M%SZ"
+            ).replace(tzinfo=timezone.utc)
+            cert_info["valid_to"] = datetime.strptime(
+                certificate.get_notAfter().decode("utf8"), "%Y%m%d%H%M%SZ"
+            ).replace(tzinfo=timezone.utc)
+            cert_info["subject"] = [
+                tuple(item.decode("utf8") for item in sets)
+                for sets in certificate.get_subject().get_components()
+            ]
+            cert_info["issuer"] = [
+                tuple(item.decode("utf8") for item in sets)
+                for sets in certificate.get_issuer().get_components()
+            ]
+            cert_info["serial"] = certificate.get_serial_number()
             break
         except crypto.Error:
             continue
