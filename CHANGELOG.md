@@ -1,5 +1,8 @@
 # Release History
 
+## 1.3.1 - 2020-04-12
+* Use correct format for setting dataclasses requirement for python 3.6
+
 ## 1.3.0 - 2020-04-05
 * Fix and update the SMIME capabilities in the Signed attributes of a signature
 * Update the versions of crypto dependencies and related changes
