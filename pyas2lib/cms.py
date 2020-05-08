@@ -464,7 +464,7 @@ def verify_message(data_to_verify, signature, verify_cert):
             if digest_alg not in DIGEST_ALGORITHMS:
                 raise Exception("Unsupported Digest Algorithm")
 
-            sig_alg = signer["signature_algorithm"]["algorithm"].native
+            sig_alg = signer["signature_algorithm"].signature_algo
             sig = signer["signature"].native
             signed_data = data_to_verify
 
