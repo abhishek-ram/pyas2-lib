@@ -45,12 +45,10 @@ class BinaryBytesGenerator(BytesGenerator):
         Handle writing the binary messages to prevent default behaviour of
         newline replacements.
         """
-        if msg.get(
-            "Content-Transfer-Encoding"
-        ) == "binary" and msg.get_content_subtype() in [
-            "pkcs7-mime",
-            "pkcs7-signature",
-        ]:
+        if msg.get_content_type() == "application/octet-stream" or (
+            msg.get("Content-Transfer-Encoding") == "binary"
+            and msg.get_content_subtype() in ["pkcs7-mime", "pkcs7-signature",]
+        ):
             payload = msg.get_payload(decode=True)
             if payload is None:
                 return
