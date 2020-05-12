@@ -261,6 +261,10 @@ def sign_message(
 
     :return: A CMS ASN.1 byte string of the signed data.
     """
+    digest_alg = digest_alg.lower()
+    if digest_alg not in DIGEST_ALGORITHMS:
+        raise Exception('Unsupported Digest Algorithm')
+
     if use_signed_attributes:
         digest_func = hashlib.new(digest_alg)
         digest_func.update(data_to_sign)
