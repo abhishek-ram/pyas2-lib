@@ -263,7 +263,7 @@ def sign_message(
     """
     digest_alg = digest_alg.lower()
     if digest_alg not in DIGEST_ALGORITHMS:
-        raise Exception("Unsupported Digest Algorithm")
+        raise AS2Exception("Unsupported Digest Algorithm")
 
     if use_signed_attributes:
         digest_func = hashlib.new(digest_alg)
