@@ -52,9 +52,8 @@ class TestAdvanced(Pyas2TestCase):
         )
 
         # Compare the mic contents of the input and output messages
-        # self.assertEqual(original_message,
-        #                  in_message.payload.get_payload(decode=True))
         self.assertEqual(status, "processed")
+        self.assertEqual(original_message, in_message.payload.get_payload(decode=True))
         self.assertTrue(in_message.signed)
         self.assertTrue(in_message.encrypted)
         self.assertEqual(out_message.mic, in_message.mic)
