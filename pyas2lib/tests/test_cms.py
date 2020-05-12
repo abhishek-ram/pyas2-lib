@@ -58,6 +58,15 @@ def test_signing():
             b"data", digest_alg="sha256", sign_key=sign_key, sign_alg="rsassa_pssa"
         )
 
+    # Test unsupported digest alg
+    with pytest.raises(AS2Exception):
+        cms.sign_message(
+            b"data",
+            digest_alg="sha-256",
+            sign_key=sign_key,
+            use_signed_attributes=False,
+        )
+
 
 def test_encryption():
     """Test the encryption and decryption functions."""
