@@ -15,14 +15,77 @@ def test_quoting():
     assert utils.quote_as2name("PYAS2 LIB") == '"PYAS2 LIB"'
 
 
-def test_bytes_generator():
-    """Test the email bytes generator class."""
+def test_mime_to_bytes_empty_message():
+    """
+    It will generate the headers with an empty body
+    """
     message = Message()
     message.set_type("application/pkcs7-mime")
     assert (
         utils.mime_to_bytes(message) == b"MIME-Version: 1.0\r\n"
         b"Content-Type: application/pkcs7-mime\r\n\r\n"
     )
+
+
+def test_mime_to_bytes_unix_text():
+    """
+    For non-binary content types,
+    it converts unix new lines to network newlines.
+    """
+    message = Message()
+    message.set_type("application/xml")
+    message.set_payload('Some line.\nAnother line.')
+
+    result = utils.mime_to_bytes(message)
+
+    assert (
+        b"MIME-Version: 1.0\r\n"
+        b"Content-Type: application/xml\r\n"
+        b"\r\n"
+        b"Some line.\r\n"
+        b"Another line."
+    ) == result
+
+
+def test_mime_to_bytes_octet_stream():
+    """
+    For binary octet-stream content types,
+    it does not converts unix new lines to network newlines.
+    """
+    message = Message()
+    message.set_type("application/octet-stream")
+    message.set_payload('Some line.\nAnother line.\n')
+
+    result = utils.mime_to_bytes(message)
+
+    assert (
+        b"MIME-Version: 1.0\r\n"
+        b"Content-Type: application/octet-stream\r\n"
+        b"\r\n"
+        b"Some line.\n"
+        b"Another line.\n"
+    ) == result
+
+
+def test_mime_to_bytes_binary():
+    """
+    It makes no conversion for binary content encoding.
+    """
+    message = Message()
+    message.set_type("any/type")
+    message['Content-Transfer-Encoding'] = 'binary'
+    message.set_payload('Some line.\nAnother line.\n')
+
+    result = utils.mime_to_bytes(message)
+
+    assert (
+        b"MIME-Version: 1.0\r\n"
+        b"Content-Type: any/type\r\n"
+        b"Content-Transfer-Encoding: binary\r\n"
+        b"\r\n"
+        b"Some line.\n"
+        b"Another line.\n"
+    ) == result
 
 
 def test_make_boundary():
