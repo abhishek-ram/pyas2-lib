@@ -978,5 +978,8 @@ class Mdn(object):
             if part.get_content_type() == "message/disposition-notification":
                 mdn = part.get_payload()[0]
                 message_id = mdn.get("Original-Message-ID").strip("<>")
-                message_recipient = mdn.get("Original-Recipient").split(";")[1].strip()
+                if mdn.get("Original-Recipient"):
+                    message_recipient = mdn.get("Original-Recipient").split(";")[1].strip()
+                else:
+                    message_recipient = mdn.get("Final-Recipient").split(";")[1].strip()
         return message_id, message_recipient
