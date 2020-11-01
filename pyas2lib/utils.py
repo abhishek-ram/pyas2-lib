@@ -48,7 +48,7 @@ class BinaryBytesGenerator(BytesGenerator):
         if (
             msg.get_content_type() == "application/octet-stream"
             or msg.get("Content-Transfer-Encoding") == "binary"
-                ):
+        ):
             payload = msg.get_payload(decode=True)
             if payload is None:
                 return

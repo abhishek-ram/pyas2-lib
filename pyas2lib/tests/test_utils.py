@@ -34,7 +34,7 @@ def test_mime_to_bytes_unix_text():
     """
     message = Message()
     message.set_type("application/xml")
-    message.set_payload('Some line.\nAnother line.')
+    message.set_payload("Some line.\nAnother line.")
 
     result = utils.mime_to_bytes(message)
 
@@ -54,7 +54,7 @@ def test_mime_to_bytes_octet_stream():
     """
     message = Message()
     message.set_type("application/octet-stream")
-    message.set_payload('Some line.\nAnother line.\n')
+    message.set_payload("Some line.\nAnother line.\n")
 
     result = utils.mime_to_bytes(message)
 
@@ -73,8 +73,8 @@ def test_mime_to_bytes_binary():
     """
     message = Message()
     message.set_type("any/type")
-    message['Content-Transfer-Encoding'] = 'binary'
-    message.set_payload('Some line.\nAnother line.\n')
+    message["Content-Transfer-Encoding"] = "binary"
+    message.set_payload("Some line.\nAnother line.\n")
 
     result = utils.mime_to_bytes(message)
 
