@@ -381,7 +381,11 @@ class Message(object):
         self.payload = email_message.Message()
         self.payload.set_payload(data)
         self.payload.set_type(content_type)
-        encoders.encode_7or8bit(self.payload)
+
+        if content_type.lower().startswith('application/octet-stream'):
+            self.payload['Content-Transfer-Encoding'] = 'binary'
+        else:
+            encoders.encode_7or8bit(self.payload)
 
         if filename:
             self.payload.add_header(
