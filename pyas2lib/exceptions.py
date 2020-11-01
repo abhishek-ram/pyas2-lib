@@ -82,7 +82,7 @@ class IntegrityError(AS2Exception):
 
 class UnexpectedError(AS2Exception):
     """A catch all exception to be raised for any error found while parsing
-     a received AS2 message"""
+    a received AS2 message"""
 
     disposition_type = "processed/Error"
     disposition_modifier = "unexpected-processing-error"

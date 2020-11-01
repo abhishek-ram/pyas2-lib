@@ -7,7 +7,7 @@ python:
 install:
   - pip install -e ".[tests]"
 script:
-  - pytest --cov=pyas2lib --cov-config .coveragerc  --black --pylama
+  - pytest --cov=pyas2lib --cov-config .coveragerc  --black --pylava
 after_success:
   - pip install codecov
   - codecov

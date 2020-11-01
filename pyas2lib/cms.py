@@ -1,3 +1,4 @@
+"""Define functions related to the CMS operations such as encrypting, signature, etc."""
 import hashlib
 import zlib
 from collections import OrderedDict
@@ -57,8 +58,7 @@ def decompress_message(compressed_data):
         cms_content = cms.ContentInfo.load(compressed_data)
         if cms_content["content_type"].native == "compressed_data":
             return cms_content["content"].decompressed
-        else:
-            raise DecompressionError("Compressed data not found in ASN.1 ")
+        raise DecompressionError("Compressed data not found in ASN.1 ")
 
     except Exception as e:
         raise DecompressionError("Decompression failed with cause: {}".format(e))
@@ -103,7 +103,11 @@ def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
     elif cipher == "rc4":
         algorithm_id = "1.2.840.113549.3.4"
         encrypted_content = symmetric.rc4_encrypt(key, data_to_encrypt)
-        enc_alg_asn1 = algos.EncryptionAlgorithm({"algorithm": algorithm_id,})
+        enc_alg_asn1 = algos.EncryptionAlgorithm(
+            {
+                "algorithm": algorithm_id,
+            }
+        )
 
     elif cipher == "aes":
         if key_length == "128":
@@ -271,6 +275,8 @@ def sign_message(
         message_digest = digest_func.digest()
 
         class SmimeCapability(core.Sequence):
+            """"Define the possible list of Smime Capability."""
+
             _fields = [
                 ("0", core.Any, {"optional": True}),
                 ("1", core.Any, {"optional": True}),
@@ -280,6 +286,8 @@ def sign_message(
             ]
 
         class SmimeCapabilities(core.Sequence):
+            """"Define the Smime Capabilities supported by pyas2."""
+
             _fields = [
                 ("0", SmimeCapability),
                 ("1", SmimeCapability, {"optional": True}),
@@ -504,9 +512,6 @@ def verify_message(data_to_verify, signature, verify_cert):
                 else:
                     raise AS2Exception("Unsupported Signature Algorithm")
             except Exception as e:
-                import traceback
-
-                traceback.print_exc()
                 raise IntegrityError("Failed to verify message signature: {}".format(e))
     else:
         raise IntegrityError("Signed data not found in ASN.1 ")

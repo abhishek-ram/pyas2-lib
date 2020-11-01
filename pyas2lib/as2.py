@@ -1,3 +1,4 @@
+"""Define the core functions/classes of the pyas2 package."""
 import logging
 import hashlib
 import binascii
@@ -54,7 +55,7 @@ logger = logging.getLogger("pyas2lib")
 
 
 @dataclass
-class Organization(object):
+class Organization:
     """
     Class represents an AS2 organization and defines the certificates and
     settings to be used when sending and receiving messages.
@@ -124,7 +125,7 @@ class Organization(object):
 
 
 @dataclass
-class Partner(object):
+class Partner:
     """
     Class represents an AS2 partner and defines the certificates and
     settings to be used when sending and receiving messages.
@@ -217,6 +218,7 @@ class Partner(object):
             )
 
     def load_verify_cert(self):
+        """Load the verification certificate of the partner and returned the parsed cert."""
         if self.validate_certs:
             # Convert the certificate to DER format
             cert = pem_to_der(self.verify_cert, return_multiple=False)
@@ -235,6 +237,7 @@ class Partner(object):
         return asymmetric.load_certificate(self.verify_cert)
 
     def load_encrypt_cert(self):
+        """Load the encryption certificate of the partner and returned the parsed cert."""
         if self.validate_certs:
             # Convert the certificate to DER format
             cert = pem_to_der(self.encrypt_cert, return_multiple=False)
@@ -253,7 +256,7 @@ class Partner(object):
         return asymmetric.load_certificate(self.encrypt_cert)
 
 
-class Message(object):
+class Message:
     """Class for handling AS2 messages. Includes functions for both
     parsing and building messages.
     """
@@ -291,19 +294,20 @@ class Message(object):
             temp = message_bytes.split(boundary)
             temp.pop(0)
             return boundary + boundary.join(temp)
-        else:
-            content = self.payload.get_payload(decode=True)
-            return content
+
+        content = self.payload.get_payload(decode=True)
+        return content
 
     @property
     def headers(self):
+        """Return the headers in the payload as a dictionary."""
         if self.payload:
             return dict(self.payload.items())
-        else:
-            return {}
+        return {}
 
     @property
     def headers_str(self):
+        """Return the headers in the payload as a string."""
         message_header = ""
         if self.payload:
             for k, v in self.headers.items():
@@ -346,10 +350,10 @@ class Message(object):
         """
 
         # Validations
-        assert type(data) is bytes, "Parameter data must be of bytes type."
+        assert isinstance(data, bytes), "Parameter data must be of bytes type."
 
         additional_headers = additional_headers if additional_headers else {}
-        assert type(additional_headers) is dict
+        assert isinstance(additional_headers, dict)
 
         if self.receiver.sign and not self.sender.sign_key:
             raise ImproperlyConfigured(
@@ -641,43 +645,42 @@ class Message(object):
             if not self.compressed:
                 self.compressed, self.payload = self._decompress_data(self.payload)
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0703
             status = getattr(e, "disposition_type", "processed/Error")
             detailed_status = getattr(
                 e, "disposition_modifier", "unexpected-processing-error"
             )
             exception = (e, traceback.format_exc())
             logger.error(f"Failed to parse AS2 message\n: {traceback.format_exc()}")
-        finally:
 
-            # Update the payload headers with the original headers
-            for k, v in as2_headers.items():
-                if self.payload.get(k) and k.lower() != "content-disposition":
-                    del self.payload[k]
-                self.payload.add_header(k, v)
+        # Update the payload headers with the original headers
+        for k, v in as2_headers.items():
+            if self.payload.get(k) and k.lower() != "content-disposition":
+                del self.payload[k]
+            self.payload.add_header(k, v)
 
-            if as2_headers.get("disposition-notification-to"):
-                mdn_mode = SYNCHRONOUS_MDN
+        if as2_headers.get("disposition-notification-to"):
+            mdn_mode = SYNCHRONOUS_MDN
 
-                mdn_url = as2_headers.get("receipt-delivery-option")
-                if mdn_url:
-                    mdn_mode = ASYNCHRONOUS_MDN
+            mdn_url = as2_headers.get("receipt-delivery-option")
+            if mdn_url:
+                mdn_mode = ASYNCHRONOUS_MDN
 
-                digest_alg = as2_headers.get("disposition-notification-options")
-                if digest_alg:
-                    digest_alg = digest_alg.split(";")[-1].split(",")[-1].strip()
+            digest_alg = as2_headers.get("disposition-notification-options")
+            if digest_alg:
+                digest_alg = digest_alg.split(";")[-1].split(",")[-1].strip()
 
-                logger.debug(
-                    f"Building the MDN for message {self.message_id} with status {status} "
-                    f"and detailed-status {detailed_status}."
-                )
-                mdn = Mdn(mdn_mode=mdn_mode, mdn_url=mdn_url, digest_alg=digest_alg)
-                mdn.build(message=self, status=status, detailed_status=detailed_status)
+            logger.debug(
+                f"Building the MDN for message {self.message_id} with status {status} "
+                f"and detailed-status {detailed_status}."
+            )
+            mdn = Mdn(mdn_mode=mdn_mode, mdn_url=mdn_url, digest_alg=digest_alg)
+            mdn.build(message=self, status=status, detailed_status=detailed_status)
 
-            return status, exception, mdn
+        return status, exception, mdn
 
 
-class Mdn(object):
+class Mdn:
     """Class for handling AS2 MDNs. Includes functions for both
     parsing and building them.
     """
@@ -700,18 +703,18 @@ class Mdn(object):
             temp = message_bytes.split(boundary)
             temp.pop(0)
             return boundary + boundary.join(temp)
-        else:
-            return ""
+        return ""
 
     @property
     def headers(self):
+        """Return the headers in the payload as a dictionary."""
         if self.payload:
             return dict(self.payload.items())
-        else:
-            return {}
+        return {}
 
     @property
     def headers_str(self):
+        """Return the headers in the payload as a string."""
         message_header = ""
         if self.payload:
             for k, v in self.headers.items():
@@ -947,16 +950,14 @@ class Mdn(object):
         except MDNNotFound:
             status = "failed/Failure"
             detailed_status = "mdn-not-found"
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0703
             status = "failed/Failure"
             detailed_status = f"Failed to parse received MDN. {e}"
             logger.error(f"Failed to parse AS2 MDN\n: {traceback.format_exc()}")
-
-        finally:
-            return status, detailed_status
+        return status, detailed_status
 
     def detect_mdn(self):
-        """ Function checks if the received raw message is an AS2 MDN or not.
+        """Function checks if the received raw message is an AS2 MDN or not.
 
         :raises MDNNotFound: If the received payload is not an MDN then this
         exception is raised.

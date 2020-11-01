@@ -16,7 +16,9 @@ from pyas2lib.tests import TEST_DIR
 
 
 INVALID_DATA = cms.cms.ContentInfo(
-    {"content_type": cms.cms.ContentType("data"),}
+    {
+        "content_type": cms.cms.ContentType("data"),
+    }
 ).dump()
 
 

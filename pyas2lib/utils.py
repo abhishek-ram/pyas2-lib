@@ -1,16 +1,19 @@
+"""Define utility functions used by the pyas2-lib package."""
+
 import email
 import random
 import re
 import sys
-from OpenSSL import crypto
-from asn1crypto import pem
-from email import policy
+from datetime import datetime, timezone
 from email import message
+from email import policy
 from email.generator import BytesGenerator
 from io import BytesIO
 
+from OpenSSL import crypto
+from asn1crypto import pem
+
 from pyas2lib.exceptions import AS2Exception
-from datetime import datetime, timezone
 
 
 def unquote_as2name(quoted_name: str):
@@ -33,8 +36,7 @@ def quote_as2name(unquoted_name: str):
 
     if re.search(r'[\\" ]', unquoted_name, re.M):
         return '"' + email.utils.quote(unquoted_name) + '"'
-    else:
-        return unquoted_name
+    return unquoted_name
 
 
 class BinaryBytesGenerator(BytesGenerator):
@@ -52,8 +54,7 @@ class BinaryBytesGenerator(BytesGenerator):
             payload = msg.get_payload(decode=True)
             if payload is None:
                 return
-            else:
-                self._fp.write(payload)
+            self._fp.write(payload)
         else:
             super()._handle_text(msg)
 
@@ -89,8 +90,8 @@ def canonicalize(email_message: message.Message):
             message_header += "{}: {}\r\n".format(k, v)
         message_header += "\r\n"
         return message_header.encode("utf-8") + message_body
-    else:
-        return mime_to_bytes(email_message)
+
+    return mime_to_bytes(email_message)
 
 
 def make_mime_boundary(text: str = None):
@@ -117,9 +118,9 @@ def make_mime_boundary(text: str = None):
     return b
 
 
-def extract_first_part(message: bytes, boundary: bytes):
-    """Function to extract the first part of a multipart message."""
-    first_message = message.split(boundary)[1].lstrip()
+def extract_first_part(message_content: bytes, boundary: bytes):
+    """Extract the first part of a multipart message."""
+    first_message = message_content.split(boundary)[1].lstrip()
     if first_message.endswith(b"\r\n"):
         first_message = first_message[:-2]
     else:
@@ -128,8 +129,7 @@ def extract_first_part(message: bytes, boundary: bytes):
 
 
 def pem_to_der(cert: bytes, return_multiple: bool = True):
-    """Converts a given certificate or list to PEM format."""
-
+    """Convert a given certificate or list to PEM format."""
     # initialize the certificate array
     cert_list = []
 
@@ -143,8 +143,7 @@ def pem_to_der(cert: bytes, return_multiple: bool = True):
     # return multiple if return_multiple is set else first element
     if return_multiple:
         return cert_list
-    else:
-        return cert_list.pop()
+    return cert_list.pop()
 
 
 def split_pem(pem_bytes: bytes):
@@ -219,7 +218,6 @@ def extract_certificate_info(cert: bytes):
                 issuer (list of name, value tuples)
                 serial (int)
     """
-
     # initialize the cert_info dictionary
     cert_info = {
         "valid_from": None,

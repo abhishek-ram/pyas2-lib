@@ -114,8 +114,8 @@ def test_cert_verification():
 
 
 def test_extract_certificate_info():
-    """ Test case that extracts data from private and public certificates
-     in PEM or DER format"""
+    """Test case that extracts data from private and public certificates
+    in PEM or DER format"""
 
     cert_info = {
         "valid_from": datetime.datetime(
