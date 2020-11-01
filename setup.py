@@ -11,8 +11,8 @@ tests_require = [
     "pytest==6.1.2",
     "pytest-cov==2.8.1",
     "coverage==5.0.4",
-    "pylava-pylint==0.0.3",
     "pylint==2.4.4",
+    "pylava-pylint==0.0.3",
     "black==20.8b1",
     "pytest-black==0.3.12",
 ]
@@ -35,7 +35,6 @@ setup(
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Topic :: Security :: Cryptography",
