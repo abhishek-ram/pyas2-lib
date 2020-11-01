@@ -1,5 +1,13 @@
 # Release History
 
+## 1.3.2 - 2020-11-01
+* Use `signature_algo` attribute when detecting the signature algorithm
+* Raise exception when unknown `digest_alg` is passed to the sign function
+* Add proper support for handling binary messages
+* Look for `Final-Recipient` if `Original-Recipient` is not present in the MDN
+* Remove support for python 3.6
+* Fix linting and change the linter to pylava
+
 ## 1.3.1 - 2020-04-12
 * Use correct format for setting dataclasses requirement for python 3.6
 

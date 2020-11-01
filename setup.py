@@ -4,7 +4,6 @@ install_requires = [
     "asn1crypto==1.3.0",
     "oscrypto==1.2.0",
     "pyOpenSSL==19.1.0",
-    "dataclasses==0.7;python_version=='3.6'",
 ]
 
 tests_require = [
@@ -25,7 +24,7 @@ setup(
     long_description="Docs for this project are maintained at "
     "https://github.com/abhishek-ram/pyas2-lib/blob/"
     "master/README.md",
-    version="1.3.1",
+    version="1.3.2",
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",
     packages=find_packages(where=".", exclude=("test*",)),
