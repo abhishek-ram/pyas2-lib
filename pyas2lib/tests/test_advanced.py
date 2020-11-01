@@ -473,7 +473,7 @@ class SterlingIntegratorTest(Pyas2TestCase):
             verify_cert_ca=self.sb2bi_public_ca,
             encrypt_cert=self.sb2bi_public_key,
             encrypt_cert_ca=self.sb2bi_public_ca,
-            validate_certs=False
+            validate_certs=False,
         )
         self.partner.load_verify_cert()
         self.partner.load_encrypt_cert()
