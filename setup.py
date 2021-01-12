@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 install_requires = [
     "asn1crypto==1.3.0",
-    "oscrypto==1.2.0",
+    "oscrypto==1.2.1",
     "pyOpenSSL==19.1.0",
 ]
 
