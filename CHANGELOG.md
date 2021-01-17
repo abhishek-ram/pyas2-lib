@@ -1,5 +1,8 @@
 # Release History
 
+## 1.3.3 - 2021-01-17
+* Update the versions of asn1crypto, oscrypto and pyOpenSSL
+
 ## 1.3.2 - 2020-11-01
 * Use `signature_algo` attribute when detecting the signature algorithm
 * Raise exception when unknown `digest_alg` is passed to the sign function

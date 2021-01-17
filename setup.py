@@ -1,13 +1,14 @@
 from setuptools import setup, find_packages
 
 install_requires = [
-    "asn1crypto==1.3.0",
+    "asn1crypto==1.4.0",
     "oscrypto==1.2.1",
-    "pyOpenSSL==19.1.0",
+    "pyOpenSSL==20.0.1",
 ]
 
 tests_require = [
-    "pytest==6.1.2",
+    "pytest==6.2.1",
+    "toml==0.10.1",
     "pytest-cov==2.8.1",
     "coverage==5.0.4",
     "pylint==2.4.4",
@@ -24,7 +25,7 @@ setup(
     long_description="Docs for this project are maintained at "
     "https://github.com/abhishek-ram/pyas2-lib/blob/"
     "master/README.md",
-    version="1.3.2",
+    version="1.3.3",
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",
     packages=find_packages(where=".", exclude=("test*",)),
