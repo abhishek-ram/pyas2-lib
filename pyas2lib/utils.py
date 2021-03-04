@@ -198,8 +198,7 @@ def verify_certificate_chain(cert_bytes, trusted_certs, ignore_self_signed=True)
 
         # Verify the certificate, returns None if certificate is not valid
         try:
-            store_ctx.
-            ificate()
+            store_ctx.verify_certificate()
         except Exception as e:
             return None
         
