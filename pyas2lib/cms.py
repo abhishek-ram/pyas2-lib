@@ -473,7 +473,9 @@ def verify_message(data_to_verify, signature, verify_cert):
 
         for signer in cms_content["content"]["signer_infos"]:
 
-            digest_alg = normalize_digest_alg(signer["digest_algorithm"]["algorithm"].native)
+            digest_alg = normalize_digest_alg(
+                signer["digest_algorithm"]["algorithm"].native
+            )
             if digest_alg not in DIGEST_ALGORITHMS:
                 raise Exception("Unsupported Digest Algorithm")
 
