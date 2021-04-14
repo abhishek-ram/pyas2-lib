@@ -259,3 +259,12 @@ def extract_certificate_info(cert: bytes):
 
     # return the dictionary
     return cert_info
+
+
+def normalize_digest_alg(digest_alg):
+    """Normalizes digest algorithm to lower case as some systems send it upper case"""
+
+    if not isinstance(digest_alg, str):
+        return digest_alg
+
+    return digest_alg.lower()

@@ -14,6 +14,7 @@ from pyas2lib.exceptions import (
     IntegrityError,
 )
 from pyas2lib.constants import DIGEST_ALGORITHMS
+from pyas2lib.utils import normalize_digest_alg
 
 
 def compress_message(data_to_compress):
@@ -265,7 +266,7 @@ def sign_message(
 
     :return: A CMS ASN.1 byte string of the signed data.
     """
-    digest_alg = digest_alg.lower()
+    digest_alg = normalize_digest_alg(digest_alg)
     if digest_alg not in DIGEST_ALGORITHMS:
         raise AS2Exception("Unsupported Digest Algorithm")
 
@@ -472,7 +473,7 @@ def verify_message(data_to_verify, signature, verify_cert):
 
         for signer in cms_content["content"]["signer_infos"]:
 
-            digest_alg = signer["digest_algorithm"]["algorithm"].native
+            digest_alg = normalize_digest_alg(signer["digest_algorithm"]["algorithm"].native)
             if digest_alg not in DIGEST_ALGORITHMS:
                 raise Exception("Unsupported Digest Algorithm")
 
