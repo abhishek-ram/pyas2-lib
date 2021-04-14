@@ -160,3 +160,11 @@ def test_extract_certificate_info():
         assert utils.extract_certificate_info(fp.read()) == cert_info
 
     assert utils.extract_certificate_info(b"") == cert_empty
+
+
+def test_normalize_digest_alg_should_return_lowercase_when_string():
+    assert utils.normalize_digest_alg("SHA256") == "sha256"
+
+
+def test_normalize_digest_alg_should_return_same_when_not_string():
+    assert utils.normalize_digest_alg(None) is None
