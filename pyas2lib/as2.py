@@ -985,7 +985,13 @@ class Mdn:
                 message_id = mdn.get("Original-Message-ID").strip("<>")
                 message_recipient = None
                 if "Original-Recipient" in mdn:
-                    message_recipient = mdn["Original-Recipient"].split(";")[1].strip()
+                    if ";" in mdn["Original-Recipient"]:
+                        message_recipient = mdn["Original-Recipient"].split(";")[1].strip()
+                    else:
+                        message_recipient = mdn["Original-Recipient"].strip()
                 elif "Final-Recipient" in mdn:
-                    message_recipient = mdn["Final-Recipient"].split(";")[1].strip()
+                    if ";" in mdn["Final-Recipient"]:
+                        message_recipient = mdn["Final-Recipient"].split(";")[1].strip()
+                    else:
+                        message_recipient = mdn["Final-Recipient"].strip()
         return message_id, message_recipient
