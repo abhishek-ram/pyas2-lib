@@ -995,7 +995,7 @@ class Mdn:
         return message_id, message_recipient
 
     @staticmethod
-    def _parse_message_recipient(recipient):
+    def _parse_message_recipient(recipient: str):
         """
         Function parses the recipient values "Original-Recipient: rfc822; 012345678000" into address_type and
         message_recipient.
