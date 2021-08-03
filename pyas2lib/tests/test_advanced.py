@@ -2,6 +2,7 @@
 import base64
 import os
 from email import message
+from email import message_from_bytes as parse_mime
 
 import pytest
 from pyas2lib import as2
@@ -447,6 +448,72 @@ class TestAdvanced(Pyas2TestCase):
 
         self.assertEqual(status, "processed/warning")
         self.assertEqual(detailed_status, "Message Integrity check failed.")
+
+    def test_missing_address_type(self):
+        """Test the case where a the mic in the mdn does not match the mic in the message."""
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.partner.sign = True
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = (
+            self.out_message.headers_str + b"\r\n" + self.out_message.content
+        )
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False,
+        )
+
+        # Remove the address type from the content.
+        patched_content = mdn.content.replace(
+            b"Original-Recipient: rfc822;", b"Original-Recipient:"
+        )
+        patched_content = patched_content.replace(
+            b"Final-Recipient: rfc822;", b"Original-Recipient:"
+        )
+
+        out_mdn = as2.Mdn()
+        out_mdn.payload = parse_mime(mdn.headers_str + b"\r\n" + patched_content)
+        message_id, message_recipient = out_mdn.detect_mdn()
+
+        self.assertEqual(message_recipient, self.partner.as2_name)
+
+    def test_final_recipient_fallback(self):
+        """Test the case where a the mic in the mdn does not match the mic in the message."""
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.partner.sign = True
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = (
+            self.out_message.headers_str + b"\r\n" + self.out_message.content
+        )
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False,
+        )
+
+        # Remove the address type from the content.
+        patched_content = mdn.content.replace(
+            b"Original-Recipient: rfc822; "
+            + self.partner.as2_name.encode("utf-8")
+            + b"\r\n",
+            b"",
+        )
+
+        out_mdn = as2.Mdn()
+        out_mdn.payload = parse_mime(mdn.headers_str + b"\r\n" + patched_content)
+        message_id, message_recipient = out_mdn.detect_mdn()
+
+        self.assertEqual(message_recipient, self.partner.as2_name)
 
     def find_org(self, headers):
         return self.org
