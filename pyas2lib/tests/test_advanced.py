@@ -473,7 +473,7 @@ class TestAdvanced(Pyas2TestCase):
             b"Original-Recipient: rfc822;", b"Original-Recipient:"
         )
         patched_content = patched_content.replace(
-            b"Final-Recipient: rfc822;", b"Original-Recipient:"
+            b"Final-Recipient: rfc822;", b"Final-Recipient:"
         )
 
         out_mdn = as2.Mdn()
