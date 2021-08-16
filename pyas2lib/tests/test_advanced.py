@@ -450,7 +450,7 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(detailed_status, "Message Integrity check failed.")
 
     def test_missing_address_type(self):
-        """Test the case where a the mic in the mdn does not match the mic in the message."""
+        """Test the case where the address type is missing and only a receiver is provided."""
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
         self.partner.sign = True
         self.out_message = as2.Message(self.org, self.partner)
@@ -483,7 +483,7 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(message_recipient, self.partner.as2_name)
 
     def test_final_recipient_fallback(self):
-        """Test the case where a the mic in the mdn does not match the mic in the message."""
+        """Test the case where the original recipient is missing, but final recipient is provided."""
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
         self.partner.sign = True
         self.out_message = as2.Message(self.org, self.partner)
