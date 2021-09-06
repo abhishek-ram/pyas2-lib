@@ -655,7 +655,12 @@ class Message:
 
         # Update the payload headers with the original headers
         for k, v in as2_headers.items():
-            if self.payload.get(k) and k.lower() != "content-disposition":
+            preserve = [
+                "content-type",
+                "content-disposition",
+                "content-transfer-encoding",
+            ]
+            if self.payload.get(k) and k.lower() not in preserve:
                 del self.payload[k]
             self.payload.add_header(k, v)
 
