@@ -85,7 +85,7 @@ from pyas2lib.as2 import Message
 msg = Message()
 # Call the parse method with the HTTP request headers + content, a function to return the the related `pyas2lib.as2.Organization` object, a function to return the `pyas2lib.as2.Partner` object and a function to check for duplicates.
 status, exception, mdn = msg.parse(
-    request_body, find_organization, find_partner, check_duplicate_msg)
+    request_body, find_organization, find_partner, check_duplicate_msg, find_partnership)
 ```
 * The parse function returns a 3 element tuple; the status of parsing, exception if any raised during parsing and an `pyas2lib.as2.Mdn` object for the message.
 * If the `mdn.mdn_mode` is `SYNC` then the `mdn.content` and `mdn.header` must be returned in the response.

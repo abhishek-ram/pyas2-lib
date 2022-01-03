@@ -1,5 +1,12 @@
 # Release History
 
+## 1.3.4 - 2022-
+* Update version of pyOpenSSL
+* Add optional partnership callback option to retrieve AS2 parties based on sender and receiver.
+* Preserving content headers on enveloped data 
+* Normalize digest algorithm 
+* Use address value also when no type was provided
+
 ## 1.3.3 - 2021-01-17
 * Update the versions of asn1crypto, oscrypto and pyOpenSSL
 
