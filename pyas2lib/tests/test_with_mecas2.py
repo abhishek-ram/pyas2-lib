@@ -64,7 +64,7 @@ class TestMecAS2(Pyas2TestCase):
 
         # Compare the mic contents of the input and output messages
         self.assertTrue(in_message.signed)
-        self.assertEqual(in_message.digest_alg, "sha1")
+        self.assertEqual(in_message.digest_alg, "sha256")
         self.assertEqual(self.test_data, in_message.content)
 
     def test_encrypted_signed_message(self):
@@ -82,7 +82,7 @@ class TestMecAS2(Pyas2TestCase):
         self.assertTrue(in_message.encrypted)
         self.assertEqual(in_message.enc_alg, "tripledes_192_cbc")
         self.assertTrue(in_message.signed)
-        self.assertEqual(in_message.digest_alg, "sha1")
+        self.assertEqual(in_message.digest_alg, "sha256")
         self.assertEqual(self.test_data, in_message.content)
 
     def test_encrypted_signed_compressed_message(self):
@@ -100,7 +100,7 @@ class TestMecAS2(Pyas2TestCase):
         self.assertTrue(in_message.encrypted)
         self.assertEqual(in_message.enc_alg, "tripledes_192_cbc")
         self.assertTrue(in_message.signed)
-        self.assertEqual(in_message.digest_alg, "sha1")
+        self.assertEqual(in_message.digest_alg, "sha256")
         self.assertEqual(self.test_data, in_message.content)
 
     def test_unsigned_mdn(self):
