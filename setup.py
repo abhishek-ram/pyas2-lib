@@ -7,7 +7,7 @@ install_requires = [
 ]
 
 tests_require = [
-    "pytest==6.2.1",
+    "pytest==6.2.5",
     "toml==0.10.2",
     "pytest-cov==2.8.1",
     "coverage==5.0.4",
@@ -38,6 +38,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Security :: Cryptography",
         "Topic :: Communications",
     ],
