@@ -245,11 +245,11 @@ def extract_certificate_info(cert: bytes):
                 certificate.get_notAfter().decode("utf8"), "%Y%m%d%H%M%SZ"
             ).replace(tzinfo=timezone.utc)
             cert_info["subject"] = [
-                tuple(item.decode("utf8") for item in sets)
+                tuple(item.decode("utf8", "backslashreplace") for item in sets)
                 for sets in certificate.get_subject().get_components()
             ]
             cert_info["issuer"] = [
-                tuple(item.decode("utf8") for item in sets)
+                tuple(item.decode("utf8", "backslashreplace") for item in sets)
                 for sets in certificate.get_issuer().get_components()
             ]
             cert_info["serial"] = certificate.get_serial_number()
