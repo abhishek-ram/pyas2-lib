@@ -62,7 +62,7 @@ def decompress_message(compressed_data):
         raise DecompressionError("Compressed data not found in ASN.1 ")
 
     except Exception as e:
-        raise DecompressionError("Decompression failed with cause: {}".format(e))
+        raise DecompressionError("Decompression failed with cause: {}".format(e)) from e
 
 
 def encrypt_message(data_to_encrypt, enc_alg, encryption_cert):
@@ -204,10 +204,10 @@ def decrypt_message(encrypted_data, decryption_key):
         ):
             try:
                 key = asymmetric.rsa_pkcs1v15_decrypt(decryption_key[0], encrypted_key)
-            except Exception:
+            except Exception as e:
                 raise DecryptionError(
                     "Failed to decrypt the payload: Could not extract decryption key."
-                )
+                ) from e
 
             alg = cms_content["content"]["encrypted_content_info"][
                 "content_encryption_algorithm"
@@ -235,7 +235,9 @@ def decrypt_message(encrypted_data, decryption_key):
                 else:
                     raise AS2Exception("Unsupported Encryption Algorithm")
             except Exception as e:
-                raise DecryptionError("Failed to decrypt the payload: {}".format(e))
+                raise DecryptionError(
+                    "Failed to decrypt the payload: {}".format(e)
+                ) from e
         else:
             raise AS2Exception("Unsupported Encryption Algorithm")
     else:
@@ -276,7 +278,7 @@ def sign_message(
         message_digest = digest_func.digest()
 
         class SmimeCapability(core.Sequence):
-            """"Define the possible list of Smime Capability."""
+            """ "Define the possible list of Smime Capability."""
 
             _fields = [
                 ("0", core.Any, {"optional": True}),
@@ -287,7 +289,7 @@ def sign_message(
             ]
 
         class SmimeCapabilities(core.Sequence):
-            """"Define the Smime Capabilities supported by pyas2."""
+            """ "Define the Smime Capabilities supported by pyas2."""
 
             _fields = [
                 ("0", SmimeCapability),
@@ -515,7 +517,9 @@ def verify_message(data_to_verify, signature, verify_cert):
                 else:
                     raise AS2Exception("Unsupported Signature Algorithm")
             except Exception as e:
-                raise IntegrityError("Failed to verify message signature: {}".format(e))
+                raise IntegrityError(
+                    "Failed to verify message signature: {}".format(e)
+                ) from e
     else:
         raise IntegrityError("Signed data not found in ASN.1 ")
 

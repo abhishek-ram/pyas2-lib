@@ -31,7 +31,7 @@ class AS2Exception(Exception):
     disposition_modifier = ""
 
     def __init__(self, message, disposition_modifier=None):
-        super(AS2Exception, self).__init__(message)
+        super().__init__(message)
         if disposition_modifier:
             self.disposition_modifier = disposition_modifier
 

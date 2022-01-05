@@ -201,7 +201,7 @@ def verify_certificate_chain(cert_bytes, trusted_certs, ignore_self_signed=True)
     except crypto.X509StoreContextError as e:
         raise AS2Exception(
             "Partner Certificate Invalid: %s" % e.args[-1][-1], "invalid-certificate"
-        )
+        ) from e
 
 
 def extract_certificate_info(cert: bytes):
