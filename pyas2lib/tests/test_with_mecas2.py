@@ -22,7 +22,7 @@ class TestMecAS2(Pyas2TestCase):
         )
 
     def test_compressed_message(self):
-        """ Test Compressed Message received from Mendelson AS2"""
+        """Test Compressed Message received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(TEST_DIR, "mecas2_compressed.as2")
@@ -37,7 +37,7 @@ class TestMecAS2(Pyas2TestCase):
         self.assertEqual(self.test_data, in_message.content)
 
     def test_encrypted_message(self):
-        """ Test Encrypted Message received from Mendelson AS2"""
+        """Test Encrypted Message received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(TEST_DIR, "mecas2_encrypted.as2")
@@ -53,7 +53,7 @@ class TestMecAS2(Pyas2TestCase):
         self.assertEqual(self.test_data, in_message.content)
 
     def test_signed_message(self):
-        """ Test Unencrypted Signed Uncompressed Message from Mendelson AS2"""
+        """Test Unencrypted Signed Uncompressed Message from Mendelson AS2"""
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(TEST_DIR, "mecas2_signed.as2")
         with open(received_file, "rb") as fp:
@@ -68,7 +68,7 @@ class TestMecAS2(Pyas2TestCase):
         self.assertEqual(self.test_data, in_message.content)
 
     def test_encrypted_signed_message(self):
-        """ Test Encrypted Signed Uncompressed Message from Mendelson AS2"""
+        """Test Encrypted Signed Uncompressed Message from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(TEST_DIR, "mecas2_signed_encrypted.as2")
@@ -86,7 +86,7 @@ class TestMecAS2(Pyas2TestCase):
         self.assertEqual(self.test_data, in_message.content)
 
     def test_encrypted_signed_compressed_message(self):
-        """ Test Encrypted Signed Compressed Message from Mendelson AS2"""
+        """Test Encrypted Signed Compressed Message from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(TEST_DIR, "mecas2_compressed_signed_encrypted.as2")
@@ -104,7 +104,7 @@ class TestMecAS2(Pyas2TestCase):
         self.assertEqual(self.test_data, in_message.content)
 
     def test_unsigned_mdn(self):
-        """ Test Unsigned MDN received from Mendelson AS2"""
+        """Test Unsigned MDN received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(TEST_DIR, "mecas2_unsigned.mdn")
@@ -118,7 +118,7 @@ class TestMecAS2(Pyas2TestCase):
         self.assertEqual(detailed_status, "authentication-failed")
 
     def test_signed_mdn(self):
-        """ Test Signed MDN received from Mendelson AS2"""
+        """Test Signed MDN received from Mendelson AS2"""
 
         # Parse the generated AS2 message as the partner
         received_file = os.path.join(TEST_DIR, "mecas2_signed.mdn")
