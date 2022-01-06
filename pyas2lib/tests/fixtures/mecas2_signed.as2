@@ -1,23 +1,25 @@
-from: as2@company.com
-ediint-features: multiple-attachments, CEM
-message-id: <mendelson_opensource_AS2-1480406596475-6@mecas2_pyas2mac>
-content-length: 4080
-user-agent: mendelson opensource AS2 1.1 build 47 - www.mendelson-e-c.com
-connection: close, TE
-mime-version: 1.0
-subject: AS2 message
-as2-to: pyas2mac
-host: 127.0.0.1:8081
-expect: 100-continue
-as2-from: mecas2
-disposition-notification-options: signed-receipt-protocol=optional, pkcs7-signature; signed-receipt-micalg=optional, sha1
-disposition-notification-to: http://localhost:8080/as2/HttpReceiver
-date: Tue, 29 Nov 2016 13:33:36 IST
-recipient-address: http://127.0.0.1:8081/pyas2/as2receive
+content-length: 3669
+content-type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha256; 	boundary="----=_Part_211_306083396.1641304626706"
 as2-version: 1.2
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1;  boundary="----=_Part_1_1464954728.1480403996634"
+ediint-features: multiple-attachments, CEM
+mime-version: 1.0
+recipient-address: http://host.docker.internal:8000/pyas2/as2receive/
+message-id: <mendelson_opensource_AS2-1641304626700-55@mecas2_pyas2lib>
+as2-from: mecas2
+as2-to: pyas2lib
+subject: AS2 message
+from: as2@company.com
+connection: close, TE
+date: Tue, 04 Jan 2022 13:57:06 UTC
+disposition-notification-to: http://www.company.com:8080/as2/HttpReceiver
+content-disposition: attachment; filename="smime.p7m"
+host: host.docker.internal:8000
+user-agent: mendelson opensource AS2 1.1 build 59 - www.mendelson-e-c.com
+expect: 100-continue
 
-------=_Part_1_1464954728.1480403996634
+Date: Tue, 4 Jan 2022 13:57:06 +0000 (UTC)
+
+------=_Part_211_306083396.1641304626706
 Content-Type: application/EDI-Consent
 Content-Transfer-Encoding: binary
 Content-Disposition: attachment; filename=payload.txt
@@ -51,40 +53,43 @@ CNT+2:3'
 UNT+26+1'
 UNZ+1+5'
 
-------=_Part_1_1464954728.1480403996634
+------=_Part_211_306083396.1641304626706
 Content-Type: application/pkcs7-signature; name=smime.p7s; smime-type=signed-data
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Description: S/MIME Cryptographic Signature
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIAwggPoMIIC
-0KADAgECAgRXcQQVMA0GCSqGSIb3DQEBBQUAMIG1MS8wLQYJKoZIhvcNAQkBFiB3ZWJtYXN0ZXJA
-bWFpbGFkZHJlc3NvbmRvbWFpbi50bzELMAkGA1UEBhMCZGUxEzARBgNVBAgMClN0YXRlIG5hbWUx
-FjAUBgNVBAcMDUxvY2FsaXR5IG5hbWUxFTATBgNVBAoMDFlvdXIgY29tcGFueTEgMB4GA1UECwwX
-WW91ciBjb21wYW55IGRlcGFydG1lbnQxDzANBgNVBAMMBm1lY2FzMjAeFw0xNjA2MjcxMDQ2NDVa
-Fw0xNzA2MjcxMDQ2NDVaMIG1MS8wLQYJKoZIhvcNAQkBFiB3ZWJtYXN0ZXJAbWFpbGFkZHJlc3Nv
-bmRvbWFpbi50bzELMAkGA1UEBhMCZGUxEzARBgNVBAgMClN0YXRlIG5hbWUxFjAUBgNVBAcMDUxv
-Y2FsaXR5IG5hbWUxFTATBgNVBAoMDFlvdXIgY29tcGFueTEgMB4GA1UECwwXWW91ciBjb21wYW55
-IGRlcGFydG1lbnQxDzANBgNVBAMMBm1lY2FzMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
-ggEBAJCqCqiYaoyXX6c0c+FgTvn1pFqlmoqc9vvfPlfdhND5KzRaERgWJg8LcN+C/WubGvvezmKk
-5l6kt+w/Mwhafovn/WOZtwyzd1umZhRHthFefqi/gxBkzsdVPMrDAdvVjrHmSdnrNayVPQnZ6n4G
-d89CQ9+eEBSXqN1cl75RuOz8Nz8qCNRBzlzsePbcH9a6gUvDt0pDsx6lgKoi0pTZtRXQxkLxQ94C
-UuqXoLHEEe2sZeA7wX+ViB1ORSFeptcthtG8OJjcQKRZMaJjTzGjXWldg5O6HTRt7BCGLamvfbcd
-4b7jiDSzCjg/eT6sG2ZTBsfukfOAxn8QFgpHRQ3w95UCAwEAATANBgkqhkiG9w0BAQUFAAOCAQEA
-GUkqGzlZeIHaiJEPksTkK8mH/ovaBzsTWnoLFCfiduYXoyR4eBudCmSVyZWMAHkRf+HY7wmvX1gg
-AhYCmeRixrfb8SGeO/my2F97JGuORK3PjcduXnPxdO+uJRinTqSx+vd+7miDbzFBay3qsxA6IZTI
-OlHkK+pw3HbGx1GA32/x0vq1w+Qy0oupNJzDfG0wvCeWlVX/HrVt4xlM65leSV6oG0cjUXdsc5bn
-kfZV8IZcu5gXKRHWVLmFUZRbpQR8ruZEPfDbb+40NRRpi+MHO2tvv7lkxIJyc2hrL0RshZWW33vC
-dWJOnAmyyDB1Ifgfi8n9Nes8fUGEPNiDkecrlgAAMYICfDCCAngCAQEwgb4wgbUxLzAtBgkqhkiG
-9w0BCQEWIHdlYm1hc3RlckBtYWlsYWRkcmVzc29uZG9tYWluLnRvMQswCQYDVQQGEwJkZTETMBEG
-A1UECAwKU3RhdGUgbmFtZTEWMBQGA1UEBwwNTG9jYWxpdHkgbmFtZTEVMBMGA1UECgwMWW91ciBj
-b21wYW55MSAwHgYDVQQLDBdZb3VyIGNvbXBhbnkgZGVwYXJ0bWVudDEPMA0GA1UEAwwGbWVjYXMy
-AgRXcQQVMAkGBSsOAwIaBQCggZMwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0B
-CQUxDxcNMTYxMTI5MDcyMDAxWjAjBgkqhkiG9w0BCQQxFgQU6ODtTdZVjneUeoN+ChUV5Npf4jEw
-NAYJKoZIhvcNAQkPMScwJTAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwBwYFKw4DAgcwDQYJ
-KoZIhvcNAQEBBQAEggEAYuRdE2cFCNzX9bgG38QYShPpoNsRGcQeXdZwwjY8mvXzJnGZdVoY8xk2
-zkgZewVSuVyQ/GpoC3QnSvusJaoA0wjobqQOaRzqvN4y9GMgpxk0jd4d+s6G/SUyjZK/TeVh2o1P
-ZEaP8MtdkL3DeXhCKSgQ+iBUOiP8rd15NB2CQOKAxQ7XL7+SEudbT4CTByRZRfvbopGYxielCjWY
-z08c4dqtkJv5PHj8gMAVUp6aXC2SdPSv3/hZSge7ovPJz4peOUZMjbRXc6sY6Tnale00H5AWOt/y
-nff3ayr901968vxmobirT9Pw4dj+OMVwm671ORUlOvr4lMPUEFUHh9nVNAAAAAAAAA==
-------=_Part_1_1464954728.1480403996634--
+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
+Xhy/njAAAAAAAAA=
+------=_Part_211_306083396.1641304626706--
