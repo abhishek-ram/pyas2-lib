@@ -26,7 +26,7 @@ class TestAdvanced(Pyas2TestCase):
         )
 
     def test_binary_message(self):
-        """ Test Encrypted Signed Binary Message """
+        """Test Encrypted Signed Binary Message"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
@@ -60,7 +60,7 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(out_message.mic, in_message.mic)
 
     def test_partner_not_found(self):
-        """ Test case where partner and organization is not found """
+        """Test case where partner and organization is not found"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
@@ -106,7 +106,7 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(detailed_status, "unknown-trading-partner")
 
     def test_duplicate_message(self):
-        """ Test case where a duplicate message is sent to the partner """
+        """Test case where a duplicate message is sent to the partner"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
@@ -135,7 +135,7 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(detailed_status, "duplicate-document")
 
     def test_failed_decompression(self):
-        """ Test case where message decompression has failed """
+        """Test case where message decompression has failed"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.compress = True
@@ -162,7 +162,7 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(detailed_status, "decompression-failed")
 
     def test_insufficient_security(self):
-        """ Test case where message security is not as per the configuration """
+        """Test case where message security is not as per the configuration"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
@@ -198,7 +198,7 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(exc.disposition_modifier, "insufficient-message-security")
 
     def test_failed_decryption(self):
-        """ Test case where message decryption has failed """
+        """Test case where message decryption has failed"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.encrypt = True
@@ -228,7 +228,7 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(detailed_status, "decryption-failed")
 
     def test_failed_signature(self):
-        """ Test case where signature verification has failed """
+        """Test case where signature verification has failed"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
@@ -258,7 +258,7 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(detailed_status, "authentication-failed")
 
     def test_verify_certificate(self):
-        """ Test case where we have try to load an expired cert  """
+        """Test case where we have try to load an expired cert"""
 
         # First test with a certificate with invalid root
         cert_path = os.path.join(TEST_DIR, "verify_cert_test1.pem")
@@ -298,7 +298,7 @@ class TestAdvanced(Pyas2TestCase):
                     self.fail("Failed to load chain certificate: %s" % e)
 
     def test_load_private_key(self):
-        """ Test case where we have try to load keys in different formats """
+        """Test case where we have try to load keys in different formats"""
 
         # First test with a pkcs12 key file
         cert_path = os.path.join(TEST_DIR, "cert_test.p12")
@@ -547,7 +547,7 @@ class SterlingIntegratorTest(Pyas2TestCase):
 
     @pytest.mark.skip(reason="no way of currently testing this")
     def test_process_message(self):
-        """ Test processing message received from Sterling Integrator"""
+        """Test processing message received from Sterling Integrator"""
         with open(os.path.join(TEST_DIR, "sb2bi_signed_cmp.msg"), "rb") as msg:
             as2message = as2.Message()
             status, exception, as2mdn = as2message.parse(
@@ -559,7 +559,7 @@ class SterlingIntegratorTest(Pyas2TestCase):
             self.assertEqual(status, "processed")
 
     def test_process_mdn(self):
-        """ Test processing mdn received from Sterling Integrator"""
+        """Test processing mdn received from Sterling Integrator"""
         msg = as2.Message(sender=self.org, receiver=self.partner)
         msg.message_id = (
             "151694007918.24690.7052273208458909245@ip-172-31-14-209.ec2.internal"

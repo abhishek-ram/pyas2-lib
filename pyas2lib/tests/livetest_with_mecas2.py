@@ -29,7 +29,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.out_message = None
 
     def test_compressed_message(self):
-        """ Send Unencrypted Unsigned Compressed  Message to Mendelson AS2"""
+        """Send Unencrypted Unsigned Compressed  Message to Mendelson AS2"""
 
         self.partner.compress = True
         self.out_message = as2.Message(self.org, self.partner)
@@ -53,7 +53,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.assertEqual(status, "processed")
 
     def test_encrypted_message(self):
-        """ Send Encrypted Unsigned Uncompressed Message to Mendelson AS2"""
+        """Send Encrypted Unsigned Uncompressed Message to Mendelson AS2"""
 
         self.partner.encrypt = True
         self.out_message = as2.Message(self.org, self.partner)
@@ -77,7 +77,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.assertEqual(status, "processed")
 
     def test_signed_message(self):
-        """ Send Unencrypted Signed Uncompressed Message to Mendelson AS2"""
+        """Send Unencrypted Signed Uncompressed Message to Mendelson AS2"""
 
         self.partner.sign = True
         self.out_message = as2.Message(self.org, self.partner)
@@ -101,7 +101,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.assertEqual(status, "processed")
 
     def test_encrypted_signed_message(self):
-        """ Send Encrypted Signed Uncompressed Message to Mendelson AS2"""
+        """Send Encrypted Signed Uncompressed Message to Mendelson AS2"""
 
         self.partner.sign = True
         self.partner.encrypt = True
@@ -126,7 +126,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         self.assertEqual(status, "processed")
 
     def test_encrypted_signed_compressed_message(self):
-        """ Send Encrypted Signed Compressed Message to Mendelson AS2"""
+        """Send Encrypted Signed Compressed Message to Mendelson AS2"""
 
         self.partner.sign = True
         self.partner.encrypt = True

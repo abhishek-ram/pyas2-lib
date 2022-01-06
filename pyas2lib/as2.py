@@ -103,20 +103,20 @@ class Organization:
         except ValueError as e:
             # If it fails due to invalid password raise error here
             if e.args[0] == "Password provided is invalid":
-                raise AS2Exception("Password not valid for Private Key.")
+                raise AS2Exception("Password not valid for Private Key.") from e
 
             # if not try to parse as a pem file
             key, cert = None, None
             for kc in split_pem(key_str):
                 try:
                     cert = asymmetric.load_certificate(kc)
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
                     try:
                         key = asymmetric.load_private_key(kc, key_pass)
                     except OSError:
                         raise AS2Exception(
                             "Invalid Private Key or password is not correct."
-                        )
+                        ) from e
 
         if not key or not cert:
             raise AS2Exception("Invalid Private key file or Public key not included.")
@@ -1001,9 +1001,9 @@ class Mdn:
 
     @staticmethod
     def _parse_message_recipient(recipient: str):
-        """
-        Function parses the recipient values "Original-Recipient: rfc822; 012345678000" into address_type and
-        message_recipient.
+        """Function parses the recipient values "Original-Recipient: rfc822; 012345678000"
+        into address_type and message_recipient.
+
         :param recipient: example: "rfc822; 012345678000"
         :return: address_type: "rfc822", message_recipient: "012345678000"
         """
