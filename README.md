@@ -1,7 +1,7 @@
 # pyas2-lib
 
 [![pypi package](https://img.shields.io/pypi/v/pyas2lib.svg)](https://pypi.python.org/pypi/pyas2lib/)
-[![Build Status](https://travis-ci.org/abhishek-ram/pyas2-lib.svg?branch=master)](https://travis-ci.org/abhishek-ram/pyas2-lib) 
+![Build Status](https://github.com/abhishek-ram/pyas2-lib/actions/workflows/run-tests.yml/badge.svg?branch=master) 
 [![codecov](https://codecov.io/gh/abhishek-ram/pyas2-lib/branch/master/graph/badge.svg)](https://codecov.io/gh/abhishek-ram/pyas2-lib)
 
 A pure python library for building and parsing message as part of the AS2 messaging protocol. The message definitions follow the AS2 version 1.2 as defined in the [RFC 4130][1].The library is intended to decouple the message construction/deconstruction from the web server/client implementation. The following functionality is part of this library:
