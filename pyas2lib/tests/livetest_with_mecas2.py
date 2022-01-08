@@ -44,7 +44,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         for k, v in response.headers.items():
             raw_mdn += "{}: {}\n".format(k, v)
 
-        raw_mdn = raw_mdn + "\n" + response.text
+        raw_mdn = (raw_mdn + "\n").encode("utf-8") + response.content
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
@@ -68,7 +68,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         for k, v in response.headers.items():
             raw_mdn += "{}: {}\n".format(k, v)
 
-        raw_mdn = raw_mdn + "\n" + response.text
+        raw_mdn = (raw_mdn + "\n").encode("utf-8") + response.content
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
@@ -92,7 +92,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         raw_mdn = ""
         for k, v in response.headers.items():
             raw_mdn += "{}: {}\n".format(k, v)
-        raw_mdn = raw_mdn + "\n" + response.text
+        raw_mdn = (raw_mdn + "\n").encode("utf-8") + response.content
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
@@ -117,7 +117,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         raw_mdn = ""
         for k, v in response.headers.items():
             raw_mdn += "{}: {}\n".format(k, v)
-        raw_mdn = raw_mdn + "\n" + response.text
+        raw_mdn = (raw_mdn + "\n").encode("utf-8") + response.content
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
@@ -143,7 +143,7 @@ class LiveTestMecAS2(Pyas2TestCase):
         raw_mdn = ""
         for k, v in response.headers.items():
             raw_mdn += "{}: {}\n".format(k, v)
-        raw_mdn = raw_mdn + "\n" + response.text
+        raw_mdn = (raw_mdn + "\n").encode("utf-8") + response.content
 
         out_mdn = as2.Mdn()
         status, detailed_status = out_mdn.parse(
