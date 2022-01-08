@@ -990,24 +990,23 @@ class Mdn:
                 message_id = mdn.get("Original-Message-ID").strip("<>")
                 message_recipient = None
                 if "Original-Recipient" in mdn:
-                    address_type, message_recipient = self._parse_message_recipient(
+                    _, message_recipient = self._parse_message_recipient(
                         mdn["Original-Recipient"]
                     )
                 elif "Final-Recipient" in mdn:
-                    address_type, message_recipient = self._parse_message_recipient(
+                    _, message_recipient = self._parse_message_recipient(
                         mdn["Final-Recipient"]
                     )
         return message_id, message_recipient
 
     @staticmethod
     def _parse_message_recipient(recipient: str):
-        """Function parses the recipient values "Original-Recipient: rfc822; 012345678000"
-        into address_type and message_recipient.
-
+        """
+        Function parses the recipient values "Original-Recipient: rfc822; 012345678000" into address_type and
+        message_recipient.
         :param recipient: example: "rfc822; 012345678000"
         :return: address_type: "rfc822", message_recipient: "012345678000"
         """
         if ";" in recipient:
             return recipient.split(";")[0].strip(), recipient.split(";")[1].strip()
-        else:
-            return None, recipient.strip()
+        return None, recipient.strip()
