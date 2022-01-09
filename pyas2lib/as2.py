@@ -1002,7 +1002,8 @@ class Mdn:
     @staticmethod
     def _parse_message_recipient(recipient: str):
         """
-        Function parses the recipient values "Original-Recipient: rfc822; 012345678000" into address_type and
+        Function parses the recipient values "Original-Recipient: rfc822; 012345678000"
+        into address_type and
         message_recipient.
         :param recipient: example: "rfc822; 012345678000"
         :return: address_type: "rfc822", message_recipient: "012345678000"
