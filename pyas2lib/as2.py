@@ -513,7 +513,14 @@ class Message:
 
         return False, payload
 
-    def parse(self, raw_content, find_org_cb, find_partner_cb, find_message_cb=None):
+    def parse(
+        self,
+        raw_content,
+        find_org_cb,
+        find_partner_cb,
+        find_message_cb=None,
+        find_partnership_cb=None,
+    ):
         """Function parses the RAW AS2 message; decrypts, verifies and
         decompresses it and extracts the payload.
 
@@ -532,6 +539,12 @@ class Message:
             An optional callback the returns an Message object if exists in
             order to check for duplicates. The message id and partner id is
             passed as arguments to it.
+
+        :param find_partnership_cb:
+            An optional callback that return Organization object and
+            Partner object if exist. The as2-to and as2-from header value
+            are passed as an argument to it. Takes precedence over find_org_cb
+            and find_partner_cb.
 
         :return:
             A three element tuple containing (status, (exception, traceback)
@@ -554,12 +567,17 @@ class Message:
         try:
             # Get the organization and partner for this transmission
             org_id = unquote_as2name(as2_headers["as2-to"])
-            self.receiver = find_org_cb(org_id)
+            partner_id = unquote_as2name(as2_headers["as2-from"])
+
+            if find_partnership_cb:
+                self.receiver, self.sender = find_partnership_cb(org_id, partner_id)
+            else:
+                self.receiver = find_org_cb(org_id)
+                self.sender = find_partner_cb(partner_id)
+
             if not self.receiver:
                 raise PartnerNotFound(f"Unknown AS2 organization with id {org_id}")
 
-            partner_id = unquote_as2name(as2_headers["as2-from"])
-            self.sender = find_partner_cb(partner_id)
             if not self.sender:
                 raise PartnerNotFound(f"Unknown AS2 partner with id {partner_id}")
 
