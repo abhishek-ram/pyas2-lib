@@ -20,7 +20,7 @@ class TestBasic(Pyas2TestCase):
         )
 
     def test_plain_message(self):
-        """ Test Unencrypted Unsigned Uncompressed Message """
+        """Test Unencrypted Unsigned Uncompressed Message"""
 
         # Build an As2 message to be transmitted to partner
         out_message = as2.Message(self.org, self.partner)
@@ -40,7 +40,7 @@ class TestBasic(Pyas2TestCase):
         self.assertEqual(self.test_data, in_message.content)
 
     def test_compressed_message(self):
-        """ Test Unencrypted Unsigned Compressed Message """
+        """Test Unencrypted Unsigned Compressed Message"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.compress = True
@@ -62,7 +62,7 @@ class TestBasic(Pyas2TestCase):
         self.assertEqual(self.test_data.splitlines(), in_message.content.splitlines())
 
     def test_encrypted_message(self):
-        """ Test Encrypted Unsigned Uncompressed Message """
+        """Test Encrypted Unsigned Uncompressed Message"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.encrypt = True
@@ -84,7 +84,7 @@ class TestBasic(Pyas2TestCase):
         self.assertEqual(self.test_data.splitlines(), in_message.content.splitlines())
 
     def test_signed_message(self):
-        """ Test Unencrypted Signed Uncompressed Message """
+        """Test Unencrypted Signed Uncompressed Message"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
@@ -107,7 +107,7 @@ class TestBasic(Pyas2TestCase):
         self.assertEqual(out_message.mic, in_message.mic)
 
     def test_encrypted_signed_message(self):
-        """ Test Encrypted Signed Uncompressed Message """
+        """Test Encrypted Signed Uncompressed Message"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
@@ -132,7 +132,7 @@ class TestBasic(Pyas2TestCase):
         self.assertEqual(self.test_data.splitlines(), in_message.content.splitlines())
 
     def test_encrypted_signed_message_dos(self):
-        """ Test Encrypted Signed Uncompressed Message with DOS line endings. """
+        """Test Encrypted Signed Uncompressed Message with DOS line endings."""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
@@ -157,7 +157,7 @@ class TestBasic(Pyas2TestCase):
         self.assertEqual(self.test_data_dos, in_message.content)
 
     def test_encrypted_signed_compressed_message(self):
-        """ Test Encrypted Signed Compressed Message """
+        """Test Encrypted Signed Compressed Message"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True

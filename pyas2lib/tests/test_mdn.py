@@ -21,7 +21,7 @@ class TestMDN(Pyas2TestCase):
         self.out_message = None
 
     def test_unsigned_mdn(self):
-        """ Test unsigned MDN generation and parsing """
+        """Test unsigned MDN generation and parsing"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
@@ -49,7 +49,7 @@ class TestMDN(Pyas2TestCase):
         self.assertEqual(status, "processed")
 
     def test_signed_mdn(self):
-        """ Test signed MDN generation and parsing """
+        """Test signed MDN generation and parsing"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True

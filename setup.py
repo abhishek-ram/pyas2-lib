@@ -3,17 +3,17 @@ from setuptools import setup, find_packages
 install_requires = [
     "asn1crypto==1.4.0",
     "oscrypto==1.2.1",
-    "pyOpenSSL==20.0.1",
+    "pyOpenSSL==21.0.0",
 ]
 
 tests_require = [
-    "pytest==6.2.1",
-    "toml==0.10.1",
+    "pytest==6.2.5",
+    "toml==0.10.2",
     "pytest-cov==2.8.1",
     "coverage==5.0.4",
-    "pylint==2.4.4",
-    "pylava-pylint==0.0.3",
-    "black==20.8b1",
+    "pylint==2.12.1",
+    "pylama-pylint==3.1.1",
+    "black==21.12b0",
     "pytest-black==0.3.12",
 ]
 
