@@ -197,9 +197,7 @@ class TestBasic(Pyas2TestCase):
         in_message = as2.Message()
         status, _, _ = in_message.parse(
             raw_out_message,
-            find_org_cb=lambda x: None,
-            find_partner_cb=lambda x: None,
-            find_partnership_cb=self.find_partnership,
+            find_org_partner_cb=self.find_org_partner,
         )
 
         # Compare the mic contents of the input and output messages
@@ -215,5 +213,5 @@ class TestBasic(Pyas2TestCase):
     def find_partner(self, as2_id):
         return self.partner
 
-    def find_partnership(self, as2_org, as2_partner):
+    def find_org_partner(self, as2_org, as2_partner):
         return self.org, self.partner

@@ -516,10 +516,10 @@ class Message:
     def parse(
         self,
         raw_content,
-        find_org_cb,
-        find_partner_cb,
+        find_org_cb=None,
+        find_partner_cb=None,
         find_message_cb=None,
-        find_partnership_cb=None,
+        find_org_partner_cb=None,
     ):
         """Function parses the RAW AS2 message; decrypts, verifies and
         decompresses it and extracts the payload.
@@ -528,23 +528,25 @@ class Message:
             A byte string of the received HTTP headers followed by the body.
 
         :param find_org_cb:
-            A callback the returns an Organization object if exists. The
-            as2-to header value is passed as an argument to it.
+            A conditional callback the returns an Organization object if exists. The
+            as2-to header value is passed as an argument to it. Must be provided
+            when find_partner_cb is provided and find_org_partner_cb is None
 
         :param find_partner_cb:
-            A callback the returns an Partner object if exists. The
-            as2-from header value is passed as an argument to it.
+            An conditional callback the returns an Partner object if exists. The
+            as2-from header value is passed as an argument to it. Must be provided
+            when find_org_cb is provided and find_org_partner_cb is None.
 
         :param find_message_cb:
             An optional callback the returns an Message object if exists in
             order to check for duplicates. The message id and partner id is
             passed as arguments to it.
 
-        :param find_partnership_cb:
-            An optional callback that return Organization object and
+        :param find_org_partner_cb:
+            A conditional callback that return Organization object and
             Partner object if exist. The as2-to and as2-from header value
-            are passed as an argument to it. Takes precedence over find_org_cb
-            and find_partner_cb.
+            are passed as an argument to it. Must be provided
+            when find_org_cb and find_org_partner_cb is None.
 
         :return:
             A three element tuple containing (status, (exception, traceback)
@@ -553,6 +555,18 @@ class Message:
             during processing and the mdn is an MDN object or None in case
             the partner did not request it.
         """
+
+        # Validate passed arguments
+        if not any(
+            [
+                find_org_cb and find_partner_cb and not find_org_partner_cb,
+                find_org_partner_cb and not find_partner_cb and not find_org_cb,
+            ]
+        ):
+            raise TypeError(
+                "Incorrect arguments passed: either find_org_cb and find_partner_cb "
+                "or only find_org_partner_cb must be passed."
+            )
 
         # Parse the raw MIME message and extract its content and headers
         status, detailed_status, exception, mdn = "processed", None, (None, None), None
@@ -569,8 +583,8 @@ class Message:
             org_id = unquote_as2name(as2_headers["as2-to"])
             partner_id = unquote_as2name(as2_headers["as2-from"])
 
-            if find_partnership_cb:
-                self.receiver, self.sender = find_partnership_cb(org_id, partner_id)
+            if find_org_partner_cb:
+                self.receiver, self.sender = find_org_partner_cb(org_id, partner_id)
             else:
                 self.receiver = find_org_cb(org_id)
                 self.sender = find_partner_cb(partner_id)
