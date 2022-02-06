@@ -1,5 +1,15 @@
 # Release History
 
+## 1.4.0 - 2022-02-06
+
+* Handle the case where non utf-8 characters are present in the certificate
+* Add support for python 3.10
+* Move to GitHub actions for running automated tests
+* Fix broken tests due to expired certs (#39)
+* Preserve content headers on enveloped data (#36)
+* When address-type is not specified, only use provided value (#34)
+* Normalize digest algorithm to make it more compatible (#32)
+
 ## 1.3.3 - 2021-01-17
 * Update the versions of asn1crypto, oscrypto and pyOpenSSL
 
