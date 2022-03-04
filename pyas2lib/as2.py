@@ -74,6 +74,10 @@ class Organization:
 
     :param mdn_url: The URL where the receiver is expected to post
         asynchronous MDNs.
+
+    :param domain:
+        Optional domain if given provides the portion of the message id
+        after the '@'.  It defaults to the locally defined hostname.
     """
 
     as2_name: str
@@ -83,6 +87,7 @@ class Organization:
     decrypt_key_pass: str = None
     mdn_url: str = None
     mdn_confirm_text: str = MDN_CONFIRM_TEXT
+    domain: str = None
 
     def __post_init__(self):
         """Run the post initialisation checks for this class."""
@@ -346,7 +351,6 @@ class Message:
         :param disposition_notification_to:
             Email address for disposition-notification-to header entry.
             (default "no-reply@pyas2.com")
-
         """
 
         # Validations
@@ -366,7 +370,9 @@ class Message:
             )
 
         # Generate message id using UUID 1 as it uses both hostname and time
-        self.message_id = email_utils.make_msgid().lstrip("<").rstrip(">")
+        self.message_id = (
+            email_utils.make_msgid(domain=self.sender.domain).lstrip("<").rstrip(">")
+        )
 
         # Set up the message headers
         as2_headers = {
@@ -749,7 +755,8 @@ class Mdn:
         """
 
         # Generate message id using UUID 1 as it uses both hostname and time
-        self.message_id = email_utils.make_msgid().lstrip("<").rstrip(">")
+        domain = message.receiver.domain if message.receiver else None
+        self.message_id = email_utils.make_msgid(domain=domain).lstrip("<").rstrip(">")
         self.orig_message_id = message.message_id
 
         # Set up the message headers
