@@ -1,5 +1,5 @@
 """Module for testing the basic features of pyas2."""
-
+import socket
 from pyas2lib import as2
 from . import Pyas2TestCase
 
@@ -182,6 +182,23 @@ class TestBasic(Pyas2TestCase):
         self.assertTrue(in_message.compressed)
         self.assertEqual(out_message.mic, in_message.mic)
         self.assertEqual(self.test_data.splitlines(), in_message.content.splitlines())
+
+    def test_plain_message_with_domain(self):
+        """Test Message building with an org domain"""
+
+        # Build an As2 message to be transmitted to partner
+        self.org.domain = "example.com"
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        self.assertEqual(out_message.message_id.split("@")[1], self.org.domain)
+
+    def test_plain_message_without_domain(self):
+        """Test Message building without an org domain"""
+
+        # Build an As2 message to be transmitted to partner
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        self.assertEqual(out_message.message_id.split("@")[1], socket.getfqdn())
 
     def find_org(self, as2_id):
         return self.org
