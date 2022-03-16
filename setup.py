@@ -12,6 +12,7 @@ tests_require = [
     "pytest-cov==2.8.1",
     "coverage==5.0.4",
     "pylint==2.12.1",
+    "pylama==8.3.7",
     "pylama-pylint==3.1.1",
     "black==21.12b0",
     "pytest-black==0.3.12",
