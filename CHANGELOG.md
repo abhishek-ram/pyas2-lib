@@ -2,6 +2,11 @@
 
 ## 1.4.0 - 2022-02-06
 
+* fix: freezing pylama version to avoid breaking changes
+* feat: option to pass custom domain for AS2 message-id generation
+
+## 1.4.0 - 2022-02-06
+
 * Handle the case where non utf-8 characters are present in the certificate
 * Add support for python 3.10
 * Move to GitHub actions for running automated tests
