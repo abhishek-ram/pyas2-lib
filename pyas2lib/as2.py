@@ -641,7 +641,10 @@ class Message:
 
                 # Verify the message, first using raw message and if it fails
                 # then convert to canonical form and try again
-                mic_content = canonicalize(self.payload, canonicalize_as_binary=self.sender.canonicalize_as_binary)
+                mic_content = canonicalize(
+                    self.payload,
+                    canonicalize_as_binary=self.sender.canonicalize_as_binary,
+                )
                 verify_cert = self.sender.load_verify_cert()
                 self.digest_alg = verify_message(mic_content, signature, verify_cert)
 

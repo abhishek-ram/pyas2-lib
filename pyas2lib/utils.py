@@ -48,8 +48,8 @@ class BinaryBytesGenerator(BytesGenerator):
         newline replacements.
         """
         if (
-                msg.get_content_type() == "application/octet-stream"
-                or msg.get("Content-Transfer-Encoding") == "binary"
+            msg.get_content_type() == "application/octet-stream"
+            or msg.get("Content-Transfer-Encoding") == "binary"
         ):
             payload = msg.get_payload(decode=True)
             if payload is None:
@@ -84,7 +84,10 @@ def canonicalize(email_message: message.Message, canonicalize_as_binary: bool = 
     :return: the standard representation of the email message in bytes
     """
 
-    if email_message.get("Content-Transfer-Encoding") == "binary" or canonicalize_as_binary:
+    if (
+        email_message.get("Content-Transfer-Encoding") == "binary"
+        or canonicalize_as_binary
+    ):
         message_header = ""
         message_body = email_message.get_payload(decode=True)
         for k, v in email_message.items():
