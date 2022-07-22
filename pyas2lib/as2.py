@@ -177,6 +177,8 @@ class Partner:
     :param mdn_confirm_text: The text to be used in the MDN for successfully
         processed messages received from this partner.
 
+    :param canonicalize_as_binary: force binary canonicalization for this partner
+
     """
 
     as2_name: str
@@ -194,6 +196,7 @@ class Partner:
     mdn_digest_alg: str = None
     mdn_confirm_text: str = MDN_CONFIRM_TEXT
     ignore_self_signed: bool = True
+    canonicalize_as_binary: bool = False
 
     def __post_init__(self):
         """Run the post initialisation checks for this class."""
@@ -638,7 +641,7 @@ class Message:
 
                 # Verify the message, first using raw message and if it fails
                 # then convert to canonical form and try again
-                mic_content = canonicalize(self.payload)
+                mic_content = canonicalize(self.payload, canonicalize_as_binary=self.sender.canonicalize_as_binary)
                 verify_cert = self.sender.load_verify_cert()
                 self.digest_alg = verify_message(mic_content, signature, verify_cert)
 
