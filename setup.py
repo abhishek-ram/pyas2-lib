@@ -14,7 +14,7 @@ tests_require = [
     "pylint==2.12.1",
     "pylama==8.3.7",
     "pylama-pylint==3.1.1",
-    "black==21.12b0",
+    "black==22.6.0",
     "pytest-black==0.3.12",
 ]
 
