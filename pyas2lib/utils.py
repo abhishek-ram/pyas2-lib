@@ -75,15 +75,19 @@ def mime_to_bytes(msg: message.Message, email_policy: policy.Policy = policy.HTT
     return fp.getvalue()
 
 
-def canonicalize(email_message: message.Message):
+def canonicalize(email_message: message.Message, canonicalize_as_binary: bool = False):
     """
     Function to convert an email Message to standard format string/
 
     :param email_message: email.message.Message to be converted to standard string
+    :param canonicalize_as_binary: force binary canonicalization
     :return: the standard representation of the email message in bytes
     """
 
-    if email_message.get("Content-Transfer-Encoding") == "binary":
+    if (
+        email_message.get("Content-Transfer-Encoding") == "binary"
+        or canonicalize_as_binary
+    ):
         message_header = ""
         message_body = email_message.get_payload(decode=True)
         for k, v in email_message.items():
