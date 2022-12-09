@@ -1,6 +1,6 @@
 # Release History
 
-## 1.4.0 - 2022-02-06
+## 1.4.1 - 2022-02-06
 
 * fix: freezing pylama version to avoid breaking changes
 * feat: option to pass custom domain for AS2 message-id generation
