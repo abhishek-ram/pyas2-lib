@@ -8,7 +8,7 @@ on:
       - "master"
 jobs:
   build:
-    runs-on: ubuntu:22.10
+    runs-on: ubuntu:jammy-20221020
     strategy:
       matrix:
         python-version: [3.7, 3.8, 3.9, "3.10"]
