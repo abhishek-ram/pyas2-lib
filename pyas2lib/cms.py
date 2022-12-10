@@ -376,7 +376,7 @@ def sign_message(
                 cms.CMSAttribute(
                     {
                         "type": cms.CMSAttributeType("1.2.840.113549.1.9.15"),
-                        "values": cms.SetOfAny(
+                        "values": cms.SetOfSMIMECapabilites(
                             [core.Any(SmimeCapabilities(smime_cap))]
                         ),
                     }
