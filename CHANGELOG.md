@@ -1,5 +1,13 @@
 # Release History
 
+## 1.4.2 - 2022-12-11
+
+* fix: update the black version to fix github ci pipeline
+* feat: added partner setting to force canonicalize binary
+* fix: freeze the version of pyflakes to resolve klen/pylama#224
+* feat: update the versions of oscrypt and asn1crypto
+* fix: Use SMIMECapabilites from asn1crypto instead of the custom class (needed due to asn1crypto upgrade)
+
 ## 1.4.1 - 2022-02-06
 
 * fix: freezing pylama version to avoid breaking changes
