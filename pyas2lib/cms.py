@@ -1,20 +1,19 @@
 """Define functions related to the CMS operations such as encrypting, signature, etc."""
 import hashlib
 import zlib
-from collections import OrderedDict
 from datetime import datetime, timezone
 
 from asn1crypto import cms, core, algos
 from asn1crypto.cms import SMIMECapabilityIdentifier
 from oscrypto import asymmetric, symmetric, util
 
+from pyas2lib.constants import DIGEST_ALGORITHMS
 from pyas2lib.exceptions import (
     AS2Exception,
     DecompressionError,
     DecryptionError,
     IntegrityError,
 )
-from pyas2lib.constants import DIGEST_ALGORITHMS
 from pyas2lib.utils import normalize_digest_alg
 
 
