@@ -318,23 +318,27 @@ def sign_message(
                             [
                                 cms.SMIMECapabilites(
                                     [
-                                        SMIMECapabilityIdentifier({
-                                            "capability_id": "2.16.840.1.101.3.4.1.42"
-                                        }),
-                                        SMIMECapabilityIdentifier({
-                                            "capability_id": "2.16.840.1.101.3.4.1.2"
-                                        }),
-                                        SMIMECapabilityIdentifier({
-                                            "capability_id": "1.2.840.113549.3.7"
-                                        }),
-                                        SMIMECapabilityIdentifier({
-                                            "capability_id": "1.2.840.113549.3.2",
-                                            "parameters": core.Integer(128)
-                                        }),
-                                        SMIMECapabilityIdentifier({
-                                            "capability_id": "1.2.840.113549.3.4",
-                                            "parameters": core.Integer(128)
-                                        }),
+                                        SMIMECapabilityIdentifier(
+                                            {"capability_id": "2.16.840.1.101.3.4.1.42"}
+                                        ),
+                                        SMIMECapabilityIdentifier(
+                                            {"capability_id": "2.16.840.1.101.3.4.1.2"}
+                                        ),
+                                        SMIMECapabilityIdentifier(
+                                            {"capability_id": "1.2.840.113549.3.7"}
+                                        ),
+                                        SMIMECapabilityIdentifier(
+                                            {
+                                                "capability_id": "1.2.840.113549.3.2",
+                                                "parameters": core.Integer(128),
+                                            }
+                                        ),
+                                        SMIMECapabilityIdentifier(
+                                            {
+                                                "capability_id": "1.2.840.113549.3.4",
+                                                "parameters": core.Integer(128),
+                                            }
+                                        ),
                                     ]
                                 )
                             ]
