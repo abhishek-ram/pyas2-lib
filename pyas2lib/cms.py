@@ -5,6 +5,7 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 
 from asn1crypto import cms, core, algos
+from asn1crypto.cms import SMIMECapabilityIdentifier
 from oscrypto import asymmetric, symmetric, util
 
 from pyas2lib.exceptions import (
@@ -277,68 +278,6 @@ def sign_message(
         digest_func.update(data_to_sign)
         message_digest = digest_func.digest()
 
-        class SmimeCapability(core.Sequence):
-            """Define the possible list of Smime Capability."""
-
-            _fields = [
-                ("0", core.Any, {"optional": True}),
-                ("1", core.Any, {"optional": True}),
-                ("2", core.Any, {"optional": True}),
-                ("3", core.Any, {"optional": True}),
-                ("4", core.Any, {"optional": True}),
-            ]
-
-        class SmimeCapabilities(core.Sequence):
-            """Define the Smime Capabilities supported by pyas2."""
-
-            _fields = [
-                ("0", SmimeCapability),
-                ("1", SmimeCapability, {"optional": True}),
-                ("2", SmimeCapability, {"optional": True}),
-                ("3", SmimeCapability, {"optional": True}),
-                ("4", SmimeCapability, {"optional": True}),
-                ("5", SmimeCapability, {"optional": True}),
-            ]
-
-        smime_cap = OrderedDict(
-            [
-                (
-                    "0",
-                    OrderedDict(
-                        [("0", core.ObjectIdentifier("2.16.840.1.101.3.4.1.42"))]
-                    ),
-                ),
-                (
-                    "1",
-                    OrderedDict(
-                        [("0", core.ObjectIdentifier("2.16.840.1.101.3.4.1.2"))]
-                    ),
-                ),
-                (
-                    "2",
-                    OrderedDict([("0", core.ObjectIdentifier("1.2.840.113549.3.7"))]),
-                ),
-                (
-                    "3",
-                    OrderedDict(
-                        [
-                            ("0", core.ObjectIdentifier("1.2.840.113549.3.2")),
-                            ("1", core.Integer(128)),
-                        ]
-                    ),
-                ),
-                (
-                    "4",
-                    OrderedDict(
-                        [
-                            ("0", core.ObjectIdentifier("1.2.840.113549.3.4")),
-                            ("1", core.Integer(128)),
-                        ]
-                    ),
-                ),
-            ]
-        )
-
         signed_attributes = cms.CMSAttributes(
             [
                 cms.CMSAttribute(
@@ -377,7 +316,29 @@ def sign_message(
                     {
                         "type": cms.CMSAttributeType("1.2.840.113549.1.9.15"),
                         "values": cms.SetOfSMIMECapabilites(
-                            [core.Any(SmimeCapabilities(smime_cap))]
+                            [
+                                cms.SMIMECapabilites(
+                                    [
+                                        SMIMECapabilityIdentifier({
+                                            "capability_id": "2.16.840.1.101.3.4.1.42"
+                                        }),
+                                        SMIMECapabilityIdentifier({
+                                            "capability_id": "2.16.840.1.101.3.4.1.2"
+                                        }),
+                                        SMIMECapabilityIdentifier({
+                                            "capability_id": "1.2.840.113549.3.7"
+                                        }),
+                                        SMIMECapabilityIdentifier({
+                                            "capability_id": "1.2.840.113549.3.2",
+                                            "parameters": core.Integer(128)
+                                        }),
+                                        SMIMECapabilityIdentifier({
+                                            "capability_id": "1.2.840.113549.3.4",
+                                            "parameters": core.Integer(128)
+                                        }),
+                                    ]
+                                )
+                            ]
                         ),
                     }
                 ),
