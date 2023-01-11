@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 install_requires = [
-    "asn1crypto==1.4.0",
-    "oscrypto==1.2.1",
+    "asn1crypto==1.5.1",
+    "oscrypto==1.3.0",
     "pyOpenSSL==21.0.0",
 ]
 
@@ -16,6 +16,7 @@ tests_require = [
     "pylama-pylint==3.1.1",
     "black==22.6.0",
     "pytest-black==0.3.12",
+    "pyflakes==2.4.0",
 ]
 
 setup(
@@ -26,7 +27,7 @@ setup(
     long_description="Docs for this project are maintained at "
     "https://github.com/abhishek-ram/pyas2-lib/blob/"
     "master/README.md",
-    version="1.4.1",
+    version="1.4.2",
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",
     packages=find_packages(where=".", exclude=("test*",)),
