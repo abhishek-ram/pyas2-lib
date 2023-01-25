@@ -1,5 +1,9 @@
 # Release History
 
+## 1.4.3 - 2023-01-25
+
+* fix: update pyopenssl version to resovle pyca/cryptography#7959
+
 ## 1.4.2 - 2022-12-11
 
 * fix: update the black version to fix github ci pipeline
