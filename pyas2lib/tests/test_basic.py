@@ -200,6 +200,14 @@ class TestBasic(Pyas2TestCase):
         out_message.build(self.test_data)
         self.assertEqual(out_message.message_id.split("@")[1], socket.getfqdn())
 
+    def test_plain_message_with_custom_message_id(self):
+        """Test Message building with a custom message id"""
+
+        # Build an As2 message to be transmitted to partner
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data, message_id="some_custom_id")
+        self.assertEqual(out_message.message_id, "some_custom_id")
+
     def find_org(self, as2_id):
         return self.org
 
