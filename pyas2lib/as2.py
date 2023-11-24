@@ -357,8 +357,8 @@ class Message:
             (default "no-reply@pyas2.com")
 
         :param message_id:
-            The message id to be used for the message. If not provided a
-            unique message id is generated. (default None)
+            A value to be used for the left side of the message id. If not provided a
+              unique id is generated. (default None)
         """
 
         # Validations
@@ -378,11 +378,17 @@ class Message:
             )
 
         if message_id:
-            self.message_id = message_id  
+            self.message_id = f"{message_id}@{self.sender.domain}"
         else:
-            # Generate message id using UUID 1 as it uses both hostname and time
             self.message_id = (
                 email_utils.make_msgid(domain=self.sender.domain).lstrip("<").rstrip(">")
+            )
+
+        # ensure the total length of the message id is no more than 255 characters
+        if len(self.message_id) > 255:
+            raise ValueError(
+                f"Message ID must be no more than 255 characters for compatibility with some AS2 servers. "
+                f"Current message ID length is {len(self.message_id)}."
             )
 
         # Set up the message headers
