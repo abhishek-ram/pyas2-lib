@@ -219,7 +219,10 @@ class TestBasic(Pyas2TestCase):
         very_long_message_id = "a" * 1000
         with pytest.raises(ValueError) as excinfo:
             out_message.build(self.test_data, message_id=very_long_message_id)
-        assert "Message ID must be no more than 255 characters for compatibility" in str(excinfo.value)
+        assert (
+            "Message ID must be no more than 255 characters for compatibility"
+            in str(excinfo.value)
+        )
 
     def find_org(self, as2_id):
         return self.org
