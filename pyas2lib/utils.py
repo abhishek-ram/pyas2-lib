@@ -178,7 +178,10 @@ def split_pem(pem_bytes: bytes):
 
 
 def verify_certificate_chain(cert_bytes, trusted_certs, ignore_self_signed=True):
-    """Verify a given certificate against a trust store."""
+    """
+    Verify a given certificate against a trust store.
+    :return:  True; or None if certificate is invalid or cannot be loaded by OpenSSL. 
+    """
 
     # Load the certificate
     certificate = crypto.load_certificate(crypto.FILETYPE_ASN1, cert_bytes)
@@ -198,8 +201,11 @@ def verify_certificate_chain(cert_bytes, trusted_certs, ignore_self_signed=True)
         store_ctx = crypto.X509StoreContext(store, certificate)
 
         # Verify the certificate, returns None if certificate is not valid
-        store_ctx.verify_certificate()
-
+        try:
+            store_ctx.verify_certificate()
+        except Exception as e:
+            return None
+        
         return True
 
     except crypto.X509StoreContextError as e:
