@@ -10,6 +10,8 @@ from email import message_from_bytes as parse_mime
 from email import utils as email_utils
 from email.mime.multipart import MIMEMultipart
 from oscrypto import asymmetric
+import asyncio
+import inspect
 
 from pyas2lib.cms import (
     compress_message,
@@ -522,7 +524,7 @@ class Message:
 
         return False, payload
 
-    def parse(
+    async def aparse(
         self,
         raw_content,
         find_org_cb=None,
@@ -593,10 +595,23 @@ class Message:
             partner_id = unquote_as2name(as2_headers["as2-from"])
 
             if find_org_partner_cb:
-                self.receiver, self.sender = find_org_partner_cb(org_id, partner_id)
+                if inspect.iscoroutinefunction(find_org_partner_cb):
+                    self.receiver, self.sender = await find_org_partner_cb(org_id, partner_id)
+                else:
+                    self.receiver, self.sender = find_org_partner_cb(org_id, partner_id)
+
             else:
-                self.receiver = find_org_cb(org_id)
-                self.sender = find_partner_cb(partner_id)
+                if find_org_cb:
+                    if inspect.iscoroutinefunction(find_org_cb):
+                        self.receiver = await find_org_cb(org_id)
+                    else:
+                        self.receiver = find_org_cb(org_id)
+
+                if find_partner_cb:
+                    if inspect.iscoroutinefunction(find_partner_cb):
+                        self.sender = await find_partner_cb(partner_id)
+                    else:
+                        self.sender = find_partner_cb(partner_id)
 
             if not self.receiver:
                 raise PartnerNotFound(f"Unknown AS2 organization with id {org_id}")
@@ -604,10 +619,15 @@ class Message:
             if not self.sender:
                 raise PartnerNotFound(f"Unknown AS2 partner with id {partner_id}")
 
-            if find_message_cb and find_message_cb(self.message_id, partner_id):
-                raise DuplicateDocument(
-                    "Duplicate message received, message with this ID already processed."
-                )
+            if find_message_cb:
+                if inspect.iscoroutinefunction(find_message_cb):
+                    message_exists = await find_message_cb(self.message_id, partner_id)
+                else:
+                    message_exists = find_message_cb(self.message_id, partner_id)
+                if message_exists:
+                    raise DuplicateDocument(
+                        "Duplicate message received, message with this ID already processed."
+                    )
 
             if (
                 self.sender.encrypt
@@ -727,6 +747,16 @@ class Message:
             mdn.build(message=self, status=status, detailed_status=detailed_status)
 
         return status, exception, mdn
+
+    def parse(self, *args, **kwargs):
+        """
+        A synchronous wrapper for the asynchronous parse method.
+        It runs the parse coroutine in an event loop and returns the result.
+        """
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            raise RuntimeError("Cannot run synchronous parse within an already running event loop.")
+        return loop.run_until_complete(self.aparse(*args, **kwargs))
 
 
 class Mdn:

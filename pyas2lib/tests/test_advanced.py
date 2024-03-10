@@ -9,6 +9,7 @@ from pyas2lib import as2
 from pyas2lib.exceptions import ImproperlyConfigured
 from pyas2lib.tests import Pyas2TestCase, TEST_DIR
 
+import asyncio
 
 class TestAdvanced(Pyas2TestCase):
     def setUp(self):
@@ -515,6 +516,36 @@ class TestAdvanced(Pyas2TestCase):
 
         self.assertEqual(message_recipient, self.partner.as2_name)
 
+    @pytest.mark.asyncio
+    async def test_duplicate_message_async(self):
+        """Test case where a duplicate message is sent to the partner asynchronously"""
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.sign = True
+        self.partner.encrypt = True
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = (
+                self.out_message.headers_str + b"\r\n" + self.out_message.content
+        )
+        in_message = as2.Message()
+        _, _, mdn = await in_message.parse(
+            raw_out_message,
+            find_org_cb=self.afind_org,
+            find_partner_cb=self.afind_partner,
+            find_message_cb=self.afind_duplicate_message,
+        )
+
+        out_mdn = as2.Mdn()
+        status, detailed_status = await out_mdn.parse(
+            mdn.headers_str + b"\r\n" + mdn.content, find_message_cb=self.afind_message
+        )
+        self.assertEqual(status, "processed/Warning")
+        self.assertEqual(detailed_status, "duplicate-document")
+
     def find_org(self, headers):
         return self.org
 
@@ -523,6 +554,15 @@ class TestAdvanced(Pyas2TestCase):
 
     def find_message(self, message_id, message_recipient):
         return self.out_message
+
+    async def afind_org(self, headers):
+        return self.org
+
+    async def afind_partner(self, headers):
+        return self.partner
+
+    async def afind_duplicate_message(self, message_id, message_recipient):
+        return True
 
 
 class SterlingIntegratorTest(Pyas2TestCase):
