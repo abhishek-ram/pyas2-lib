@@ -332,6 +332,7 @@ class Message:
         content_type="application/edi-consent",
         additional_headers=None,
         disposition_notification_to="no-reply@pyas2.com",
+        message_id=None,
     ):
 
         """Function builds the AS2 message. Compresses, signs and encrypts
@@ -356,6 +357,10 @@ class Message:
         :param disposition_notification_to:
             Email address for disposition-notification-to header entry.
             (default "no-reply@pyas2.com")
+
+        :param message_id:
+            A value to be used for the left side of the message id. If not provided a
+              unique id is generated. (default None)
         """
 
         # Validations
@@ -374,10 +379,22 @@ class Message:
                 "Encryption of messages is enabled but encrypt key is not set for the receiver."
             )
 
-        # Generate message id using UUID 1 as it uses both hostname and time
-        self.message_id = (
-            email_utils.make_msgid(domain=self.sender.domain).lstrip("<").rstrip(">")
-        )
+        if message_id:
+            self.message_id = f"{message_id}@{self.sender.domain}"
+        else:
+            self.message_id = (
+                email_utils.make_msgid(domain=self.sender.domain)
+                .lstrip("<")
+                .rstrip(">")
+            )
+
+        # ensure the total length of the message id is no more than 255 characters
+        if len(self.message_id) > 255:
+            raise ValueError(
+                "Message ID must be no more than 255 characters for "
+                "compatibility with some AS2 servers. "
+                f"Current message ID length is {len(self.message_id)}."
+            )
 
         # Set up the message headers
         as2_headers = {

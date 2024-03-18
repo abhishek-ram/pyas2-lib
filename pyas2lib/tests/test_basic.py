@@ -1,4 +1,5 @@
 """Module for testing the basic features of pyas2."""
+import pytest
 import socket
 from pyas2lib import as2
 from . import Pyas2TestCase
@@ -223,6 +224,29 @@ class TestBasic(Pyas2TestCase):
         out_message = as2.Message(self.org, self.partner)
         out_message.build(self.test_data)
         self.assertEqual(out_message.message_id.split("@")[1], socket.getfqdn())
+
+    def test_plain_message_with_custom_message_id(self):
+        """Test Message building with a custom message id"""
+
+        # Build an As2 message to be transmitted to partner
+        self.org.domain = "example.com"
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data, message_id="some_custom_id")
+        self.assertEqual(out_message.message_id, "some_custom_id@example.com")
+
+    def test_invalid_message_id_length_raises_error(self):
+        """Test Message building with a custom message id that's invalid"""
+
+        # Build an As2 message to be transmitted to partner
+        self.org.domain = "example.com"
+        out_message = as2.Message(self.org, self.partner)
+        very_long_message_id = "a" * 1000
+        with pytest.raises(ValueError) as excinfo:
+            out_message.build(self.test_data, message_id=very_long_message_id)
+        assert (
+            "Message ID must be no more than 255 characters for compatibility"
+            in str(excinfo.value)
+        )
 
     def find_org(self, as2_id):
         return self.org
