@@ -88,8 +88,20 @@ def test_encryption():
         "aes_192_cbc",
         "aes_256_cbc",
     ]
-    for enc_algorithm in enc_algorithms:
-        encrypted_data = cms.encrypt_message(b"data", enc_algorithm, encrypt_cert)
+
+    key_enc_algos = [
+        "rsaes_oaep",
+        "rsaes_pkcs1v15",
+    ]
+
+    encryption_algos = [
+        (alg, scheme) for alg, scheme in zip(enc_algorithms, key_enc_algos)
+    ]
+
+    for enc_algorithm, encryption_scheme in encryption_algos:
+        encrypted_data = cms.encrypt_message(
+            b"data", enc_algorithm, encrypt_cert, encryption_scheme
+        )
         _, decrypted_data = cms.decrypt_message(encrypted_data, decrypt_key)
         assert decrypted_data == b"data"
 
@@ -101,3 +113,7 @@ def test_encryption():
     encrypted_data = cms.encrypt_message(b"data", "des_64_cbc", encrypt_cert)
     with pytest.raises(AS2Exception):
         cms.decrypt_message(encrypted_data, decrypt_key)
+
+    # Test faulty key encryption algorithm
+    with pytest.raises(AS2Exception):
+        cms.encrypt_message(b"data", "rc2_128_cbc", encrypt_cert, "des_64_cbc")
