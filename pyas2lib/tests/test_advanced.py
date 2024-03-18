@@ -11,6 +11,7 @@ from pyas2lib.tests import Pyas2TestCase, TEST_DIR
 
 import asyncio
 
+
 class TestAdvanced(Pyas2TestCase):
     def setUp(self):
         self.org = as2.Organization(
@@ -529,7 +530,7 @@ class TestAdvanced(Pyas2TestCase):
 
         # Parse the generated AS2 message as the partner
         raw_out_message = (
-                self.out_message.headers_str + b"\r\n" + self.out_message.content
+            self.out_message.headers_str + b"\r\n" + self.out_message.content
         )
         in_message = as2.Message()
         _, _, mdn = await in_message.parse(
@@ -567,7 +568,6 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(status, "processed")
         self.assertEqual(self.test_data, in_message.content)
 
-
     def find_org(self, headers):
         return self.org
 
@@ -588,6 +588,8 @@ class TestAdvanced(Pyas2TestCase):
 
     async def afind_org_partner(self, as2_org, as2_partner):
         return self.org, self.partner
+
+
 class SterlingIntegratorTest(Pyas2TestCase):
     def setUp(self):
         self.org = as2.Organization(
