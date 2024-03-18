@@ -518,7 +518,7 @@ class TestAdvanced(Pyas2TestCase):
 
     @pytest.mark.asyncio
     async def test_duplicate_message_async(self):
-        """Test case where a duplicate message is sent to the partner asynchronously"""
+        """Test case where a duplicate message is sent to the partner using async callbacks"""
 
         # Build an As2 message to be transmitted to partner
         self.partner.sign = True
@@ -546,6 +546,28 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(status, "processed/Warning")
         self.assertEqual(detailed_status, "duplicate-document")
 
+    @pytest.mark.asyncio
+    async def test_async_partnership(self):
+        """Test Async Partnership callback with Unencrypted Unsigned Uncompressed Message"""
+
+        # Build an As2 message to be transmitted to partner
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        raw_out_message = out_message.headers_str + b"\r\n" + out_message.content
+
+        # Parse the generated AS2 message as the partner
+        in_message = as2.Message()
+        status, _, _ = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.afind_org_partner,
+        )
+
+        # Compare contents of the input and output messages
+        self.assertEqual(status, "processed")
+        self.assertEqual(self.test_data, in_message.content)
+
+
     def find_org(self, headers):
         return self.org
 
@@ -564,7 +586,8 @@ class TestAdvanced(Pyas2TestCase):
     async def afind_duplicate_message(self, message_id, message_recipient):
         return True
 
-
+    async def afind_org_partner(self, as2_org, as2_partner):
+        return self.org, self.partner
 class SterlingIntegratorTest(Pyas2TestCase):
     def setUp(self):
         self.org = as2.Organization(
