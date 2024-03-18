@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 install_requires = [
     "asn1crypto==1.5.1",
     "oscrypto==1.3.0",
-    "pyOpenSSL==21.0.0",
+    "pyOpenSSL==23.2.0",
 ]
 
 tests_require = [
@@ -27,7 +27,7 @@ setup(
     long_description="Docs for this project are maintained at "
     "https://github.com/abhishek-ram/pyas2-lib/blob/"
     "master/README.md",
-    version="1.4.2",
+    version="1.4.3",
     author="Abhishek Ram",
     author_email="abhishek8816@gmail.com",
     packages=find_packages(where=".", exclude=("test*",)),
