@@ -4,6 +4,7 @@
 
 * feat: added partnership lookup function 
 * feat: added support for async callback functions
+* feat: added support for optional key encryption algorithm rsaes_oaep for encryption and decryption
 
 ## 1.4.3 - 2023-01-25
 
