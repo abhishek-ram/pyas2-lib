@@ -776,7 +776,7 @@ class Message:
         loop = asyncio.get_event_loop()
         if loop.is_running():
             raise RuntimeError(
-                "Cannot run synchronous parse within an already running event loop."
+                "Cannot run synchronous parse within an already running event loop, use aparse."
             )
         return loop.run_until_complete(self.aparse(*args, **kwargs))
 
@@ -955,7 +955,7 @@ class Mdn:
             f"content:\n {mime_to_bytes(self.payload)}"
         )
 
-    def parse(self, raw_content, find_message_cb):
+    async def aparse(self, raw_content, find_message_cb):
         """Function parses the RAW AS2 MDN, verifies it and extracts the
         processing status of the orginal AS2 message.
 
@@ -980,7 +980,13 @@ class Mdn:
             self.orig_message_id, orig_recipient = self.detect_mdn()
 
             # Call the find message callback which should return a Message instance
-            orig_message = find_message_cb(self.orig_message_id, orig_recipient)
+            if find_message_cb:
+                if inspect.iscoroutinefunction(find_message_cb):
+                    orig_message = await find_message_cb(
+                        self.orig_message_id, orig_recipient
+                    )
+                else:
+                    orig_message = find_message_cb(self.orig_message_id, orig_recipient)
 
             if not orig_message:
                 status = "failed/Failure"
@@ -1062,6 +1068,18 @@ class Mdn:
             detailed_status = f"Failed to parse received MDN. {e}"
             logger.error(f"Failed to parse AS2 MDN\n: {traceback.format_exc()}")
         return status, detailed_status
+
+    def parse(self, *args, **kwargs):
+        """
+        A synchronous wrapper for the asynchronous parse method.
+        It runs the parse coroutine in an event loop and returns the result.
+        """
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            raise RuntimeError(
+                "Cannot run synchronous parse within an already running event loop, use aparse."
+            )
+        return loop.run_until_complete(self.aparse(*args, **kwargs))
 
     def detect_mdn(self):
         """Function checks if the received raw message is an AS2 MDN or not.
