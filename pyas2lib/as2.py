@@ -1,7 +1,9 @@
 """Define the core functions/classes of the pyas2 package."""
-import logging
-import hashlib
+import asyncio
 import binascii
+import hashlib
+import inspect
+import logging
 import traceback
 from dataclasses import dataclass
 from email import encoders
@@ -9,9 +11,8 @@ from email import message as email_message
 from email import message_from_bytes as parse_mime
 from email import utils as email_utils
 from email.mime.multipart import MIMEMultipart
+
 from oscrypto import asymmetric
-import asyncio
-import inspect
 
 from pyas2lib.cms import (
     compress_message,
@@ -613,7 +614,9 @@ class Message:
 
             if find_org_partner_cb:
                 if inspect.iscoroutinefunction(find_org_partner_cb):
-                    self.receiver, self.sender = await find_org_partner_cb(org_id, partner_id)
+                    self.receiver, self.sender = await find_org_partner_cb(
+                        org_id, partner_id
+                    )
                 else:
                     self.receiver, self.sender = find_org_partner_cb(org_id, partner_id)
 
@@ -772,7 +775,9 @@ class Message:
         """
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            raise RuntimeError("Cannot run synchronous parse within an already running event loop.")
+            raise RuntimeError(
+                "Cannot run synchronous parse within an already running event loop."
+            )
         return loop.run_until_complete(self.aparse(*args, **kwargs))
 
 

@@ -3,7 +3,7 @@ import hashlib
 import zlib
 from datetime import datetime, timezone
 
-from asn1crypto import cms, core, algos
+from asn1crypto import algos, cms, core
 from asn1crypto.cms import SMIMECapabilityIdentifier
 from oscrypto import asymmetric, symmetric, util
 
@@ -73,7 +73,7 @@ def encrypt_message(
     :param data_to_encrypt: A byte string of the data to be encrypted
     :param enc_alg: The algorithm to be used for encrypting the data
     :param encryption_cert: The certificate to be used for encrypting the data
-    :param key_enc_alg: The encryption scheme for the key encryption: rsaes_pkcs1v15 (default) or rsaes_oaep
+    :param key_enc_alg: The algo for the key encryption: rsaes_pkcs1v15 (default) or rsaes_oaep
 
     :return: A CMS ASN.1 byte string of the encrypted data.
     """
