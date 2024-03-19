@@ -54,6 +54,9 @@ async def test_duplicate_message_async():
     out_message = as2.Message(org, partner)
     out_message.build(test_data)
 
+    async def afind_message(message_id, message_recipient):
+        return out_message
+
     # Parse the generated AS2 message as the partner
     raw_out_message = out_message.headers_str + b"\r\n" + out_message.content
     in_message = as2.Message()
@@ -67,7 +70,7 @@ async def test_duplicate_message_async():
     out_mdn = as2.Mdn()
     status, detailed_status = await out_mdn.aparse(
         mdn.headers_str + b"\r\n" + mdn.content,
-        find_message_cb=lambda x, y: out_message,
+        find_message_cb=afind_message,
     )
     assert status == "processed/Warning"
     assert detailed_status == "duplicate-document"
@@ -90,3 +93,33 @@ async def test_async_partnership():
 
     # Compare contents of the input and output messages
     assert status == "processed"
+
+
+@pytest.mark.asyncio
+async def test_runtime_error():
+    with pytest.raises(RuntimeError):
+        out_message = as2.Message(org, partner)
+        out_message.build(test_data)
+        raw_out_message = out_message.headers_str + b"\r\n" + out_message.content
+
+        in_message = as2.Message()
+        status, _, _ = in_message.parse(
+            raw_out_message, find_org_partner_cb=afind_org_partner
+        )
+
+    with pytest.raises(RuntimeError):
+        partner.sign = True
+        partner.encrypt = True
+        partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        out_message = as2.Message(org, partner)
+        out_message.build(test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = out_message.headers_str + b"\r\n" + out_message.content
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=afind_org,
+            find_partner_cb=afind_partner,
+            find_message_cb=afind_duplicate_message,
+        )

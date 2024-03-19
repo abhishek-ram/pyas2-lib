@@ -2,7 +2,9 @@
 import os
 
 import pytest
-from oscrypto import asymmetric
+from oscrypto import asymmetric, symmetric, util
+
+from asn1crypto import algos, cms as crypto_cms, core
 
 from pyas2lib.as2 import Organization
 from pyas2lib import cms
@@ -20,6 +22,68 @@ INVALID_DATA = cms.cms.ContentInfo(
         "content_type": cms.cms.ContentType("data"),
     }
 ).dump()
+
+
+def encrypted_data_with_faulty_key_algo():
+    with open(os.path.join(TEST_DIR, "cert_test_public.pem"), "rb") as fp:
+        encrypt_cert = asymmetric.load_certificate(fp.read())
+    enc_alg_list = "rc4_128_cbc".split("_")
+    cipher, key_length, _ = enc_alg_list[0], enc_alg_list[1], enc_alg_list[2]
+    key = util.rand_bytes(int(key_length) // 8)
+    algorithm_id = "1.2.840.113549.3.4"
+    encrypted_content = symmetric.rc4_encrypt(key, b"data")
+    enc_alg_asn1 = algos.EncryptionAlgorithm(
+        {
+            "algorithm": algorithm_id,
+        }
+    )
+    encrypted_key = asymmetric.rsa_oaep_encrypt(encrypt_cert, key)
+    return crypto_cms.ContentInfo(
+        {
+            "content_type": crypto_cms.ContentType("enveloped_data"),
+            "content": crypto_cms.EnvelopedData(
+                {
+                    "version": crypto_cms.CMSVersion("v0"),
+                    "recipient_infos": [
+                        crypto_cms.KeyTransRecipientInfo(
+                            {
+                                "version": crypto_cms.CMSVersion("v0"),
+                                "rid": crypto_cms.RecipientIdentifier(
+                                    {
+                                        "issuer_and_serial_number": crypto_cms.IssuerAndSerialNumber(
+                                            {
+                                                "issuer": encrypt_cert.asn1[
+                                                    "tbs_certificate"
+                                                ]["issuer"],
+                                                "serial_number": encrypt_cert.asn1[
+                                                    "tbs_certificate"
+                                                ]["serial_number"],
+                                            }
+                                        )
+                                    }
+                                ),
+                                "key_encryption_algorithm": crypto_cms.KeyEncryptionAlgorithm(
+                                    {
+                                        "algorithm": crypto_cms.KeyEncryptionAlgorithmId(
+                                            "aes128_wrap"
+                                        )
+                                    }
+                                ),
+                                "encrypted_key": crypto_cms.OctetString(encrypted_key),
+                            }
+                        )
+                    ],
+                    "encrypted_content_info": crypto_cms.EncryptedContentInfo(
+                        {
+                            "content_type": crypto_cms.ContentType("data"),
+                            "content_encryption_algorithm": enc_alg_asn1,
+                            "encrypted_content": encrypted_content,
+                        }
+                    ),
+                }
+            ),
+        }
+    ).dump()
 
 
 def test_compress():
@@ -87,6 +151,7 @@ def test_encryption():
         "aes_128_cbc",
         "aes_192_cbc",
         "aes_256_cbc",
+        "tripledes_192_cbc",
     ]
 
     key_enc_algos = [
@@ -95,7 +160,7 @@ def test_encryption():
     ]
 
     encryption_algos = [
-        (alg, scheme) for alg, scheme in zip(enc_algorithms, key_enc_algos)
+        (alg, key_algo) for alg in enc_algorithms for key_algo in key_enc_algos
     ]
 
     for enc_algorithm, encryption_scheme in encryption_algos:
@@ -117,3 +182,8 @@ def test_encryption():
     # Test faulty key encryption algorithm
     with pytest.raises(AS2Exception):
         cms.encrypt_message(b"data", "rc2_128_cbc", encrypt_cert, "des_64_cbc")
+
+    # Test unsupported key encryption algorithm
+    encrypted_data = encrypted_data_with_faulty_key_algo()
+    with pytest.raises(AS2Exception):
+        cms.decrypt_message(encrypted_data, decrypt_key)

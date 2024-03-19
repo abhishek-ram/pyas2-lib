@@ -211,26 +211,24 @@ def decrypt_message(encrypted_data, decryption_key):
         key_enc_alg = recipient_info["key_encryption_algorithm"]["algorithm"].native
         encrypted_key = recipient_info["encrypted_key"].native
 
-        if cms.KeyEncryptionAlgorithmId(key_enc_alg) == cms.KeyEncryptionAlgorithmId(
-            "rsaes_pkcs1v15"
-        ):
-            try:
+        try:
+            if cms.KeyEncryptionAlgorithmId(
+                key_enc_alg
+            ) == cms.KeyEncryptionAlgorithmId("rsaes_pkcs1v15"):
                 key = asymmetric.rsa_pkcs1v15_decrypt(decryption_key[0], encrypted_key)
-            except Exception as e:
-                raise DecryptionError(
-                    "Failed to decrypt the payload: Could not extract decryption key."
-                ) from e
-        elif cms.KeyEncryptionAlgorithmId(key_enc_alg) == cms.KeyEncryptionAlgorithmId(
-            "rsaes_oaep"
-        ):
-            try:
+
+            elif cms.KeyEncryptionAlgorithmId(
+                key_enc_alg
+            ) == cms.KeyEncryptionAlgorithmId("rsaes_oaep"):
                 key = asymmetric.rsa_oaep_decrypt(decryption_key[0], encrypted_key)
-            except Exception as e:
-                raise DecryptionError(
-                    "Failed to decrypt the payload: Could not extract decryption key."
-                ) from e
-        else:
-            raise AS2Exception(f"Unsupported Key Encryption Algorithm {key_enc_alg}")
+            else:
+                raise AS2Exception(
+                    f"Unsupported Key Encryption Algorithm {key_enc_alg}"
+                )
+        except Exception as e:
+            raise DecryptionError(
+                "Failed to decrypt the payload: Could not extract decryption key."
+            ) from e
 
         alg = cms_content["content"]["encrypted_content_info"][
             "content_encryption_algorithm"
