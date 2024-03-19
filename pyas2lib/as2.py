@@ -620,18 +620,16 @@ class Message:
                 else:
                     self.receiver, self.sender = find_org_partner_cb(org_id, partner_id)
 
-            else:
-                if find_org_cb:
-                    if inspect.iscoroutinefunction(find_org_cb):
-                        self.receiver = await find_org_cb(org_id)
-                    else:
-                        self.receiver = find_org_cb(org_id)
+            elif find_org_cb and find_partner_cb:
+                if inspect.iscoroutinefunction(find_org_cb):
+                    self.receiver = await find_org_cb(org_id)
+                else:
+                    self.receiver = find_org_cb(org_id)
 
-                if find_partner_cb:
-                    if inspect.iscoroutinefunction(find_partner_cb):
-                        self.sender = await find_partner_cb(partner_id)
-                    else:
-                        self.sender = find_partner_cb(partner_id)
+                if inspect.iscoroutinefunction(find_partner_cb):
+                    self.sender = await find_partner_cb(partner_id)
+                else:
+                    self.sender = find_partner_cb(partner_id)
 
             if not self.receiver:
                 raise PartnerNotFound(f"Unknown AS2 organization with id {org_id}")
@@ -980,13 +978,12 @@ class Mdn:
             self.orig_message_id, orig_recipient = self.detect_mdn()
 
             # Call the find message callback which should return a Message instance
-            if find_message_cb:
-                if inspect.iscoroutinefunction(find_message_cb):
-                    orig_message = await find_message_cb(
-                        self.orig_message_id, orig_recipient
-                    )
-                else:
-                    orig_message = find_message_cb(self.orig_message_id, orig_recipient)
+            if inspect.iscoroutinefunction(find_message_cb):
+                orig_message = await find_message_cb(
+                    self.orig_message_id, orig_recipient
+                )
+            else:
+                orig_message = find_message_cb(self.orig_message_id, orig_recipient)
 
             if not orig_message:
                 status = "failed/Failure"
