@@ -117,9 +117,15 @@ async def test_runtime_error():
         # Parse the generated AS2 message as the partner
         raw_out_message = out_message.headers_str + b"\r\n" + out_message.content
         in_message = as2.Message()
-        _, _, mdn = in_message.parse(
+        _, _, mdn = await in_message.aparse(
             raw_out_message,
             find_org_cb=afind_org,
             find_partner_cb=afind_partner,
+            find_message_cb=afind_duplicate_message,
+        )
+
+        out_mdn = as2.Mdn()
+        _, _ = out_mdn.parse(
+            mdn.headers_str + b"\r\n" + mdn.content,
             find_message_cb=afind_duplicate_message,
         )
