@@ -182,6 +182,12 @@ class Partner:
 
     :param canonicalize_as_binary: force binary canonicalization for this partner
 
+    :param sign_alg: The signing algorithm to be used for generating the
+        signature. (default `rsassa_pkcs1v15`)
+
+    :param key_enc_alg: The key encryption algorithm to be used.
+        (default `rsaes_pkcs1v15`)
+
     """
 
     as2_name: str
@@ -200,6 +206,8 @@ class Partner:
     mdn_confirm_text: str = MDN_CONFIRM_TEXT
     ignore_self_signed: bool = True
     canonicalize_as_binary: bool = False
+    sign_alg: str = "rsassa_pkcs1v15"
+    key_enc_alg: str = "rsaes_pkcs1v15"
 
     def __post_init__(self):
         """Run the post initialisation checks for this class."""
@@ -469,7 +477,10 @@ class Message:
             )
             del signature["MIME-Version"]
             signature_data = sign_message(
-                mic_content, self.digest_alg, self.sender.sign_key
+                mic_content,
+                self.digest_alg,
+                self.sender.sign_key,
+                self.receiver.sign_alg,
             )
             signature.set_payload(signature_data)
             encoders.encode_base64(signature)
@@ -930,7 +941,10 @@ class Mdn:
             del signature["MIME-Version"]
 
             signed_data = sign_message(
-                canonicalize(self.payload), self.digest_alg, message.receiver.sign_key
+                canonicalize(self.payload),
+                self.digest_alg,
+                message.receiver.sign_key,
+                message.sender.sign_alg,
             )
             signature.set_payload(signed_data)
             encoders.encode_base64(signature)
