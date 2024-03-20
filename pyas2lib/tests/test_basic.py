@@ -184,6 +184,30 @@ class TestBasic(Pyas2TestCase):
         self.assertEqual(out_message.mic, in_message.mic)
         self.assertEqual(self.test_data.splitlines(), in_message.content.splitlines())
 
+    def test_encrypted_signed_message_partnership(self):
+        """Test Encrypted Signed Uncompressed Message with Partnership"""
+
+        # Build an As2 message to be transmitted to partner
+        self.partner.sign = True
+        self.partner.encrypt = True
+        out_message = as2.Message(self.org, self.partner)
+        out_message.build(self.test_data)
+        raw_out_message = out_message.headers_str + b"\r\n" + out_message.content
+
+        # Parse the generated AS2 message as the partner
+        in_message = as2.Message()
+        status, _, _ = in_message.parse(
+            raw_out_message,
+            find_org_partner_cb=self.find_org_partner,
+        )
+
+        # Compare the mic contents of the input and output messages
+        self.assertEqual(status, "processed")
+        self.assertTrue(in_message.signed)
+        self.assertTrue(in_message.encrypted)
+        self.assertEqual(out_message.mic, in_message.mic)
+        self.assertEqual(self.test_data.splitlines(), in_message.content.splitlines())
+
     def test_plain_message_with_domain(self):
         """Test Message building with an org domain"""
 
@@ -229,3 +253,6 @@ class TestBasic(Pyas2TestCase):
 
     def find_partner(self, as2_id):
         return self.partner
+
+    def find_org_partner(self, as2_org, as2_partner):
+        return self.org, self.partner

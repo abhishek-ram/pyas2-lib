@@ -1,7 +1,9 @@
 """Define the core functions/classes of the pyas2 package."""
-import logging
-import hashlib
+import asyncio
 import binascii
+import hashlib
+import inspect
+import logging
 import traceback
 from dataclasses import dataclass
 from email import encoders
@@ -9,6 +11,7 @@ from email import message as email_message
 from email import message_from_bytes as parse_mime
 from email import utils as email_utils
 from email.mime.multipart import MIMEMultipart
+
 from oscrypto import asymmetric
 
 from pyas2lib.cms import (
@@ -179,6 +182,12 @@ class Partner:
 
     :param canonicalize_as_binary: force binary canonicalization for this partner
 
+    :param sign_alg: The signing algorithm to be used for generating the
+        signature. (default `rsassa_pkcs1v15`)
+
+    :param key_enc_alg: The key encryption algorithm to be used.
+        (default `rsaes_pkcs1v15`)
+
     """
 
     as2_name: str
@@ -197,6 +206,8 @@ class Partner:
     mdn_confirm_text: str = MDN_CONFIRM_TEXT
     ignore_self_signed: bool = True
     canonicalize_as_binary: bool = False
+    sign_alg: str = "rsassa_pkcs1v15"
+    key_enc_alg: str = "rsaes_pkcs1v15"
 
     def __post_init__(self):
         """Run the post initialisation checks for this class."""
@@ -466,7 +477,10 @@ class Message:
             )
             del signature["MIME-Version"]
             signature_data = sign_message(
-                mic_content, self.digest_alg, self.sender.sign_key
+                mic_content,
+                self.digest_alg,
+                self.sender.sign_key,
+                self.receiver.sign_alg,
             )
             signature.set_payload(signature_data)
             encoders.encode_base64(signature)
@@ -539,7 +553,14 @@ class Message:
 
         return False, payload
 
-    def parse(self, raw_content, find_org_cb, find_partner_cb, find_message_cb=None):
+    async def aparse(
+        self,
+        raw_content,
+        find_org_cb=None,
+        find_partner_cb=None,
+        find_message_cb=None,
+        find_org_partner_cb=None,
+    ):
         """Function parses the RAW AS2 message; decrypts, verifies and
         decompresses it and extracts the payload.
 
@@ -547,17 +568,25 @@ class Message:
             A byte string of the received HTTP headers followed by the body.
 
         :param find_org_cb:
-            A callback the returns an Organization object if exists. The
-            as2-to header value is passed as an argument to it.
+            A conditional callback the returns an Organization object if exists. The
+            as2-to header value is passed as an argument to it. Must be provided
+            when find_partner_cb is provided and find_org_partner_cb is None
 
         :param find_partner_cb:
-            A callback the returns an Partner object if exists. The
-            as2-from header value is passed as an argument to it.
+            An conditional callback the returns an Partner object if exists. The
+            as2-from header value is passed as an argument to it. Must be provided
+            when find_org_cb is provided and find_org_partner_cb is None.
 
         :param find_message_cb:
             An optional callback the returns an Message object if exists in
             order to check for duplicates. The message id and partner id is
             passed as arguments to it.
+
+        :param find_org_partner_cb:
+            A conditional callback that return Organization object and
+            Partner object if exist. The as2-to and as2-from header value
+            are passed as an argument to it. Must be provided
+            when find_org_cb and find_org_partner_cb is None.
 
         :return:
             A three element tuple containing (status, (exception, traceback)
@@ -566,6 +595,18 @@ class Message:
             during processing and the mdn is an MDN object or None in case
             the partner did not request it.
         """
+
+        # Validate passed arguments
+        if not any(
+            [
+                find_org_cb and find_partner_cb and not find_org_partner_cb,
+                find_org_partner_cb and not find_partner_cb and not find_org_cb,
+            ]
+        ):
+            raise TypeError(
+                "Incorrect arguments passed: either find_org_cb and find_partner_cb "
+                "or only find_org_partner_cb must be passed."
+            )
 
         # Parse the raw MIME message and extract its content and headers
         status, detailed_status, exception, mdn = "processed", None, (None, None), None
@@ -580,19 +621,42 @@ class Message:
         try:
             # Get the organization and partner for this transmission
             org_id = unquote_as2name(as2_headers["as2-to"])
-            self.receiver = find_org_cb(org_id)
+            partner_id = unquote_as2name(as2_headers["as2-from"])
+
+            if find_org_partner_cb:
+                if inspect.iscoroutinefunction(find_org_partner_cb):
+                    self.receiver, self.sender = await find_org_partner_cb(
+                        org_id, partner_id
+                    )
+                else:
+                    self.receiver, self.sender = find_org_partner_cb(org_id, partner_id)
+
+            elif find_org_cb and find_partner_cb:
+                if inspect.iscoroutinefunction(find_org_cb):
+                    self.receiver = await find_org_cb(org_id)
+                else:
+                    self.receiver = find_org_cb(org_id)
+
+                if inspect.iscoroutinefunction(find_partner_cb):
+                    self.sender = await find_partner_cb(partner_id)
+                else:
+                    self.sender = find_partner_cb(partner_id)
+
             if not self.receiver:
                 raise PartnerNotFound(f"Unknown AS2 organization with id {org_id}")
 
-            partner_id = unquote_as2name(as2_headers["as2-from"])
-            self.sender = find_partner_cb(partner_id)
             if not self.sender:
                 raise PartnerNotFound(f"Unknown AS2 partner with id {partner_id}")
 
-            if find_message_cb and find_message_cb(self.message_id, partner_id):
-                raise DuplicateDocument(
-                    "Duplicate message received, message with this ID already processed."
-                )
+            if find_message_cb:
+                if inspect.iscoroutinefunction(find_message_cb):
+                    message_exists = await find_message_cb(self.message_id, partner_id)
+                else:
+                    message_exists = find_message_cb(self.message_id, partner_id)
+                if message_exists:
+                    raise DuplicateDocument(
+                        "Duplicate message received, message with this ID already processed."
+                    )
 
             if (
                 self.sender.encrypt
@@ -712,6 +776,18 @@ class Message:
             mdn.build(message=self, status=status, detailed_status=detailed_status)
 
         return status, exception, mdn
+
+    def parse(self, *args, **kwargs):
+        """
+        A synchronous wrapper for the asynchronous parse method.
+        It runs the parse coroutine in an event loop and returns the result.
+        """
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            raise RuntimeError(
+                "Cannot run synchronous parse within an already running event loop, use aparse."
+            )
+        return loop.run_until_complete(self.aparse(*args, **kwargs))
 
 
 class Mdn:
@@ -865,7 +941,10 @@ class Mdn:
             del signature["MIME-Version"]
 
             signed_data = sign_message(
-                canonicalize(self.payload), self.digest_alg, message.receiver.sign_key
+                canonicalize(self.payload),
+                self.digest_alg,
+                message.receiver.sign_key,
+                message.sender.sign_alg,
             )
             signature.set_payload(signed_data)
             encoders.encode_base64(signature)
@@ -888,7 +967,7 @@ class Mdn:
             f"content:\n {mime_to_bytes(self.payload)}"
         )
 
-    def parse(self, raw_content, find_message_cb):
+    async def aparse(self, raw_content, find_message_cb):
         """Function parses the RAW AS2 MDN, verifies it and extracts the
         processing status of the orginal AS2 message.
 
@@ -913,7 +992,17 @@ class Mdn:
             self.orig_message_id, orig_recipient = self.detect_mdn()
 
             # Call the find message callback which should return a Message instance
-            orig_message = find_message_cb(self.orig_message_id, orig_recipient)
+            if inspect.iscoroutinefunction(find_message_cb):
+                orig_message = await find_message_cb(
+                    self.orig_message_id, orig_recipient
+                )
+            else:
+                orig_message = find_message_cb(self.orig_message_id, orig_recipient)
+
+            if not orig_message:
+                status = "failed/Failure"
+                details_status = "original-message-not-found"
+                return status, details_status
 
             # Extract the headers and save it
             mdn_headers = {}
@@ -990,6 +1079,18 @@ class Mdn:
             detailed_status = f"Failed to parse received MDN. {e}"
             logger.error(f"Failed to parse AS2 MDN\n: {traceback.format_exc()}")
         return status, detailed_status
+
+    def parse(self, *args, **kwargs):
+        """
+        A synchronous wrapper for the asynchronous parse method.
+        It runs the parse coroutine in an event loop and returns the result.
+        """
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            raise RuntimeError(
+                "Cannot run synchronous parse within an already running event loop, use aparse."
+            )
+        return loop.run_until_complete(self.aparse(*args, **kwargs))
 
     def detect_mdn(self):
         """Function checks if the received raw message is an AS2 MDN or not.
