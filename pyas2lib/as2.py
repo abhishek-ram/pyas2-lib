@@ -25,6 +25,7 @@ from pyas2lib.constants import (
     DIGEST_ALGORITHMS,
     EDIINT_FEATURES,
     ENCRYPTION_ALGORITHMS,
+    KEY_ENCRYPTION_ALGORITHMS,
     MDN_CONFIRM_TEXT,
     MDN_FAILED_TEXT,
     MDN_MODES,
@@ -183,6 +184,9 @@ class Partner:
     :param sign_alg: The signing algorithm to be used for generating the
         signature. (default `rsassa_pkcs1v15`)
 
+    :param key_enc_alg: The key encryption algorithm to be used.
+        (default `rsaes_pkcs1v15`)
+
     """
 
     as2_name: str
@@ -202,6 +206,7 @@ class Partner:
     ignore_self_signed: bool = True
     canonicalize_as_binary: bool = False
     sign_alg: str = "rsassa_pkcs1v15"
+    key_enc_alg: str = "rsaes_pkcs1v15"
 
     def __post_init__(self):
         """Run the post initialisation checks for this class."""
@@ -234,6 +239,12 @@ class Partner:
             raise ImproperlyConfigured(
                 f"Unsupported Signature Algorithm {self.sign_alg}, "
                 f"must be one of {SIGNATUR_ALGORITHMS}"
+            )
+
+        if self.key_enc_alg and self.key_enc_alg not in KEY_ENCRYPTION_ALGORITHMS:
+            raise ImproperlyConfigured(
+                f"Unsupported Key Encryption Algorithm {self.key_enc_alg}, "
+                f"must be one of {KEY_ENCRYPTION_ALGORITHMS}"
             )
 
     def load_verify_cert(self):
