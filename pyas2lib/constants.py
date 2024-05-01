@@ -28,3 +28,7 @@ ENCRYPTION_ALGORITHMS = (
     "aes_192_cbc",
     "aes_256_cbc",
 )
+SIGNATUR_ALGORITHMS = (
+    "rsassa_pkcs1v15",
+    "rsassa_pss",
+)
