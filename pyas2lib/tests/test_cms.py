@@ -24,7 +24,7 @@ INVALID_DATA = cms.cms.ContentInfo(
 ).dump()
 
 
-def encrypted_data_with_faulty_key_algo():
+def _encrypted_data_with_faulty_key_algo():
     with open(os.path.join(TEST_DIR, "cert_test_public.pem"), "rb") as fp:
         encrypt_cert = asymmetric.load_certificate(fp.read())
     enc_alg_list = "rc4_128_cbc".split("_")
@@ -180,10 +180,15 @@ def test_encryption():
         cms.decrypt_message(encrypted_data, decrypt_key)
 
     # Test faulty key encryption algorithm
-    with pytest.raises(AS2Exception):
+    with pytest.raises(
+        AS2Exception, match="Unsupported Key Encryption Scheme: des_64_cbc"
+    ):
         cms.encrypt_message(b"data", "rc2_128_cbc", encrypt_cert, "des_64_cbc")
 
     # Test unsupported key encryption algorithm
-    encrypted_data = encrypted_data_with_faulty_key_algo()
-    with pytest.raises(AS2Exception):
+    encrypted_data = _encrypted_data_with_faulty_key_algo()
+    with pytest.raises(
+        AS2Exception,
+        match="Failed to decrypt the payload: Could not extract decryption key.",
+    ):
         cms.decrypt_message(encrypted_data, decrypt_key)
