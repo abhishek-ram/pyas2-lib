@@ -337,6 +337,9 @@ class TestAdvanced(Pyas2TestCase):
         with self.assertRaises(ImproperlyConfigured):
             as2.Partner("a partner", sign_alg="xyz")
 
+        with self.assertRaises(ImproperlyConfigured):
+            as2.Partner("a partner", key_enc_alg="xyz")
+
     def test_message_checks(self):
         """Test the checks and other features of Message."""
         msg = as2.Message()
