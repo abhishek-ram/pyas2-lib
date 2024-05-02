@@ -32,3 +32,7 @@ SIGNATUR_ALGORITHMS = (
     "rsassa_pkcs1v15",
     "rsassa_pss",
 )
+KEY_ENCRYPTION_ALGORITHMS = (
+    "rsaes_pkcs1v15",
+    "rsaes_oaep",
+)
