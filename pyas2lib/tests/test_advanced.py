@@ -396,6 +396,33 @@ class TestAdvanced(Pyas2TestCase):
         self.assertEqual(status, "failed/Failure")
         self.assertEqual(detailed_status, "mdn-not-found")
 
+    def test_mdn_original_message_not_found(self):
+        """Test that the MDN parser raises MDN not found when a non MDN message is passed."""
+        self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
+        self.out_message = as2.Message(self.org, self.partner)
+        self.out_message.build(self.test_data)
+
+        # Parse the generated AS2 message as the partner
+        raw_out_message = (
+            self.out_message.headers_str + b"\r\n" + self.out_message.content
+        )
+        in_message = as2.Message()
+        _, _, mdn = in_message.parse(
+            raw_out_message,
+            find_org_cb=self.find_org,
+            find_partner_cb=self.find_partner,
+            find_message_cb=lambda x, y: False,
+        )
+
+        # Parse the MDN
+        out_mdn = as2.Mdn()
+        status, detailed_status = out_mdn.parse(
+            mdn.headers_str + b"\r\n" + mdn.content, find_message_cb=lambda x, y: False
+        )
+
+        self.assertEqual(status, "failed/Failure")
+        self.assertEqual(detailed_status, "original-message-not-found")
+
     def test_unsigned_mdn_sent_error(self):
         """Test the case where a signed mdn was expected but unsigned mdn was returned."""
         self.partner.mdn_mode = as2.SYNCHRONOUS_MDN
