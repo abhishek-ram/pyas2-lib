@@ -943,6 +943,11 @@ class Mdn:
             # Call the find message callback which should return a Message instance
             orig_message = find_message_cb(self.orig_message_id, orig_recipient)
 
+            if not orig_message:
+                status = "failed/Failure"
+                details_status = "original-message-not-found"
+                return status, details_status
+
             # Extract the headers and save it
             mdn_headers = {}
             for k, v in self.payload.items():
