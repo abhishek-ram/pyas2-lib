@@ -248,6 +248,47 @@ class TestBasic(Pyas2TestCase):
             in str(excinfo.value)
         )
 
+    def test_invalid_cb_function_passed(self):
+        """Checking allowed combination of CB functions"""
+
+        # Create AS2 message and parse with wrong combination of callback functions
+
+        as2_message = as2.Message()
+        with pytest.raises(
+            TypeError,
+            match="Incorrect arguments passed: either find_org_cb and find_partner_cb "
+            "or only find_org_partner_cb must be passed.",
+        ):
+
+            _, _, _ = as2_message.parse(
+                "abc",
+                find_org_partner_cb=self.find_org_partner,
+                find_partner_cb=self.find_partner,
+            )
+
+        with pytest.raises(
+            TypeError,
+            match="Incorrect arguments passed: either find_org_cb and find_partner_cb "
+            "or only find_org_partner_cb must be passed.",
+        ):
+            _, _, _ = as2_message.parse(
+                "abc",
+                find_org_partner_cb=self.find_org_partner,
+                find_org_cb=self.find_org,
+            )
+
+        with pytest.raises(
+            TypeError,
+            match="Incorrect arguments passed: either find_org_cb and find_partner_cb "
+            "or only find_org_partner_cb must be passed.",
+        ):
+            _, _, _ = as2_message.parse(
+                "abc",
+                find_org_partner_cb=self.find_org_partner,
+                find_org_cb=self.find_org,
+                find_partner_cb=self.find_partner,
+            )
+
     def find_org(self, as2_id):
         return self.org
 
