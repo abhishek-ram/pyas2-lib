@@ -635,12 +635,13 @@ class Message:
                 self.receiver, self.sender = find_org_partner_cb(org_id, partner_id)
             elif find_org_cb and find_partner_cb:
                 self.receiver = find_org_cb(org_id)
-                if not self.receiver:
-                    raise PartnerNotFound(f"Unknown AS2 organization with id {org_id}")
-
                 self.sender = find_partner_cb(partner_id)
-                if not self.sender:
-                    raise PartnerNotFound(f"Unknown AS2 partner with id {partner_id}")
+
+            if not self.receiver:
+                raise PartnerNotFound(f"Unknown AS2 organization with id {org_id}")
+
+            if not self.sender:
+                raise PartnerNotFound(f"Unknown AS2 partner with id {partner_id}")
 
             if find_message_cb and find_message_cb(self.message_id, partner_id):
                 raise DuplicateDocument(
