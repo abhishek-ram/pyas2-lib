@@ -46,7 +46,7 @@ a_partner = Partner(
 
 ### Sending a message to your partner
 
-* The partner is now setup we can build and AS2 message
+* The partner is now setup we can build an AS2 message
 ```python
 from pyas2lib.as2 import Message
 
