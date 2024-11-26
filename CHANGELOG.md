@@ -1,8 +1,18 @@
 # Release History
 
+## 1.4.4 - 2024-
+
+* feat: add support for asyncio 
+* feat: add callback option to find partnerships (organization and partner combinations)
+* fix: add specific error when MDN received but original message was not found
+* feat: add key encryption algorithm parameters to partners with additional support for rsaes_oaep
+* feat: add signature algorithm parameter to partners with additional support for rsassa_pss
+* feat: add message id parameter to allow user provided message id 
+* fix: bump pyOpenSSL version to 23.2.0, which bumps cryptography version to 41.0.x which fixes CVE-2023-2650
+
 ## 1.4.3 - 2023-01-25
 
-* fix: update pyopenssl version to resovle pyca/cryptography#7959
+* fix: update pyopenssl version to resolve pyca/cryptography#7959
 
 ## 1.4.2 - 2022-12-11
 

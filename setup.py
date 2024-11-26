@@ -7,7 +7,8 @@ install_requires = [
 ]
 
 tests_require = [
-    "pytest==6.2.5",
+    "pytest==7.4.4",
+    "pytest-asyncio==0.21.1",
     "toml==0.10.2",
     "pytest-cov==2.8.1",
     "coverage==5.0.4",
